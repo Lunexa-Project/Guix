@@ -17,7 +17,7 @@
 ;;; Copyright © 2016 Petter <petter@mykolab.ch>
 ;;; Copyright © 2017 Mekeor Melire <mekeor.melire@gmail.com>
 ;;; Copyright © 2017 Nikita <nikita@n0.is>
-;;; Copyright © 2017–2021, 2024 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Marek Benc <dusxmt@gmx.com>
 ;;; Copyright © 2017 Mike Gerwitz <mtg@gnu.org>
 ;;; Copyright © 2018 Thomas Sigurdsen <tonton@riseup.net>
@@ -63,8 +63,6 @@
 ;;; Copyright © 2022 Mehmet Tekman <mtekman89@gmail.com>
 ;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;; Copyright © 2024 Igor Goryachev <igor@goryachev.org>
-;;; Copyright © 2024 Ashish SHUKLA <ashish.is@lostca.se>
-;;; Copyright © 2024 Spencer Peters <spencerpeters@protonmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -107,7 +105,6 @@
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cpp)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages datastructures)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages documentation)
@@ -119,7 +116,6 @@
   #:use-module (gnu packages gl)
   #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
-  #:use-module (gnu packages golang-build)
   #:use-module (gnu packages golang-xyz)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gtk)
@@ -266,7 +262,7 @@ command line, without displaying a keyboard at all.")
                (wrap-program (string-append out "/bin/arandr")
                  `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path)))))))
        #:tests? #f)) ;no tests
-    (inputs (list bash-minimal gtk+ python-pycairo python-pygobject xrandr))
+    (inputs (list gtk+ python-pycairo python-pygobject xrandr))
     (native-inputs (list gettext-minimal python-docutils))
     (home-page "https://christian.amsuess.com/tools/arandr/")
     (synopsis "Another RandR graphical user interface")
@@ -373,38 +369,6 @@ list of options (usually programs to launch).  It renders the menu graphically
 with X11 or Wayland, or in a text terminal with ncurses.")
     (license (list license:gpl3+ ; client program[s] and other sources
                    license:lgpl3+))))   ; library and bindings
-
-(define-public cliphist
-  (package
-    (name "cliphist")
-    (version "0.5.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/sentriz/cliphist")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1cbhrw9vk8c0in9yyhlp0k9rldgjwbcj00d7vqh69p3igznhdgsk"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:install-source? #f
-      #:import-path "go.senan.xyz/cliphist"))
-    (native-inputs
-     (list go-github-com-rogpeppe-go-internal
-           go-go-etcd-io-bbolt
-           go-go-senan-xyz-flagconf
-           go-golang-org-x-image))
-    (home-page "https://github.com/sentriz/cliphist")
-    (synopsis "Clipboard history manager for wayland with support for images")
-    (description
-     "A Wayland clipboard history manager.  It can write clipboard changes to
-a history file, recall history with any picker which accepts input from
-stdin (including dmenu, rofi, and wofi), copy and past both images and text,
-and preserve leading and trailing whitespace.")
-    (license license:gpl3)))
 
 (define-public copyq
   (package
@@ -556,7 +520,6 @@ avoiding password prompts when X11 forwarding has already been setup.")
               (sha256
                (base32
                 "0awwz5pg9x5bj0d7dpg4a7bd4gl6k55mlpxwb12534fkrpn19p0f"))))
-    (outputs '("out" "doc"))
     (build-system meson-build-system)
     (inputs
      (list libx11
@@ -574,30 +537,13 @@ avoiding password prompts when X11 forwarding has already been setup.")
          (list pkg-config-for-build)
          '())))
     (arguments
-     (list
-      #:configure-flags
-      #~(list (string-append "-Dxkb-config-root="
-                             (search-input-directory
-                              %build-inputs "share/X11/xkb"))
-              (string-append "-Dx-locale-root="
-                             (search-input-directory
-                              %build-inputs "share/X11/locale")))
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'install 'move-doc
-            (lambda _
-              (let ((old (string-append #$output "/share/doc"))
-                    (new (string-append #$output:doc "/share/doc")))
-                (mkdir-p (dirname new))
-                (rename-file old new))))
-          (add-after 'install 'symlink-pc
-            ;; in Requires.private of xkbregistry.pc
-            ;; XXX: Symlink libxml-2.0.pc in order to avoid putting
-            ;; libxml2 as a propagated input.
-            (lambda _
-              (let ((stem "/lib/pkgconfig/libxml-2.0.pc"))
-                (symlink (string-append #$(this-package-input "libxml2") stem)
-                         (string-append #$output stem))))))))
+     (list #:configure-flags
+           #~(list (string-append "-Dxkb-config-root="
+                                  (search-input-directory
+                                   %build-inputs "share/X11/xkb"))
+                   (string-append "-Dx-locale-root="
+                                  (search-input-directory
+                                   %build-inputs "share/X11/locale")))))
     (home-page "https://xkbcommon.org/")
     (synopsis "Library to handle keyboard descriptions")
     (description "Xkbcommon is a library to handle keyboard descriptions,
@@ -1224,7 +1170,7 @@ shows it again when the mouse cursor moves or a mouse button is pressed.")
                              "/lib/X11/app-defaults"))
       #:tests? #f))                     ;no such thing as a test suite
     (inputs
-     (list libx11 libxcrypt libxext libxt linux-pam))
+     (list libx11 libxext libxt linux-pam))
     (home-page "https://sillycycle.com/xlockmore.html")
     (synopsis "Screen locker for the X Window System")
     (description
@@ -1269,7 +1215,7 @@ X Window System.")
                      (install-file "xtrlock.1"
                                    (string-append out
                                                   "/share/man/man1/"))))))))
-    (inputs (list libx11 libxcrypt libxi libxfixes))
+    (inputs (list libx11 libxi libxfixes))
     (home-page "https://packages.debian.org/sid/xtrlock")
     (synopsis "Minimal X display lock program")
     (description
@@ -1506,15 +1452,15 @@ Escape key when Left Control is pressed and released on its own.")
 (define-public libwacom
   (package
     (name "libwacom")
-    (version "2.12.2")
+    (version "2.12.1")
     (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/linuxwacom/libwacom")
-                    (commit (string-append "libwacom-" version))))
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/linuxwacom/libwacom/releases/download/"
+                    "libwacom-" version "/libwacom-" version ".tar.xz"))
               (sha256
                (base32
-                "1z8p8k19j4snl90rh1j9m53m1wq4vamsdny3hq9azwmzwf3xf6bp"))))
+                "0wjmv0rnxbd143cb5a73drflpdaxpb0mck0r9rsds08bs8l7l12v"))))
     (build-system meson-build-system)
     (arguments
      (list
@@ -1588,7 +1534,7 @@ driver for the X.Org X Server version 1.7 and later (X11R7.5 or later).")
          "1fi27b73x85qqar526dbd33av7mahca2ykaqwr7siqiw1qqcby6j"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:imported-modules (,@%default-gnu-imported-modules
+     `(#:imported-modules (,@%gnu-build-system-modules
                            (guix build python-build-system))
        #:phases
        (modify-phases %standard-phases
@@ -1614,7 +1560,8 @@ driver for the X.Org X Server version 1.7 and later (X11R7.5 or later).")
                               (string-append out "/share/" dir)
                               (string-append gtk "/share/" dir))
                              (delete-file-recursively dir))
-                           '("appdata" "icons"))))))
+                           '("appdata" "icons")))
+               #t)))
          (add-after 'split-outputs 'wrap
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((gtk (assoc-ref outputs "gtk"))
@@ -1624,13 +1571,13 @@ driver for the X.Org X Server version 1.7 and later (X11R7.5 or later).")
                (wrap-program (string-append gtk "/bin/redshift-gtk")
                  `("GUIX_PYTHONPATH" ":" prefix
                    (,(string-append site ":" (getenv "GUIX_PYTHONPATH"))))
-                 `("GI_TYPELIB_PATH" ":" prefix (,(getenv "GI_TYPELIB_PATH"))))))))))
+                 `("GI_TYPELIB_PATH" ":" prefix (,(getenv "GI_TYPELIB_PATH"))))
+               #t))))))
     (outputs '("out" "gtk"))
     (native-inputs
      (list pkg-config intltool))
     (inputs
-     (list bash-minimal
-           libdrm
+     (list libdrm
            libx11
            libxcb
            libxxf86vm
@@ -1770,8 +1717,7 @@ to an arbitrary balanced color.")
            libtool
            pkg-config))
     (inputs
-     (list bash-minimal
-           glib
+     (list glib
            gtk+
            libappindicator
            libdrm
@@ -1836,7 +1782,6 @@ less if you are working in front of the screen at night.")
      (list pkg-config intltool))
     (inputs
      (list libx11
-           libxcrypt
            libxext
            libxi
            libxt
@@ -2765,7 +2710,7 @@ temperature of the screen.")
      '(#:configure-flags
        '("--with-pam-service-name=login"
          "--with-xkb"
-         "--with-default-authproto-module=/run/privileged/bin/authproto_pam")))
+         "--with-default-authproto-module=/run/setuid-programs/authproto_pam")))
     (native-inputs
      (list pandoc pkg-config))
     (inputs
@@ -2784,17 +2729,15 @@ temperature of the screen.")
     (description "@code{xsecurelock} is an X11 screen locker which uses
 a modular design to avoid the usual pitfalls of screen locking utility design.
 
-As a consequence of this design, you shouldn't use the usual screen locker
-service with @code{xsecurelock}.  Instead, add a helper binary to your
-@code{operating-system}'s @code{privileged-programs} field:
-
+As a consequence of the modular design, the usual screen locker service
+shouldn't be used with @code{xsecurelock}.  Instead, you need to add a helper
+binary to setuid-binaries:
 @example
-(privileged-programs
+(setuid-programs
  (cons*
-  (privileged-program
-   (program (file-append xsecurelock \"/libexec/xsecurelock/authproto_pam\"))
-   (setuid? #t))
-  %default-privileged-programs))
+  (setuid-program
+   (program (file-append xsecurelock \"/libexec/xsecurelock/authproto_pam\")))
+  %setuid-programs))
 @end example")
     (license license:asl2.0)))
 
@@ -2913,13 +2856,15 @@ Wayland.")
              (let ((out          (assoc-ref outputs "out"))
                    (wl-clipboard (assoc-ref inputs "wl-clipboard")))
                (wrap-program (string-append out "/bin/wl-clipboard-x11")
-                `("PATH" prefix (,(string-append wl-clipboard "/bin")))))))
+                `("PATH" prefix (,(string-append wl-clipboard "/bin")))))
+             #t))
          (add-after 'wrap-binary 'symlink-utilities
            ;; As seen in the Makefile.
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((bin (string-append (assoc-ref outputs "out") "/bin/")))
                (symlink "wl-clipboard-x11" (string-append bin "xclip"))
-               (symlink "wl-clipboard-x11" (string-append bin "xsel"))))))))
+               (symlink "wl-clipboard-x11" (string-append bin "xsel")))
+             #t)))))
     (inputs
      (list bash-minimal wl-clipboard))
     (home-page "https://github.com/brunelli/wl-clipboard-x11")
@@ -3012,11 +2957,11 @@ can optionally use some appearance settings from XSettings, tint2 and GTK.")
       #:tests? #f                       ;no test suite
       #:modules `(((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-imported-modules
+                  ,@%gnu-build-system-modules
                   (srfi srfi-26))
       #:phases
       (with-imported-modules `((guix build guile-build-system)
-                               ,@%default-gnu-imported-modules)
+                               ,@%gnu-build-system-modules)
         #~(modify-phases %standard-phases
             (add-after 'install 'wrap
               (lambda* (#:key inputs #:allow-other-keys)
@@ -3430,30 +3375,6 @@ applications.  The font and colors can be configured.")
     (license (list license:expat ;fuzzel
                    license:zlib)))) ;; bundled nanosvg
 
-(define-public fyi
-  (package
-    (name "fyi")
-    (version "1.0.3")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://codeberg.org/dnkl/fyi")
-                    (commit version)))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "112jczg0gfjgf7jkqlr97a9n5nv931dfdmwvnd5jivdh8ljajwfh"))))
-    (build-system meson-build-system)
-    (native-inputs (list pkg-config))
-    (inputs (list dbus))
-    (home-page "https://codeberg.org/dnkl/fyi")
-    (synopsis "Lightweight alternative to @code{notify-send}")
-    (description
-     "@acronym{FYI, For Your Information} is a command line utility to send
-desktop notifications to the user via a notification daemon implementing XDG
-desktop notifications.")
-    (license license:expat)))
-
 (define-public wofi
   (package
     (name "wofi")
@@ -3661,7 +3582,7 @@ if there's more than one.")
         (base32 "1xa6sgvnwynl2qrjnsppvb2vg4p5v1pisrfhrmnlymw1fzhh6s9p"))))
     (build-system gnu-build-system)
     (inputs
-     (list bash-minimal libx11 perl perl-tk))
+     (list libx11 perl perl-tk))
     (arguments
      `(#:tests? #f                      ; There are none.
        #:make-flags
@@ -3683,13 +3604,14 @@ if there's more than one.")
            (lambda* (#:key outputs #:allow-other-keys)
              (wrap-program (string-append (assoc-ref outputs "out")
                                           "/bin/xkbset-gui")
-               `("PERL5LIB" ":" prefix (,(getenv "PERL5LIB"))))))
+               `("PERL5LIB" ":" prefix (,(getenv "PERL5LIB"))))
+             #t))
          (replace 'install-license-files
            (lambda* (#:key outputs #:allow-other-keys)
              (install-file "COPYRIGHT"
-                           (string-append
-                            (assoc-ref outputs "out")
-                            "/share/doc/" ,name "-" ,version)))))))
+                           (string-append (assoc-ref outputs "out")
+                                          "/share/doc/" ,name "-" ,version))
+             #t)))))
     (home-page "https://stephenmontgomerysmith.github.io/software/#xkbset")
     (synopsis "User-preference utility for XKB extensions for X")
     (description

@@ -32,7 +32,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages bison)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages docbook)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gettext)
@@ -61,8 +60,7 @@
               (file-name (git-file-name "selinux" version))
               (sha256
                (base32
-                "1lcmgmfr0q7g5cwg6b7jm6ncw8cw6c1jblkm93v1g37bfhcgrqc0"))
-              (patches (search-patches "libsepol-versioned-docbook.patch"))))
+                "1lcmgmfr0q7g5cwg6b7jm6ncw8cw6c1jblkm93v1g37bfhcgrqc0"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -233,6 +231,14 @@ binary policies.")
     (name "secilc")
     (arguments
      (substitute-keyword-arguments (package-arguments libsepol)
+       ((#:make-flags flags)
+        #~(let ((xsl (search-input-directory %build-inputs "xml/xsl")))
+            (cons (string-append "XMLTO=xmlto --skip-validation -x "
+                                 xsl "/docbook-xsl-"
+                                 #$(package-version
+                                    (this-package-native-input "docbook-xsl"))
+                                 "/manpages/docbook.xsl")
+                  #$flags)))
        ((#:phases phases)
         #~(modify-phases #$phases
             (delete 'portability)
@@ -241,7 +247,7 @@ binary policies.")
     (inputs
      (list libsepol))
     (native-inputs
-     (list docbook-xml-4.2 docbook-xsl xmlto))
+     (list xmlto docbook-xsl))
     (synopsis "SELinux common intermediate language (CIL) compiler")
     (description "The SELinux CIL compiler is a compiler that converts the
 @dfn{common intermediate language} (CIL) into a kernel binary policy file.")
@@ -252,7 +258,7 @@ binary policies.")
     (name "python-sepolgen")
     (arguments
      (substitute-keyword-arguments (package-arguments libsepol)
-       ((#:modules _ #~%default-gnu-modules)
+       ((#:modules _ #~%gnu-build-system-modules)
         '((srfi srfi-1)
           (guix build gnu-build-system)
           (guix build utils)))
@@ -396,8 +402,7 @@ tools, and libraries designed to facilitate SELinux policy analysis.")
            linux-pam
            libsepol
            libselinux
-           libsemanage
-           libxcrypt))
+           libsemanage))
     (native-inputs
      (list gettext-minimal))
     (synopsis "SELinux core utilities")

@@ -21,7 +21,7 @@
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
 ;;; Copyright © 2020, 2021 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020 Raghav Gururajan <raghavgururajan@disroot.org>
-;;; Copyright © 2020, 2021, 2022, 2023, 2024 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020, 2021, 2022, 2023 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2020 Gabriel Arazas <foo.dogsquared@gmail.com>
 ;;; Copyright © 2021 Antoine Côté <antoine.cote@posteo.net>
 ;;; Copyright © 2021 Andy Tai <atai@atai.org>
@@ -162,16 +162,6 @@
        (sha256
         (base32 "1xmcv6rwinqsbr863rgl9005h2jlmd7k2qrwsc1h4fb8r61ykpjl"))))
     (build-system meson-build-system)
-    (arguments
-     (list #:phases #~(modify-phases %standard-phases
-                        ;; XXX: Meson build fails due to a misspelling of
-                        ;; "description" keyword in the configuration.  This phase
-                        ;; fixes that.
-                        (add-after 'unpack 'patch-meson-build
-                          (lambda _
-                            (substitute* "meson.build"
-                              (("not stable, Description:")
-                               "not stable, description:")))))))
     (native-inputs
      (list luajit pkg-config))
     (inputs
@@ -179,7 +169,7 @@
     (synopsis "Memory Mapped Machine")
     (description "MMM is a shared memory protocol for virtualising access to
 framebuffer graphics, audio output and input event.")
-    (home-page "https://github.com/hodefoting/mmm")
+    (home-page "https://github.com/hodefoting/mrg")
     (license license:isc)))
 
 (define-public directfb
@@ -395,7 +385,7 @@ objects!")
 (define-public autotrace
   (package
     (name "autotrace")
-    (version "0.31.10")
+    (version "0.31.9")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -404,7 +394,7 @@ objects!")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0ai91c567c5z560s4zjgjclgca1pm61h8cb8c8q84wg3xvkhmc9x"))))
+                "0fsg13pg72ac51l3fkzvyf7h9mzbvfxp9vfjfiwkyvx6hbm83apj"))))
     (build-system gnu-build-system)
     (arguments
      (list #:configure-flags #~'("--disable-static")
@@ -432,11 +422,7 @@ objects!")
            imagemagick
            libjpeg-turbo
            libpng
-           pstoedit
-           ;; pango is required because of libtool, from the imagemagick
-           ;; library files (.la), which records all its transitive
-           ;; dependencies.
-           pango))
+           pstoedit))
     (home-page "https://github.com/autotrace/autotrace")
     (synopsis "Bitmap to vector graphics converter")
     (description "AutoTrace is a utility for converting bitmap into vector
@@ -789,7 +775,7 @@ materials, lights, displacement, and pattern generation.")
 (define-public cgal
   (package
     (name "cgal")
-    (version "5.6.1")
+    (version "5.2.2")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -797,7 +783,7 @@ materials, lights, displacement, and pattern generation.")
                     "/CGAL-" version ".tar.xz"))
               (sha256
                (base32
-                "0dsqvnyd2ic50pr28gfz34bpnyx3i2csf1rikmc661hywdz5xcfd"))))
+                "0yjzq12ivizp23y7zqm30x20psv9gzwbcdrhyd3f7h0ds94m1c40"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
@@ -897,7 +883,7 @@ exception-handling library.")
 (define-public lib2geom
   (package
     (name "lib2geom")
-    (version "1.3")
+    (version "1.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -906,58 +892,52 @@ exception-handling library.")
               (file-name (git-file-name "lib2geom" version))
               (sha256
                (base32
-                "1ypcn0yxk9ny7qg8s8h3px2wpimhfgkwk7x1548ky12iqmdjjmcn"))))
+                "0dq981g894hmvhd6rmfl1w32mksg9hpvpjs1qvfxrnz87rhkknj8"))))
     (build-system cmake-build-system)
     (arguments
-     (list
-      #:imported-modules `((guix build python-build-system)
+     `(#:imported-modules ((guix build python-build-system)
                            ,@%cmake-build-system-modules)
-      #:modules '((guix build cmake-build-system)
-                  (guix build utils)
-                  ((guix build python-build-system) #:prefix python:))
-      #:configure-flags
-      #~(list "-D2GEOM_BUILD_SHARED=ON"
-              "-D2GEOM_BOOST_PYTHON=ON"
-              ;; Compiling the Cython bindings fail (see:
-              ;; https://gitlab.com/inkscape/lib2geom/issues/21).
-              "-D2GEOM_CYTHON_BINDINGS=OFF")
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'patch-python-lib-install-path
-            (lambda* (#:key inputs outputs #:allow-other-keys)
-              (substitute* '("src/cython/CMakeLists.txt"
-                             "src/py2geom/CMakeLists.txt")
-                (("PYTHON_LIB_INSTALL \"[^\"]*\"")
-                 (format #f "PYTHON_LIB_INSTALL ~s"
-                         (python:site-packages inputs outputs))))))
-          #$@(cond
-              ((target-x86-32?)
-               #~((add-after 'unpack 'skip-faulty-test
-                    (lambda _
-                      (substitute* "tests/CMakeLists.txt"
-                        ;; This test fails on i686 when comparing floating point
-                        ;; values, probably due to excess precision.  However,
-                        ;; '-fexcess-precision' is not implemented for C++ in
-                        ;; GCC 10 so just skip it.
-                        (("bezier-test") "")
-
-                        ;; https://gitlab.com/inkscape/lib2geom/-/issues/68
-                        (("ellipse-test") "")
-
-                        ;; XXX: Additional unresolved test failures.
-                        (("elliptical-arc-test") "")
-                        (("self-intersections-test") ""))))))
-              ;; See https://gitlab.com/inkscape/lib2geom/-/issues/63
-              ((target-aarch64?)
-               #~((add-after 'unpack 'fix-aarch64-faulty-test
-                    (lambda _
-                      (substitute* "tests/CMakeLists.txt"
-                        (("elliptical-arc-test") ""))))))
-              (else
-               #~())))))
-    (native-inputs (list python-wrapper googletest pkg-config))
-    (inputs (list cairo python-pycairo double-conversion glib gsl))
-    (propagated-inputs (list boost))    ;included in 2geom/pathvector.h
+       #:configure-flags '("-D2GEOM_BUILD_SHARED=ON"
+                           "-D2GEOM_BOOST_PYTHON=ON"
+                           ;; Compiling the Cython bindings fail (see:
+                           ;; https://gitlab.com/inkscape/lib2geom/issues/21).
+                           "-D2GEOM_CYTHON_BINDINGS=OFF")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-python-lib-install-path
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((python-version (@ (guix build python-build-system)
+                                       python-version))
+                    (python-maj-min-version (python-version
+                                             (assoc-ref inputs "python")))
+                    (site-package (string-append
+                                   (assoc-ref outputs "out")
+                                   "/lib/python" python-maj-min-version
+                                   "/site-packages")))
+               (substitute* '("src/cython/CMakeLists.txt"
+                              "src/py2geom/CMakeLists.txt")
+                 (("PYTHON_LIB_INSTALL \"[^\"]*\"")
+                  (format #f "PYTHON_LIB_INSTALL ~s" site-package))))))
+         ,@(if (target-x86-32?)
+               `((add-after 'unpack 'skip-faulty-test
+                   (lambda _
+                     ;; This test fails on i686 when comparing floating point
+                     ;; values, probably due to excess precision.  However,
+                     ;; '-fexcess-precision' is not implemented for C++ in
+                     ;; GCC 10 so just skip it.
+                     (substitute* "tests/CMakeLists.txt"
+                       (("bezier-test") "")))))
+               '()))))
+    (native-inputs `(("python" ,python-wrapper)
+                     ("googletest" ,googletest)
+                     ("pkg-config" ,pkg-config)))
+    (inputs `(("cairo" ,cairo)
+              ("pycairo" ,python-pycairo)
+              ("double-conversion" ,double-conversion)
+              ("glib" ,glib)
+              ("gsl" ,gsl)))
+    (propagated-inputs
+     (list boost))               ;referred to in 2geom/pathvector.h.
     (home-page "https://gitlab.com/inkscape/lib2geom/")
     (synopsis "C++ 2D graphics library")
     (description "2geom is a C++ library of mathematics for paths, curves,
@@ -998,38 +978,23 @@ Angus Johnson}.")
 (define-public pstoedit
   (package
     (name "pstoedit")
-    ;; Do not yet upgrade to 4.0.0, as its include file fails to compile for C
-    ;; project (see: https://github.com/reviczky/pstoedit/issues/2).
-    (version "4.00")
+    (version "3.77")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/pstoedit/pstoedit/"
                                   version "/pstoedit-" version ".tar.gz"))
               (sha256
                (base32
-                "1sk2mhrjgnlz4a1650p3qxrv6av6qc66ibmy48ckspx7mfp7snh7"))
-              (patches
-               (search-patches "pstoedit-fix-gcc12.patch"
-                               "pstoedit-fix-plainC.patch"
-                               "pstoedit-pkglibdir.patch"))))
+                "02av76j75g5sq3bg353yl6dlllda9ihmmk4c8hvgiscix816nv4s"))))
     (build-system gnu-build-system)
-    (arguments
-     ;; Avoid keeping extraneous references to libtool exhaustively listed
-     ;; dependencies.
-     (list #:configure-flags #~(list "LDFLAGS=-Wl,--as-needed")))
     (native-inputs
      (list pkg-config))
     (inputs
-     (list ghostscript
-           imagemagick
-           plotutils
-           libjpeg-turbo
-           libzip
-           ;; The following inputs are pulled in by libtool, from the
-           ;; imagemagick library files (.la), which records all its
-           ;; transitive dependencies.
-           glib
-           pango))
+     `(("ghostscript" ,ghostscript)
+       ("imagemagick" ,imagemagick)
+       ("libplot" ,plotutils)
+       ("libjpeg" ,libjpeg-turbo)
+       ("zlib" ,zlib)))               ;else libp2edrvmagick++.so fails to link
     (home-page "http://www.pstoedit.net/")
     (synopsis "Converter for PostScript and PDF graphics")
     (description "The @code{pstoedit} utility allows translating graphics
@@ -1145,7 +1110,7 @@ distills complex, animated scenes into a set of baked geometric results.")
     (inputs
      (list dbus
            glslang
-           hwdata
+           `(,hwdata "pci")
            imgui-1.86
            libx11
            mesa
@@ -1375,24 +1340,7 @@ with strong support for multi-part, multi-channel use cases.")
     (arguments
      (list #:tests? #f ; half the tests require online data or use redirection
            #:configure-flags #~(list "-DUSE_EXTERNAL_PUGIXML=1"
-                                     "-DOIIO_BUILD_TESTS=false")
-           #:phases
-           #~(modify-phases %standard-phases
-               ; Work around a CMake Zlib-detection bug:
-               ; https://issues.guix.gnu.org/72046
-               ; https://gitlab.kitware.com/cmake/cmake/-/issues/25200
-               (add-after 'configure 'fix-zlib-version
-                 (lambda _
-                   (substitute* "include/imageio_pvt.h"
-                     (("#define ZLIB_VERSION \"1\\.3\"")
-                      ""))))
-               (add-after 'install 'fix-OpenImageIOConfig
-                 (lambda _
-                   (substitute* (string-append
-                                 #$output
-                                 "/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake")
-                     (("#define ZLIB_VERSION \"1\\.3\"")
-                      "")))))))
+                                     "-DOIIO_BUILD_TESTS=false")))
     (native-inputs
      (list pkg-config))
     (inputs
@@ -2852,80 +2800,78 @@ a game.")
       (license license:zlib))))
 
 (define-public asli
-  ;; Use the newer version of ASLI that allows build with CGAL v5.6.
-  (let ((commit "4f4ba142ea7db6eecfdb546538c88a38680a83c5")
-        (revision "1"))
-    (package
-      (name "asli")
-      (version (git-version "0.1" revision commit))
-      (source
-       (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url "https://github.com/tpms-lattice/ASLI")
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32 "122xxnj3dckmg6mh07x490564b2z9gd38cd0wc5zz3p4nshcq7wy"))
-         (patches (search-patches "asli-use-system-libs.patch"))
-         (modules '((guix build utils)))
-         (snippet
-          ;; Remove bundled libraries except (the ones missing from Guix and)
-          ;; KU Leuven's mTT, which is an obscure (i.e., unfindable by searching
-          ;; online for “mTT KU Leuven”), BSD-3 licensed, header-only library.
-          #~(begin
-              ;;(delete-file-recursively "libs/AdaptTools") ; Missing from Guix
-              (delete-file-recursively "libs/CGAL")
-              ;;(delete-file-recursively "libs/alglib") ; Missing from Guix
-              (delete-file-recursively "libs/eigen")
-              (delete-file-recursively "libs/mmg")
-              (delete-file-recursively "libs/yaml")))))
-      (build-system cmake-build-system)
-      (inputs
-       (list boost
-             cgal
-             eigen
-             gmp
-             `(,mmg "lib")
-             mpfr
-             tbb-2020
-             yaml-cpp))
-      (arguments
-       (list #:tests? #f                  ; No tests
-             #:configure-flags
-             #~(list "-DCGAL_ACTIVATE_CONCURRENT_MESH_3=ON"
-                     (string-append "-DEIGEN3_INCLUDE_DIR="
-                                    #$(this-package-input "eigen")
-                                    "/include/eigen3")
-                     (string-append "-DMMG_INCLUDE_DIR="
-                                    (ungexp (this-package-input "mmg") "lib")
-                                    "/include")
-                     (string-append "-DMMG_LIBRARY_DIR="
-                                    (ungexp (this-package-input "mmg") "lib")
-                                    "/lib"))
-             #:phases
-             #~(modify-phases %standard-phases
-                 (replace 'install        ; No install phase
-                   (lambda _
-                     (with-directory-excursion "../source/bin"
-                       (install-file "ASLI" (string-append #$output "/bin"))
-                       ;; The manual is included in the repository.
-                       ;; Building it requires -DASLI_DOC=ON, but this is marked
-                       ;; as unsupported (presumably for users).
-                       ;; Besides, some of the LaTeX packages it uses are
-                       ;; missing from Guix, for example emptypage, fvextra and
-                       ;; menukeys.
-                       (install-file "docs/ASLI [User Manual].pdf"
-                                     (string-append #$output "/share/doc/"
-                                                    #$name "-" #$version))))))))
-      (home-page "http://www.biomech.ulg.ac.be/ASLI/")
-      (synopsis "Create lattice infills with varying unit cell type, size and feature")
-      (description "ASLI (A Simple Lattice Infiller) is a command-line tool that
+  (package
+    (name "asli")
+    (version "0.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/tpms-lattice/ASLI")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32 "02hwdavpsy3vmivd6prp03jn004ykrl11lbkvksy5i2zm38zbknr"))
+       (patches (search-patches "asli-use-system-libs.patch"))
+       (modules '((guix build utils)))
+       (snippet
+        ;; Remove bundled libraries except (the ones missing from Guix and)
+        ;; KU Leuven's mTT, which is an obscure (i.e., unfindable by searching
+        ;; online for “mTT KU Leuven”), BSD-3 licensed, header-only library.
+        #~(begin
+            ;;(delete-file-recursively "libs/AdaptTools") ; Missing from Guix
+            (delete-file-recursively "libs/CGAL")
+            ;;(delete-file-recursively "libs/alglib") ; Missing from Guix
+            (delete-file-recursively "libs/eigen")
+            (delete-file-recursively "libs/mmg")
+            ;;(delete-file-recursively "libs/tetgen") ; Missing from Guix
+            (delete-file-recursively "libs/yaml")))))
+    (build-system cmake-build-system)
+    (inputs
+     (list boost
+           cgal
+           eigen
+           gmp
+           `(,mmg "lib")
+           mpfr
+           tbb-2020
+           yaml-cpp))
+    (arguments
+     (list #:tests? #f                  ; No tests
+           #:configure-flags
+           #~(list "-DCGAL_ACTIVATE_CONCURRENT_MESH_3=ON"
+                   (string-append "-DEIGEN3_INCLUDE_DIR="
+                                  #$(this-package-input "eigen")
+                                  "/include/eigen3")
+                   (string-append "-DMMG_INCLUDE_DIR="
+                                  (ungexp (this-package-input "mmg") "lib")
+                                  "/include")
+                   (string-append "-DMMG_LIBRARY_DIR="
+                                  (ungexp (this-package-input "mmg") "lib")
+                                  "/lib"))
+           #:phases
+           #~(modify-phases %standard-phases
+               (replace 'install        ; No install phase
+                 (lambda _
+                   (with-directory-excursion "../source/bin"
+                     (install-file "ASLI" (string-append #$output "/bin"))
+                     ;; The manual is included in the repository.
+                     ;; Building it requires -DASLI_DOC=ON, but this is marked
+                     ;; as unsupported (presumably for users).
+                     ;; Besides, some of the LaTeX packages it uses are
+                     ;; missing from Guix, for example emptypage, fvextra and
+                     ;; menukeys.
+                     (install-file "docs/ASLI [User Manual].pdf"
+                                   (string-append #$output "/share/doc/"
+                                                  #$name "-" #$version))))))))
+    (home-page "http://www.biomech.ulg.ac.be/ASLI/")
+    (synopsis "Create lattice infills with varying unit cell type, size and feature")
+    (description "ASLI (A Simple Lattice Infiller) is a command-line tool that
 allows users to fill any 3D geometry with a functionally graded lattice.  The
 lattice infill is constructed out of unit cells, described by implicit
 functions, whose type, size and feature can be varied locally to obtain the
 desired local properties.")
-      (license license:agpl3+))))
+    (license license:agpl3+)))
 
 (define-public f3d
   (package

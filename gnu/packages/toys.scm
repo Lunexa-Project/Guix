@@ -143,7 +143,7 @@ display via @command{fortune}, drawn from sources all around the world.")
 (define-public lolcat
   (package
     (name "lolcat")
-    (version "1.5")
+    (version "1.4")
     (source
      (origin
        (method git-fetch)
@@ -152,7 +152,7 @@ display via @command{fortune}, drawn from sources all around the world.")
              (commit (string-append "v" version))))
        (sha256
         (base32
-         "1vq5y4wzjnj5r9jd085mifw84wz6hnp8p9gnd2d3x3jg9xwb0jmc"))
+         "0wyx184072z820njlc6qkvpxwcpjhj25gq4j0iw3jqzv3sk7mg7q"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -300,8 +300,7 @@ typing @command{sl} instead of @command{ls}.")
                       ""))))))
     (build-system gnu-build-system)
     (arguments
-     `(#:parallel-build? #f             ;y.tab.h fails otherwise
-       #:make-flags
+     `(#:make-flags
        (list (string-append "CC=" ,(cc-for-target))
              (string-append "prefix=" (assoc-ref %outputs "out")))
        #:phases

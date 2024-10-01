@@ -161,6 +161,7 @@
            docbook-xsl
            doxygen
            libtool
+           libxml2 ;for XML_CATALOG_FILES
            libxslt
            which
            xmlto
@@ -531,7 +532,7 @@ functions for strings and common data structures.")
        `(("docbook-xml-4.2" ,docbook-xml-4.2)
          ("docbook-xml-4.5" ,docbook-xml)
          ("docbook-xsl" ,docbook-xsl)
-         ("gtk-doc" ,gtk-doc/stable)
+         ("gtk-doc" ,gtk-doc)
          ("libxml2" ,libxml2)
          ("xsltproc" ,libxslt)
          ,@(package-native-inputs base)))
@@ -687,6 +688,23 @@ provide bindings to call into the C library.")
       ;; For tools.
       license:gpl2+))))
 
+(define-public gobject-introspection-next
+  (package
+    (inherit gobject-introspection)
+    (name "gobject-introspection")
+    (version "1.73.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnome/sources/"
+                                  "gobject-introspection/" (version-major+minor version)
+                                  "/gobject-introspection-" version ".tar.xz"))
+              (sha256
+               (base32 "1gkbx32as3v2286w7k3j24fwhkxj6brr49881m2zavxamfwxdm34"))
+              (patches (search-patches
+                        "gobject-introspection-cc-1.72.patch"
+                        "gobject-introspection-girepository.patch"
+                        "gobject-introspection-absolute-shlib-path-1.72.patch"))))))
+
 (define intltool
   (package
     (name "intltool")
@@ -750,7 +768,7 @@ The intltool collection can be used to do these things:
                "1jl7gsr7aclb9nvqazr039m86y7f7ivfhl2pixcrbfqjkb97r6kb"))))
     (build-system gnu-build-system)
     (inputs
-     (list bash-minimal libxml2 python-libxml2 python))
+     (list libxml2 python-libxml2 python))
     (arguments
      (list
       #:phases
@@ -1028,7 +1046,7 @@ useful for C++.")
 (define-public python-pygobject
   (package
     (name "python-pygobject")
-    (version "3.47.0")
+    (version "3.46.0")
     (source
      (origin
        (method url-fetch)
@@ -1036,8 +1054,7 @@ useful for C++.")
                            (version-major+minor version)
                            "/pygobject-" version ".tar.xz"))
        (sha256
-        (base32
-         "082dpm34a350bnhgmkdv8myxzjgnrflckkpn46vnvs36f7bbfdij"))
+        (base32 "1z6aagb46fhhdd0bb3zk6dfdw3s4y2fva0vv3jpwjj6mvar0hq22"))
        (modules '((guix build utils)))
        (snippet
         ;; We disable these tests in a snippet so that they are inherited

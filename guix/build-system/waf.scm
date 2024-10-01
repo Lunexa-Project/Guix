@@ -42,7 +42,7 @@
 (define %waf-build-system-modules
   ;; Build-side modules imported by default.
   `((guix build waf-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define* (lower name
                 #:key source inputs native-inputs outputs system target

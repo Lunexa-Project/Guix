@@ -56,7 +56,6 @@
 ;;; Copyright © 2023 Arjan Adriaanse <arjan@adriaan.se>
 ;;; Copyright © 2023 Wilko Meyer <w@wmeyer.eu>
 ;;; Copyright © 2024 Benjamin Slade <slade@lambda-y.net>
-;;; Copyright © 2024 Jean Simard <woshilapin@tuziwo.info>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -388,7 +387,6 @@ example, modify the message headers or body, or encrypt or sign the message.")
            readline
            linux-pam
            libltdl
-           libxcrypt
            gdbm
            ;; Required for SEARCH CHARSET.
            libunistring))
@@ -1013,8 +1011,7 @@ mailpack.  What can alterMIME do?
            w3m
            xorg-server-for-tests))
     (inputs
-     (list bash-minimal
-           boost
+     (list boost
            gmime
            gobject-introspection        ; it is referenced
            gtkmm-3
@@ -1264,14 +1261,14 @@ security functionality including PGP, S/MIME, SSH, and SSL.")
 (define-public mu
   (package
     (name "mu")
-    (version "1.12.6")
+    (version "1.12.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/djcb/mu/releases/download/v"
                            version "/mu-" version ".tar.xz"))
        (sha256
-        (base32 "0qdpag5skcwml4mrhz8205wfirayn55cqdydsy7ng6f9hyv3k9gq"))))
+        (base32 "1jwalqmvk5s4mf7bnz7gnzh6rii7n348bsflgdvyinia0zir42vp"))))
     (build-system meson-build-system)
     (native-inputs
      (list pkg-config
@@ -1411,7 +1408,7 @@ Notmuch.")
          (file-name (string-append name "-" version "-checkout"))))
       (build-system python-build-system)
       (inputs
-       (list bash-minimal python-notmuch python-pygobject gobject-introspection
+       (list python-notmuch python-pygobject gobject-introspection
              libnotify gtk+))
       (arguments
        `(#:phases
@@ -2074,7 +2071,6 @@ delivery.")
            gzip
            libnsl
            libxaw
-           libxcrypt
            libxt
            perl
            perl-file-fcntllock
@@ -2095,7 +2091,7 @@ facilities for checking incoming mail.")
   (package
     (name "dovecot")
     ;; Also update dovecot-pigeonhole when updating to a new minor version.
-    (version "2.3.21.1")
+    (version "2.3.21")
     (source
      (origin
        (method url-fetch)
@@ -2103,7 +2099,7 @@ facilities for checking incoming mail.")
                            (version-major+minor version) "/"
                            "dovecot-" version ".tar.gz"))
        (sha256
-        (base32 "0zh9971d49dl5q1km31jnrd3vg53j9aaxnppic412xi9qiwa341d"))
+        (base32 "0bah6rn5ihczai8q50p6pqxwj73j21smib89ycp7q8qwly9i1c85"))
        (patches
         (search-patches "dovecot-opensslv3.patch"))))
     (build-system gnu-build-system)
@@ -2116,7 +2112,6 @@ facilities for checking incoming mail.")
            libsodium ; extra password algorithms
            libstemmer
            libunwind
-           libxcrypt
            linux-pam
            lz4
            openssl
@@ -2166,7 +2161,7 @@ It supports mbox/Maildir and its own dbox/mdbox formats.")
   (let ((dovecot-version (version-major+minor (package-version dovecot))))
     (package
       (name "dovecot-pigeonhole")
-      (version "0.5.21.1")
+      (version "0.5.21")
       (source
        (origin
          (method url-fetch)
@@ -2174,7 +2169,7 @@ It supports mbox/Maildir and its own dbox/mdbox formats.")
                "https://pigeonhole.dovecot.org/releases/" dovecot-version "/"
                "dovecot-" dovecot-version "-pigeonhole-" version ".tar.gz"))
          (sha256
-          (base32 "14j6bj9dc0c2f6pi251jyhfiwyg7n9gi2c840vg261v29cldnxq3"))
+          (base32 "09zd7n6ljqaj3i3m6r1hn1vb1cjhy64040vji82i4rq7b4k1v9qw"))
          (modules '((guix build utils)))
          (snippet
           '(begin
@@ -2319,14 +2314,17 @@ hashing scheme (such as scrypt) plug-in for @code{Dovecot}.")
 (define-public isync
   (package
     (name "isync")
-    (version "1.5.0")
+    (version "1.4.4")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/isync/isync/"
                            version "/isync-" version ".tar.gz"))
        (sha256 (base32
-                "13gpawspfpiw87wm2p6gzrm98xwy741k2ib1l6fjggw7jc81xj50"))))
+                "1zq0wwvmqsl9y71546dr0aygzn9gjjfiw19hlcq87s929y4p6ckw"))
+       (patches
+        ;; Likely to be included in next version
+        (search-patches "isync-openssl3-fix.patch"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -2896,8 +2894,7 @@ DKIM and/or DomainKeys.")
                               "perl-net-dns"
                               "perl-timedate"))))))))
     (inputs
-     (list bash-minimal
-           perl
+     (list perl
            perl-crypt-openssl-rsa
            perl-cryptx
            perl-io-socket-inet6
@@ -3282,63 +3279,53 @@ from the Cyrus IMAP project.")
 (define-public opensmtpd
   (package
     (name "opensmtpd")
-    (version "7.5.0p0")
+    (version "7.4.0p1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.opensmtpd.org/archives/"
                            "opensmtpd-" version ".tar.gz"))
        (sha256
-        (base32 "1763w26zvvc3kf8giqg4lwn5n1ypmgh73agf5k3yq6qc7hww3xc4"))))
+        (base32 "1dbhvf73z9qi9pzj4h58bgnzsafiwpmy7n17rba83q8rjkna50ly"))))
     (build-system gnu-build-system)
     (inputs
      ;; OpenSMTPd bundled (a subset of) libasr and libtls, which we use.  See
      ;; https://www.mail-archive.com/misc@opensmtpd.org/msg05909.html for why.
-     (list bash-minimal    ;sh invoked at run time
-           bdb
-           coreutils       ;for cat
-           gzip            ;for zcat
+     (list bdb
            libbsd          ;https://github.com/OpenSMTPD/OpenSMTPD/issues/1233
            libevent
            libressl
            linux-pam
-           libxcrypt
            zlib))
     (native-inputs
      (list bison
            groff                        ;for man pages
            pkg-config))
     (arguments
-     (list
-      #:configure-flags
-      #~(list "--localstatedir=/var"
-              "--with-libbsd"
-              ;; This is the default only if it exists at build time—it doesn't.
-              "--with-path-socket=/var/run"
-              "--with-path-CAfile=/etc/ssl/certs/ca-certificates.crt"
-              "--with-user-smtpd=smtpd"
-              "--with-user-queue=smtpq" "--with-group-queue=smtpq"
-              "--with-auth-pam"
-              "--with-table-db"
-
-              ;; This is called at run time but defaults to the native zcat in
-              ;; $PATH, breaking cross-compilation.
-              (string-append "ac_cv_path_ZCAT="
-                             #$(this-package-input "gzip") "/bin/zcat"))
-      #:phases
-      `(modify-phases %standard-phases
+     `(#:configure-flags
+       (list "--localstatedir=/var"
+             "--with-libbsd"
+             ;; This is the default only if it exists at build time—it doesn't.
+             "--with-path-socket=/var/run"
+             "--with-path-CAfile=/etc/ssl/certs/ca-certificates.crt"
+             "--with-user-smtpd=smtpd"
+             "--with-user-queue=smtpq" "--with-group-queue=smtpq"
+             "--with-auth-pam"
+             "--with-table-db")
+       #:phases
+       (modify-phases %standard-phases
          ;; Fix some incorrectly hard-coded external tool file names.
          (add-after 'unpack 'patch-FHS-file-names
-           (lambda* (#:key inputs #:allow-other-keys)
+           (lambda _
              ;; avoids warning smtpd: couldn't enqueue offline message
              ;; smtpctl exited abnormally
              (substitute* "usr.sbin/smtpd/smtpd.h"
-               (("/usr/bin/smtpctl") "/run/privileged/bin/smtpctl"))
+               (("/usr/bin/smtpctl") "/run/setuid-programs/smtpctl"))
              (substitute* "usr.sbin/smtpd/smtpctl.c"
                ;; ‘gzcat’ is auto-detected at compile time, but ‘cat’ isn't.
-               (("/bin/cat" file) (search-input-file inputs file)))
+               (("/bin/cat") (which "cat")))
              (substitute* "usr.sbin/smtpd/mda_unpriv.c"
-               (("/bin/sh" file) (search-input-file inputs file)))))
+               (("/bin/sh") (which "sh")))))
          ;; OpenSMTPD provides a single smtpctl utility to control both the
          ;; daemon and the local submission subsystem.  To accomodate systems
          ;; that require historical interfaces such as sendmail, newaliases or
@@ -3385,7 +3372,6 @@ to esoteric or niche requirements.")
     (inputs
      `(("libressl" ,libressl)
        ("libevent" ,libevent)
-       ("libxcrypt" ,libxcrypt)         ;required by Python.h
        ("mysql" ,mariadb "dev")
        ("opensmtpd" ,opensmtpd)
        ("postgresql" ,postgresql)
@@ -3875,11 +3861,7 @@ on the fly.  Both programs are written in C and are very fast.")
         (base32 "131i2b1yxhnbqkfk4kky40pfanqw2c5lcgbnjhfqp5cvpawpk2ai"))))
     (build-system perl-build-system)
     (inputs
-     (list bash-minimal
-           perl-io-socket-inet6
-           perl-net-dns
-           perl-net-ssleay
-           perl-socket6)) ; used by perl-io-socket-inet6
+     (list perl-io-socket-inet6 perl-net-dns perl-net-ssleay perl-socket6)) ; used by perl-io-socket-inet6
     (arguments
      `(#:tests? #f                      ; no tests
        #:phases
@@ -3887,7 +3869,8 @@ on the fly.  Both programs are written in C and are very fast.")
          (add-after 'unpack 'set-build_version
            (lambda _
              (substitute* "swaks"
-               (("\"DEVRELEASE\"") (format #f "\"~a\"" ,version)))))
+               (("\"DEVRELEASE\"") (format #f "\"~a\"" ,version)))
+             #true))
          (delete 'configure)
          (replace 'build
            (lambda _
@@ -3896,12 +3879,14 @@ on the fly.  Both programs are written in C and are very fast.")
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (install-file "swaks" (string-append out "/bin"))
-               (install-file "swaks.1" (string-append out "/share/man/man1")))))
+               (install-file "swaks.1" (string-append out "/share/man/man1")))
+             #t))
          (add-after 'install 'wrap-program
            (lambda* (#:key outputs #:allow-other-keys)
              (wrap-program (string-append (assoc-ref outputs "out")
                                           "/bin/swaks")
-               `("PERL5LIB" ":" = (,(getenv "PERL5LIB")))))))))
+               `("PERL5LIB" ":" = (,(getenv "PERL5LIB"))))
+             #t)))))
     (home-page "https://jetmore.org/john/code/swaks/")
     (synopsis "Featureful SMTP test tool")
     (description "Swaks is a flexible, scriptable, transaction-oriented SMTP
@@ -3940,7 +3925,6 @@ operators and scripters.")
     (arguments
      `(#:make-flags
        (list (string-append "CC=" ,(cc-for-target)))
-       #:parallel-build? #f             ;fails otherwise
        #:configure-flags (list (string-append "--with-ssl-include-dir="
                                               (assoc-ref %build-inputs "openssl")
                                               "/include/openssl")
@@ -3977,7 +3961,6 @@ operators and scripters.")
            mit-krb5
            aspell
            tcl
-           libxcrypt
            linux-pam))
     (home-page "https://repo.or.cz/alpine.git")
     (synopsis "Alternatively Licensed Program for Internet News and Email")
@@ -4232,7 +4215,7 @@ It is a replacement for the @command{urlview} program.")
                    #:select (target-guile-effective-version))
                   (guix build utils))
       #:imported-modules `((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
 
       #:configure-flags '(list "--localstatedir=/var")
 
@@ -4883,7 +4866,7 @@ ex-like commands on it.")
                   ((guix build emacs-build-system) #:prefix emacs:)
                   (guix build utils)
                   (ice-9 string-fun))
-       #:imported-modules (,@%default-gnu-imported-modules
+       #:imported-modules (,@%gnu-build-system-modules
                            (guix build emacs-build-system)
                            (guix build emacs-utils))
        #:make-flags (list (string-append "prefix=" %output)
@@ -5051,7 +5034,7 @@ remote SMTP server.")
 (define-public aerc
   (package
     (name "aerc")
-    (version "0.18.1")
+    (version "0.15.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -5060,7 +5043,7 @@ remote SMTP server.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1gj8m8xvqaf0lsnk4h1n9d0qhwi8d3mm0w9zhw16v888n7rll9fb"))))
+                "1gbprx0i8d13q974n5hsys6lllav5cpll3cwrr1hfw6307hc001r"))))
     (build-system go-build-system)
     (arguments
      (list #:import-path "git.sr.ht/~rjarry/aerc"
@@ -5069,19 +5052,23 @@ remote SMTP server.")
            #:build-flags
            #~(list "-tags=notmuch"
                    (string-append
-                    "-ldflags=-X main.Version=" #$version
-                    " -X git.sr.ht/~rjarry/aerc/config.libexecDir="
-                    #$output "/libexec/aerc"
-                    " -X git.sr.ht/~rjarry/aerc/config.shareDir="
-                    #$output "/share/aerc"))
+                     "-ldflags=-X main.Version=" #$version
+                     " -X git.sr.ht/~rjarry/aerc/config.libexecDir="
+                     #$output "/libexec/aerc"
+                     " -X git.sr.ht/~rjarry/aerc/config.shareDir="
+                     #$output "/share/aerc"))
            #:phases
            #~(modify-phases %standard-phases
                (add-after 'unpack 'patch-paths
                  (lambda* (#:key import-path inputs #:allow-other-keys)
-                   (with-directory-excursion (string-append "src/" import-path)
-                     (substitute* (find-files "." "\\.go$")
-                       ;; Patch all occurrences to "sh" with absolute path to
-                       ;; the shell available in Guix.
+                   (with-directory-excursion
+                       (string-append "src/" import-path)
+                     (substitute* (list "config/config.go"
+                                        "lib/templates/template.go"
+                                        "widgets/compose.go"
+                                        "widgets/msgviewer.go"
+                                        "worker/maildir/worker.go"
+                                        "worker/notmuch/worker.go")
                        (("\"sh\"")
                         (string-append
                          "\"" (search-input-file inputs "bin/sh")
@@ -5090,8 +5077,8 @@ remote SMTP server.")
                        (substitute* "commands/z.go"
                          (("\"zoxide\"")
                           (string-append
-                           "\"" (search-input-file inputs "bin/zoxide")
-                           "\""))))
+                            "\"" (search-input-file inputs "bin/zoxide")
+                            "\""))))
                      (substitute* (list "lib/crypto/gpg/gpg.go"
                                         "lib/crypto/gpg/gpg_test.go"
                                         "lib/crypto/gpg/gpgbin/keys.go"
@@ -5113,47 +5100,51 @@ remote SMTP server.")
                            (string-append "PREFIX=" #$output)))))))
     (inputs
      (append
-      (list gnupg
-            notmuch ; Failing to build without it.
-            python
-            python-vobject)
-      (if (supported-package? zoxide)
-          (list zoxide)
-          '())))
-    (native-inputs
-     (list go-git-sr-ht-rjarry-go-opt
-           go-git-sr-ht-rockorager-go-jmap
-           go-git-sr-ht-rockorager-vaxis
-           go-github-com-protonmail-go-crypto
-           go-github-com-arran4-golang-ical
-           go-github-com-danwakefield-fnmatch
-           go-github-com-emersion-go-imap
-           go-github-com-emersion-go-imap-sortthread
-           go-github-com-emersion-go-maildir
-           go-github-com-emersion-go-mbox
-           go-github-com-emersion-go-message
-           go-github-com-emersion-go-msgauth
-           go-github-com-emersion-go-pgpmail
-           go-github-com-emersion-go-sasl
-           go-github-com-emersion-go-smtp
-           go-github-com-fsnotify-fsnotify
-           go-github-com-gatherstars-com-jwz
-           go-github-com-go-ini-ini
-           go-github-com-lithammer-fuzzysearch
-           go-github-com-mattn-go-isatty
-           go-github-com-mattn-go-runewidth
-           go-github-com-pkg-errors
-           go-github-com-riywo-loginshell
-           go-github-com-stretchr-testify
-           go-github-com-syndtr-goleveldb
-           go-golang-org-x-image
-           go-golang-org-x-oauth2
-           go-golang-org-x-sys
-           go-golang-org-x-tools
-           scdoc))
+       (list gnupg
+             go-github-com-zenhack-go-notmuch
+             go-golang-org-x-oauth2
+             go-github-com-xo-terminfo
+             go-github-com-stretchr-testify
+             go-github-com-riywo-loginshell
+             go-github-com-pkg-errors
+             go-github-com-mitchellh-go-homedir
+             go-github-com-miolini-datacounter
+             go-github-com-mattn-go-runewidth
+             go-github-com-mattn-go-isatty
+             go-github-com-lithammer-fuzzysearch
+             go-github-com-kyoh86-xdg
+             go-github-com-imdario-mergo
+             go-github-com-google-shlex
+             go-github-com-go-ini-ini
+             go-github-com-gdamore-tcell-v2
+             go-github-com-gatherstars-com-jwz
+             go-github-com-fsnotify-fsnotify
+             go-github-com-emersion-go-smtp
+             go-github-com-emersion-go-sasl
+             go-github-com-emersion-go-pgpmail
+             go-github-com-emersion-go-message
+             go-github-com-emersion-go-maildir
+             go-github-com-emersion-go-imap-sortthread
+             go-github-com-emersion-go-imap
+             go-github-com-emersion-go-msgauth
+             go-github-com-emersion-go-mbox
+             go-github-com-ddevault-go-libvterm
+             go-github-com-danwakefield-fnmatch
+             go-github-com-creack-pty
+             go-github-com-arran4-golang-ical
+             go-github-com-protonmail-go-crypto
+             go-github-com-syndtr-goleveldb
+             go-git-sr-ht-sircmpwn-getopt
+             go-git-sr-ht-rockorager-tcell-term
+             python
+             python-vobject)
+       (if (supported-package? zoxide)
+           (list zoxide)
+           '())))
+    (native-inputs (list scdoc))
     (home-page "https://git.sr.ht/~rjarry/aerc")
     (synopsis "Email client for the terminal")
-    (description "@code{aerc} is a textual email client for terminals.  It
+    (description "@code{aerc} is a textual email client for terminals. It
 features:
 @enumerate
 @item First-class support for using patches and @code{git send-email}
@@ -5166,41 +5157,3 @@ features:
     ;; <https://lists.sr.ht/~rjarry/aerc-devel/%3Cb5cb213a7d0c699a886971658c2476
     ;; 1073eb2391%40disroot.org%3E>
     (license license:gpl3+)))
-
-(define-public hydroxide
-  (package
-    (name "hydroxide")
-    (version "0.2.29")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/emersion/hydroxide")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "11gbikrgm7nf0zjav64202wsnr9pvrmslm2rzg9d9rbvwdqcq1jl"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:install-source? #f
-      #:import-path "github.com/emersion/hydroxide/cmd/hydroxide"
-      #:unpack-path "github.com/emersion/hydroxide"))
-    (native-inputs
-     (list go-github-com-protonmail-go-crypto
-           go-github-com-boltdb-bolt
-           go-github-com-emersion-go-bcrypt
-           go-github-com-emersion-go-imap
-           go-github-com-emersion-go-mbox
-           go-github-com-emersion-go-message
-           go-github-com-emersion-go-smtp
-           go-github-com-emersion-go-vcard
-           go-github-com-emersion-go-webdav
-           go-golang-org-x-crypto
-           go-golang-org-x-term))
-    (home-page "https://github.com/emersion/hydroxide")
-    (synopsis "ProtonMail CardDAV, IMAP and SMTP bridge")
-    (description
-     "This package implements a functionality to translate standard
-protocols (SMTP, IMAP, CardDAV) into ProtonMail API requests.")
-    (license license:expat)))

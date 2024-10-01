@@ -116,8 +116,9 @@ applying deltarpms, compatible with the original deltarpm packages.")
            `(,glib "bin")
            `(,glib-with-documentation "doc")
            gobject-introspection        ;for g-ir-scanner
-           gtk-doc/stable
+           gtk-doc
            help2man
+           libxml2                      ;for XML_CATALOG_FILES
            pkg-config
            python))                     ;for 'site-packages' call
     (inputs

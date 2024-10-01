@@ -352,10 +352,10 @@ Counterpane's Passwordsafe.")
           (add-after 'unpack 'generate-gdk-pixbuf-loaders-cache-file
             (assoc-ref glib-or-gtk:%standard-phases
                        'generate-gdk-pixbuf-loaders-cache-file))
-          (add-after 'install 'glib-or-gtk-compile-schemas
+          (add-after 'wrap 'glib-or-gtk-compile-schemas
             (assoc-ref glib-or-gtk:%standard-phases
                        'glib-or-gtk-compile-schemas))
-          (add-after 'glib-or-gtk-compile-schemas 'glib-or-gtk-wrap
+          (add-after 'wrap 'glib-or-gtk-wrap
             (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
     (inputs (list adwaita-icon-theme
                   libcotp
@@ -410,8 +410,10 @@ client, supporting @acronym{TOTP, Time-based one time passwords} and
                                              "/lib/guile/" effective "/site-ccache"))
                     (prog      (string-append out "/bin/shroud")))
                (wrap-program prog
-                 `("GUILE_LOAD_COMPILED_PATH" ":" prefix (,ccachedir)))))))))
-    (inputs (list bash-minimal guile-2.2 gnupg xclip))
+                 `("GUILE_LOAD_COMPILED_PATH" ":" prefix (,ccachedir)))
+               #t))))))
+    (inputs
+     (list guile-2.2 gnupg xclip))
     (synopsis "GnuPG-based secret manager")
     (description "Shroud is a simple secret manager with a command line
 interface.  The password database is stored as a Scheme s-expression and
@@ -574,7 +576,7 @@ random passwords that pass the checks.")
       #:phases
       #~(modify-phases %standard-phases
           (delete 'configure))))        ;no configure script
-    (inputs (list linux-pam libxcrypt))
+    (inputs (list linux-pam))
     (home-page "https://www.openwall.com/passwdqc/")
     (synopsis
      "Password/passphrase strength checking and policy enforcement toolset")
@@ -618,7 +620,8 @@ command-line programs (@command{pwqcheck}, @command{pwqfilter}, and
                                      "/bin/assword"))
                    (gi-typelib-path (getenv "GI_TYPELIB_PATH")))
                (wrap-program prog
-                 `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))))))
+                 `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path)))
+               #t)))
          (add-after 'install 'manpage
            (lambda* (#:key outputs #:allow-other-keys)
              (invoke "make" "assword.1")
@@ -629,7 +632,7 @@ command-line programs (@command{pwqcheck}, @command{pwqfilter}, and
     (native-inputs
      (list txt2man))
     (inputs
-     (list bash-minimal gtk+ python-xdo python-gpg python-pygobject))
+     (list gtk+ python-xdo python-gpg python-pygobject))
     (propagated-inputs
      (list xclip))
     (home-page "https://finestructure.net/assword/")
@@ -722,8 +725,7 @@ any X11 window.")
             (separator #f)             ;single entry
             (files '("lib/password-store/extensions")))))
     (inputs
-     (list bash-minimal
-           coreutils
+     (list coreutils
            dmenu
            util-linux
            git
@@ -798,7 +800,7 @@ through the pass command.")
          ("src/completion/pass.zsh-completion"
           "/share/zsh/site-functions/"))))
     (inputs
-     (list age age-keygen bash-minimal git procps qrencode sed tree util-linux))
+     (list age age-keygen git procps qrencode sed tree util-linux))
     (home-page "https://github.com/FiloSottile/passage")
     (synopsis "Encrypted password manager")
     (description "This package provides an encrypted password manager, forked
@@ -1642,7 +1644,7 @@ try every password contained in a file.")
       (native-inputs
        (list pkg-config libxslt libxml2 docbook-xsl docbook-xml))
       (inputs
-       (list libxcrypt openssl))
+       (list openssl))
       (arguments
        `(#:phases
          (modify-phases %standard-phases

@@ -7,7 +7,6 @@
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2017, 2018, 2019, 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2023 Zheng Junjie <873216071@qq.com>
-;;; Copyright © 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -34,8 +33,6 @@
   #:use-module (guix build-system gnu)
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
-  #:use-module (gnu packages bash)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages hurd)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages perl)
@@ -58,7 +55,7 @@
     (native-inputs
      (list autoconf automake texinfo))
     (inputs
-     (list libxcrypt ncurses perl))
+     (list ncurses perl))
     (arguments
      `(#:configure-flags
        ;; By default, screen supports 16 colors, but we want 256 when
@@ -122,8 +119,7 @@ controlling terminal and attach to it later.")
        (patches (search-patches "byobu-writable-status.patch"))))
     (build-system gnu-build-system)
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("python" ,python-wrapper)       ; for config and session GUIs
+     `(("python" ,python-wrapper)       ; for config and session GUIs
        ("python-newt" ,newt "python")))
     (arguments
      `(#:phases

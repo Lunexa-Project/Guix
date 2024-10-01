@@ -21,7 +21,6 @@
 ;;; Copyright © 2023 Yovan Naumovski <yovan@gorski.stream>
 ;;; Copyright © 2023 Hendursaga <hendursaga@aol.com>
 ;;; Copyright © 2023 Zheng Junjie <873216071@qq.com>
-;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -122,19 +121,18 @@
 (define-public vice
   (package
     (name "vice")
-    (version "3.8")
+    (version "3.7.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/vice-emu/releases/"
                            "vice-" version ".tar.gz"))
-       (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        (base32 "010h3aj0y9n8kcg5yvy1m7g4hc7nbm5gym5r3f3jmk5vyb8c8z8x"))))
+        (base32 "165b1ixrarcqy1rl06yhaf46ni3j8lrbn8f3zf5nkc2d0bk12f3y"))))
     (build-system gnu-build-system)
     (arguments
-     (list #:configure-flags #~(list "--disable-html-docs"
-                                     "--disable-pdf-docs")))
+     `(#:configure-flags '("--disable-html-docs"
+                           "--disable-pdf-docs")))
     (native-inputs
      (list bison
            dos2unix
@@ -143,7 +141,6 @@
            pkg-config))
     (inputs
      (list alsa-lib
-           curl
            glew
            glib
            gtk+
@@ -190,7 +187,7 @@ SuperCPU.")
        #:tests? #f ; No check target and custom tests don't seem to build
        #:imported-modules
        ((guix build copy-build-system)
-        ,@%default-gnu-imported-modules)
+        ,@%gnu-build-system-modules)
        #:modules
        (((guix build copy-build-system)
          #:prefix copy:)
@@ -596,7 +593,6 @@ and a game metadata scraper.")
      (list pkg-config))
     (inputs
      `(("alsa-lib" ,alsa-lib)
-       ("bash" ,bash-minimal) ; for wrap-program
        ("ao" ,ao)
        ("eudev" ,eudev)
        ("gtk+" ,gtk+-2)
@@ -2161,13 +2157,13 @@ assembler, and debugger for the Intel 8085 microprocessor.
                  ;; For GtkFileChooserDialog.
                  `("GSETTINGS_SCHEMA_DIR" =
                    (,(string-append (assoc-ref inputs "gtk+")
-                                    "/share/glib-2.0/schemas")))))))))
+                                    "/share/glib-2.0/schemas"))))
+               #t)))))
       (native-inputs
        (list pkg-config intltool
              `(,glib "bin")))
       (inputs
-       (list bash-minimal
-             libcdio
+       (list libcdio
              sdl2
              gtk+
              ffmpeg-4

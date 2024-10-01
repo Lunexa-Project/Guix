@@ -74,7 +74,6 @@
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cpp)
   #:use-module (gnu packages crates-io)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages datastructures)
   #:use-module (gnu packages documentation)
@@ -116,14 +115,14 @@
 (define-public ed
   (package
     (name "ed")
-    (version "1.20.1")
+    (version "1.18")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://gnu/ed/ed-"
                                  version ".tar.lz"))
              (sha256
               (base32
-               "1jmvpbs2mnrmk870js11v7g5qr3z8w0ws7sbdj3zjhd1jyr6795i"))))
+               "0krb8rsb0cd8mgz0c5pqgnjbbrj7zjl7mf9099r8gi80k2nyza5c"))))
     (build-system gnu-build-system)
     (native-inputs (list lzip))
     (arguments
@@ -202,7 +201,7 @@ extensions over the standard utility.")
            (sha256
             (base32 "1jsvg2lg3xqfgi79x08kx94mc34mh62ivca10vsci6fqsk68jbd0"))
            (file-name (git-file-name "vis-test" version))))))
-    (inputs (list bash-minimal lua ncurses libtermkey lua-lpeg tre))
+    (inputs (list lua ncurses libtermkey lua-lpeg tre))
     (synopsis "Vim-like text editor")
     (description
      "Vis aims to be a modern, legacy free, simple yet efficient vim-like text
@@ -452,7 +451,6 @@ bindings and many of the powerful features of GNU Emacs.")
      (list pkg-config xorg-server-for-tests))
     (inputs
      (list aspell
-           bash-minimal
            boost
            clang-11               ;XXX: must be the same version as Mesas LLVM
            gtkmm-3
@@ -577,7 +575,7 @@ Wordstar-, EMACS-, Pico, Nedit or vi-like key bindings.  e3 can be used on
 (define-public mg
   (package
     (name "mg")
-    (version "20240709")
+    (version "20230501")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -586,7 +584,7 @@ Wordstar-, EMACS-, Pico, Nedit or vi-like key bindings.  e3 can be used on
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "02q3976glcih0icqvfz2fxrc723si57q080ba4ali5hw4wwggnk4"))
+                "15wynij770xv0582vhh9sabypl61hcqcb9i4y2vwn0k4r8dx6j0g"))
               (modules '((guix build utils)))
               (snippet '(begin
                           (substitute* "GNUmakefile"
@@ -770,8 +768,7 @@ scripts/input/X11/C/Shell/HTML/Dired): 49KB.
     (native-inputs
      (list pkg-config qttools-5))       ; for lrelease
     (inputs
-     (list bash-minimal
-           hunspell
+     (list hunspell
            qtbase-5
            qtdeclarative-5
            qtmultimedia-5
@@ -985,7 +982,6 @@ editors.")
      (list freetype
            guile-1.8
            libjpeg-turbo
-           libxcrypt
            perl
            python-wrapper
            qtbase-5
@@ -1109,14 +1105,14 @@ The basic features of Text Pieces are:
 (define-public scintilla
   (package
     (name "scintilla")
-    (version "5.5.1")
+    (version "5.4.3")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.scintilla.org/scintilla"
                            (string-delete #\. version) ".tgz"))
        (sha256
-        (base32 "1rvp8aabk0m75fih7fvv6qhhc2ahf93vqbqa2zd0r8627v3llqzx"))))
+        (base32 "1ysdi9rsg14w5mn581gjvr9jrdg1yp9rmg1r9jz7gngdgcz7q5ij"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -1240,7 +1236,7 @@ used with the Scintilla editing component.")
            ))
     (arguments
      `(#:imported-modules ((guix build glib-or-gtk-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:modules (((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
                   (guix build gnu-build-system)
                   (guix build utils))

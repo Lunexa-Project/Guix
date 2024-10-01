@@ -40,8 +40,7 @@
 ;;; Copyright © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 ;;; Copyright © 2023 Paul A. Patience <paul@apatience.com>
 ;;; Copyright © 2024 dan <i@dan.games>
-;;; Copyright © 2024 Peepo Froggings <peepofroggings@tutanota.de>
-
+;;;
 ;;; This file is part of GNU Guix.
 ;;;
 ;;; GNU Guix is free software; you can redistribute it and/or modify it
@@ -75,7 +74,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages assembly)
   #:use-module (gnu packages autotools)
-  #:use-module (gnu packages base)
   #:use-module (gnu packages bdw-gc)
   #:use-module (gnu packages benchmark)
   #:use-module (gnu packages boost)
@@ -190,69 +188,36 @@ allocator that makes it easy to generate complex code without a significant
 development effort.")
       (license license:zlib))))
 
-(define-public biblesync
+(define-public castxml
   (package
-    (name "biblesync")
-    (version "2.1.0")
+    (name "castxml")
+    (version "0.6.4")
     (source (origin
               (method git-fetch)
               (uri
                (git-reference
-                (url "https://github.com/karlkleinpaste/biblesync")
-                (commit version)))
+                (url "https://github.com/CastXML/CastXML")
+                (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
-               (base32
-                "0prmd12jq2cjdhsph5v89y38j7hhd51dr3r1hivgkhczr3m5hf4s"))))
+               (base32 "0l5ys9zmllfgwhjrm897akbsf38iswfcarhxg27xfhiy0bmzcwsg"))))
     (build-system cmake-build-system)
     (arguments
      (list
-      #:tests? #f                    ;FIXME: Not sure how to run tests, if any
       #:configure-flags
-      #~(list (string-append "-DBUILD_SHARED_LIBS=TRUE"))))
-    (inputs (list `(,util-linux "lib")))
-    (synopsis "C++ library implementing the BibleSync protocol")
-    (description
-     "BibleSync is a multicast protocol to support Bible software shared
-co-navigation.  The premise is that there is a local network over which to
-multicast Bible navigation, and someone, possibly several someones, will
-transmit, and others will receive.  The library implementing the protocol is
-a single C++ class providing a complete yet minimal public interface to
-support mode setting, setup for packet reception, transmit on local
-navigation, and handling of incoming packets.")
-    (home-page "https://github.com/karlkleinpaste/biblesync")
-    (license license:public-domain)))
-
-(define-public castxml
-(package
-  (name "castxml")
-  (version "0.6.4")
-  (source (origin
-            (method git-fetch)
-            (uri
-             (git-reference
-              (url "https://github.com/CastXML/CastXML")
-              (commit (string-append "v" version))))
-            (file-name (git-file-name name version))
-            (sha256
-             (base32 "0l5ys9zmllfgwhjrm897akbsf38iswfcarhxg27xfhiy0bmzcwsg"))))
-  (build-system cmake-build-system)
-  (arguments
-   (list
-    #:configure-flags
-    #~(list
-       (string-append "-DCLANG_RESOURCE_DIR="
-                      #$(this-package-native-input "clang") "/lib/clang/"
-                      #$(version-major
-                         (package-version (this-package-native-input "clang")))))))
-  (inputs (list libffi))
-  (native-inputs (list clang-17 llvm-17))
-  (home-page "https://github.com/CastXML/CastXML")
-  (synopsis "C-family abstract syntax tree XML output")
-  (description "CastXML is a C-family abstract syntax tree XML output tool.
+      #~(list
+         (string-append "-DCLANG_RESOURCE_DIR="
+                        #$(this-package-native-input "clang") "/lib/clang/"
+                        #$(version-major
+                           (package-version (this-package-native-input "clang")))))))
+    (inputs (list libffi))
+    (native-inputs (list clang-17 llvm-17))
+    (home-page "https://github.com/CastXML/CastXML")
+    (synopsis "C-family abstract syntax tree XML output")
+    (description "CastXML is a C-family abstract syntax tree XML output tool.
 This project is maintained by Kitware in support of ITK, the Insight
 Segmentation and Registration Toolkit.")
-  (license license:asl2.0)))
+    (license license:asl2.0)))
 
 (define-public range-v3
   (package
@@ -915,12 +880,11 @@ intuitive syntax and trivial integration.")
                 (lambda _
                   (substitute* "tests/meson.build"
                     (("foreach locale : test_locales" all)
-                     (format #f "test_locales = [~{'~a.utf8', ~}]~%~a"
+                     (format #f "test_locales = ['C', ~{'~a.utf8', ~}]~%~a"
                              ;; %default-utf8-locales in (gnu packages base).
-                             '("C" "de_DE" "el_GR" "en_US" "fr_FR" "tr_TR")
+                             '("de_DE" "el_GR" "en_US" "fr_FR" "tr_TR")
                              all))))))))
-   ;; Tests require locales.
-   (native-inputs (list cmake-minimal (libc-utf8-locales-for-target)))
+   (native-inputs (list cmake-minimal))
    (home-page "https://marzer.github.io/tomlplusplus/")
    (synopsis "Header-only TOML config file parser and serializer for C++17")
    (description
@@ -2212,7 +2176,7 @@ pointers, containers, compiler building blocks, etc.")
     (arguments
      `(#:test-target "test"
        #:imported-modules ((guix build copy-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:modules (((guix build copy-build-system) #:prefix copy:)
                   (guix build gnu-build-system)
                   (guix build utils))

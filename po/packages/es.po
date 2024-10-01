@@ -40618,11 +40618,11 @@ msgstr ""
 #~ msgstr "Aplicación de reproducción musical de GNOME"
 
 #, fuzzy
-#~ msgid "Command-line interface to the Lunexa currency"
+#~ msgid "Command-line interface to the Monero currency"
 #~ msgstr "Interfaz de mandato lineal para libtocc"
 
 #, fuzzy
-#~ msgid "Graphical user interface for the Lunexa currency"
+#~ msgid "Graphical user interface for the Monero currency"
 #~ msgstr "Interfaz gráfica para programas de ajedrez"
 
 #, fuzzy

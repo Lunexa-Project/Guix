@@ -1016,7 +1016,7 @@ configuration file."))
 /etc/ssl/certs"
                          "SSL_CERT_FILE=/run/current-system/profile\
 /etc/ssl/certs/ca-certificates.crt"
-                         "PATH=/run/privileged/bin:\
+                         "PATH=/run/setuid-programs:\
 /run/current-system/profile/bin:/run/current-system/profile/sbin")))
          (stop #~(make-kill-destructor)))))
 

@@ -49,7 +49,6 @@
   #:use-module (gnu packages aidc)
   #:use-module (gnu packages attr)
   #:use-module (gnu packages autotools)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
@@ -490,8 +489,7 @@ total number of shares generated.")
     (build-system gnu-build-system)
     (native-inputs (list sudo))   ;presence needed for 'check' phase
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("zsh" ,zsh)
+     `(("zsh" ,zsh)
        ("gnupg" ,gnupg)
        ("cryptsetup" ,cryptsetup)
        ("e2fsprogs" ,e2fsprogs)         ;for mkfs.ext4
@@ -506,7 +504,7 @@ total number of shares generated.")
      `(#:make-flags (list (string-append "PREFIX=" (assoc-ref %outputs "out")))
        ;; The "sudo" input is needed only to satisfy dependency checks in the
        ;; 'check' phase.  The "sudo" used at runtime should come from the
-       ;; system's privileged-programs, so ensure no reference is kept.
+       ;; system's setuid-programs, so ensure no reference is kept.
        #:disallowed-references (,sudo)
        ;; TODO: Build and install gtk and qt trays
        #:phases
@@ -1080,7 +1078,7 @@ trivial to build for local use.  Portability is emphasized over performance.")
 (define-public libsecp256k1
   (package
     (name "libsecp256k1")
-    (version "0.5.1")
+    (version "0.3.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1089,17 +1087,13 @@ trivial to build for local use.  Portability is emphasized over performance.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1f3nq1dg6afbwp45m2rbndd8mpvx7hhggmzji22csyzwhq3fz2r1"))
-              (modules '((guix build utils)))
-              (snippet
-               ;; These files are pre-generated, the build system is able to
-               ;; re-generate those.
-               #~(for-each delete-file '("src/precomputed_ecmult.c"
-                                         "src/precomputed_ecmult_gen.c")))))
+                "12wksk7bi3yfzmk1zwh5b6846zcaycqz1w4w4p23apjc8da4jwpn"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--enable-module-recovery"
                            "--enable-experimental"
+                           "--enable-module-ecdh"
+                           "--enable-module-schnorrsig"
                            "--enable-shared"
                            "--disable-static"
                            "--disable-benchmark")))
@@ -1653,16 +1647,22 @@ checksum tool based on the BLAKE3 cryptographic hash function.")
     (version "4.4.36")
     (source
      (origin
-       (method url-fetch)
-       (uri
-        (string-append
-         "https://github.com/besser82/libxcrypt/releases/download/v" version
-         "/libxcrypt-" version ".tar.xz"))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/besser82/libxcrypt")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "0hw9zphnbzgys5k7ja37iqmwmlyn0y417qr6xqmdw08axv5g9qg5"))))
+        (base32 "1yhpjjjv38y14nrj15bkndq824v42plndgi3k8mmc04grj1fbnjf"))))
     (build-system gnu-build-system)
     (native-inputs
-     (list perl))
+     (list autoconf
+           automake
+           libtool
+           perl
+           pkg-config
+           python-3
+           python-passlib))
     (synopsis
      "Extended crypt library for descrypt, md5crypt, bcrypt, and others")
     (description

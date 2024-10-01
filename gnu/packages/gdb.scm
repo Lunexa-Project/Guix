@@ -64,7 +64,7 @@
      `(#:tests? #f                      ;FIXME: 217 unexpected failures
        #:out-of-source? #t
        #:modules ((srfi srfi-1)
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:phases (modify-phases %standard-phases
                   (add-after 'unpack 'patch-paths
                     (lambda* (#:key inputs #:allow-other-keys)

@@ -186,7 +186,7 @@ markup) can be customized and extended by the user.")
 (define-public doxygen
   (package
     (name "doxygen")
-    (version "1.9.8")
+    (version "1.9.5")
     (home-page "https://www.doxygen.nl/")
     (source (origin
               (method url-fetch)
@@ -197,7 +197,7 @@ markup) can be customized and extended by the user.")
                                         ".src.tar.gz")))
               (sha256
                (base32
-                "0qjgw7bnx668hpi4r8m366vsq118s9365zf8z4x5yjrqx0ld5qq5"))))
+                "1v1f9cp5lyymg7xmw0ldnzi7ql8agbaqam1xdyljk0lrbnrm9d2m"))))
     (build-system cmake-build-system)
     (native-inputs
      (list bison
@@ -426,12 +426,21 @@ the Net to search for documents which are not on the local system.")
     (build-system qt-build-system)
     (arguments
       (list
-       #:tests? #f))                    ;no tests
+       #:tests? #f                    ;no tests
+       #:phases
+       #~(modify-phases %standard-phases
+           (add-after 'wrap 'wrap-qt-process-path
+             (lambda* (#:key inputs #:allow-other-keys)
+               (let* ((bin (string-append #$output "/bin/zeal"))
+                      (qt-process-path
+                        (search-input-file inputs
+                          "/lib/qt5/libexec/QtWebEngineProcess")))
+                 (wrap-program bin
+                   `("QTWEBENGINEPROCESS_PATH" = (,qt-process-path)))))))))
     (native-inputs
      (list extra-cmake-modules pkg-config))
     (inputs
-     (list bash-minimal
-           libarchive
+     (list libarchive
            sqlite
            qtbase-5
            qtdeclarative-5

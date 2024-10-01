@@ -23,7 +23,6 @@
 (define-module (gnu packages tryton)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages check)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages finance)
@@ -124,11 +123,11 @@ and security.")
              (let ((out               (assoc-ref outputs "out"))
                    (gi-typelib-path   (getenv "GI_TYPELIB_PATH")))
                (wrap-program (string-append out "/bin/tryton")
-                 `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path)))))))))
+                 `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))))
+             #t)))))
     (native-inputs
-     (list `(,glib "bin")
-           gobject-introspection))
-    (inputs (list bash-minimal))        ;for wrap-program
+     `(("glib-compile-schemas" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)))
     (propagated-inputs
      (list (librsvg-for-system)
            gsettings-desktop-schemas

@@ -130,8 +130,9 @@ Scheme machine types, or '#f' if none is defined."
     #f)
    ((target-ppc32? system)
     "ppc32")
-   ((target-riscv64? system)
-    "rv64")
+   ;; This is apparently not ready in chez-scheme-for-racket.
+   ;((target-riscv64? system)
+   ; "rv64")
    ((string-prefix? "loongarch64-" system)
     "la64")
    (else
@@ -295,7 +296,7 @@ will name the threaded machine type unless THREADS? is provided as #f."
 (define-public chez-scheme-for-racket
   (package
     (name "chez-scheme-for-racket")
-    ;; The version should match `(scheme-version #t)`.
+    ;; The version should match `(scheme-version-number #t)`.
     ;; See s/cmacros.ss c. line 360.
     (version "10.1.0-pre-release.1")
     (source #f)
@@ -312,8 +313,7 @@ will name the threaded machine type unless THREADS? is provided as #f."
                                  `(,this-package "doc"))
                            (list stex-bootstrap
                                  (texlive-updmap.cfg
-                                  (list texlive-enumitem
-                                        texlive-etoolbox))))
+                                  (list texlive-enumitem))))
                      ,chez-nanopass-bootstrap
                      ,zuo))
     (native-search-paths

@@ -454,7 +454,6 @@ asdf-build-system."
                       "gnu/packages/cross-base.scm"
                       "gnu/packages/gcc.scm"
                       "gnu/packages/guile.scm"
-                      "gnu/packages/ld-wrapper.in"
                       "gnu/packages/make-bootstrap.scm"
                       "guix/build/gnu-build-system.scm"
                       "guix/build/utils.scm"
@@ -734,6 +733,10 @@ GLib/GIO, GTK, GStreamer and Webkit."
 (define-member (person "Adam Faiz"
                        "adam.faiz@disroot.org")
   games)
+
+(define-member (person "Matthew Trzcinski"
+                       "matt@excalamus.com")
+  documentation)
 
 (define-member (person "Laurent Gatto"
                        "laurent.gatto@gmail.com")

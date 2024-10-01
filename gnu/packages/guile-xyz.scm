@@ -187,7 +187,7 @@
                   #t))))
     (build-system gnu-build-system)
     (inputs
-     (list bash-minimal guile-3.0 nspr nss))
+     (list guile-3.0 nspr nss))
     ;; FIXME the bundled csv contains one more exported procedure
     ;; (sxml->csv-string) than guile-csv. The author is maintainer of both
     ;; projects.
@@ -201,9 +201,9 @@
     (arguments
      `(#:modules (((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:make-flags
        ;; TODO: The documentation must be built with the `docs' target.
        (let* ((out (assoc-ref %outputs "out"))
@@ -290,9 +290,9 @@ more.")
      `(#:make-flags '("GUILE_AUTO_COMPILE=0")
        #:modules (((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:phases (modify-phases %standard-phases
                   (add-after 'install 'wrap-guilescript
                     (lambda* (#:key outputs #:allow-other-keys)
@@ -761,7 +761,7 @@ you send to a FIFO file.")
 (define-public guile-dsv
   (package
     (name "guile-dsv")
-    (version "0.7.2")
+    (version "0.7.1")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -770,7 +770,7 @@ you send to a FIFO file.")
               (file-name (string-append name "-" version "-checkout"))
               (sha256
                (base32
-                "1iavc1dg1899v519hvbzcmvdc16rahcwwvj68jycqdc5px5z285i"))))
+                "18v8snh45ibh13mvihhajs226yflxpl6v09wqndyfj1da8cdmkzk"))))
     (build-system gnu-build-system)
     (native-inputs (list autoconf
                          automake
@@ -786,9 +786,9 @@ you send to a FIFO file.")
     (arguments
      `(#:modules (((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:phases (modify-phases %standard-phases
                   (delete 'strip)
                   (add-after 'install 'wrap-program
@@ -1052,6 +1052,27 @@ programming languages into a simple s-expression that can be converted to
 HTML (via SXML) or any other format for rendering.")
     (home-page "https://dthompson.us/projects/guile-syntax-highlight.html")
     (license license:lgpl3+)))
+
+;; gitile requires a more recent version than the latest release.
+(define-public guile-syntax-highlight-for-gitile
+  (let ((commit "897fa5156ff41588e0d281eb00e4e94de63ccd8a")
+        (revision "0"))
+    (package
+      (inherit guile-syntax-highlight)
+      (version (git-version "0.1" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                       (url "https://git.dthompson.us/guile-syntax-highlight.git")
+                       (commit commit)))
+                (file-name (git-file-name "guile-syntax-highlight" version))
+                (sha256
+                 (base32
+                  "18zlg4mkgd3swgv2ggfz91ivnnzc0zhvc9ybgrxg1y762va9hyvj"))))
+      (native-inputs
+       (modify-inputs (package-native-inputs guile-syntax-highlight)
+         (prepend autoconf automake texinfo)))
+      (properties '((hidden? . #t))))))
 
 (define-public guile2.2-syntax-highlight
   (package
@@ -1551,7 +1572,7 @@ messaging library.")
                     (add-after 'build 'chdir-back
                       (lambda _ (chdir "..") #t))
 
-                    (add-after 'chdir-back 'install-kernel
+                    (add-after 'install 'install-kernel
                       (lambda* (#:key inputs outputs #:allow-other-keys)
                         (let* ((out   (assoc-ref outputs "out"))
                                (json  (assoc-ref inputs "guile-json"))
@@ -1905,9 +1926,9 @@ bindings to the @code{yaml-cpp} C++ library.")
     (arguments
      `(#:modules (((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:configure-flags
        (list (string-append
               "--with-guile-site-dir=" %output "/share/guile/site/"
@@ -2138,10 +2159,10 @@ above command-line parameters.")
         #:modules `(((guix build guile-build-system)
                      #:select
                      (target-guile-effective-version))
-                    ,@%default-gnu-modules)
+                    ,@%gnu-build-system-modules)
         #:phases
         (with-imported-modules `((guix build guile-build-system)
-                                 ,@%default-gnu-imported-modules)
+                                 ,@%gnu-build-system-modules)
           #~(modify-phases %standard-phases
               (add-after 'install 'hall-wrap-binaries
                 (lambda* (#:key inputs #:allow-other-keys)
@@ -2287,7 +2308,7 @@ user which package sets would they like to install from it.")
                   (guix build emacs-utils)
                   (ice-9 rdelim)
                   (ice-9 popen))
-       #:imported-modules (,@%default-gnu-imported-modules
+       #:imported-modules (,@%gnu-build-system-modules
                            (guix build emacs-build-system)
                            (guix build emacs-utils))
        #:phases
@@ -2517,7 +2538,7 @@ capabilities.")
            clutter
            xorg-server-for-tests))
     (propagated-inputs
-     (list gobject-introspection))
+     (list gobject-introspection-next))
     (home-page "https://www.gnu.org/software/g-golf/")
     (synopsis "Guile bindings for GObject Introspection")
     (description
@@ -2696,7 +2717,7 @@ many readers as needed).")
                    #:select (target-guile-effective-version))
                   (guix build utils))
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:configure-flags (list "--with-gnu-filesystem-hierarchy")
        #:phases
        (modify-phases %standard-phases
@@ -2944,7 +2965,7 @@ See http://minikanren.org/ for more on miniKanren generally.")
               (for-each (lambda (f)
                           (invoke "guile" "--no-auto-compile" "-L" "." "-s" f))
                         (find-files "tests" "^guile-.*\\.scm"))))
-          (add-after 'check 'check-installed
+          (add-after 'install 'check-installed
             (lambda _
               (define-values (scm go) (target-guile-scm+go #$output))
               (for-each
@@ -3015,7 +3036,7 @@ inspired by the SCSH regular expression system.")
     (build-system gnu-build-system)
     (arguments
      `(#:modules ((ice-9 match) (ice-9 ftw)
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:tests? #f ; test suite is non-deterministic :(
        #:phases (modify-phases %standard-phases
                   (add-after 'install 'wrap-haunt
@@ -3051,13 +3072,14 @@ inspired by the SCSH regular expression system.")
                                            (string-append dep "/lib/guile/"
                                                           version
                                                           "/site-ccache"))
-                                         deps)))))))))))))
+                                         deps))))
+                             #t)))))))))
     (native-inputs
      (list pkg-config texinfo))
     (inputs
      ;; Depend on the latest Guile to avoid bytecode compatibility issues when
      ;; using modules built against the latest version.
-     (list bash-minimal guile-3.0-latest))
+     (list guile-3.0-latest))
     (propagated-inputs
      (list guile-reader guile-commonmark))
     (synopsis "Functional static site generator")
@@ -3151,11 +3173,7 @@ key-value cache and store.")
                   (substitute* "configure"
                     (("2\\.2 2\\.0")
                      "3.0 2.2 2.0"))
-                  ;; The 'en_US.utf8' locale is missing, but C.UTF-8 is
-                  ;; enough.
-                  (substitute* (find-files "tests/inlines" "\\.scm$")
-                    (("en_US.utf8")
-                     "C.UTF-8"))))))
+                  #t))))
     (build-system gnu-build-system)
     ;; The tests throw exceptions with Guile 3.0.5, because they evaluate
     ;; (exit ...).
@@ -3303,7 +3321,7 @@ The picture values can directly be displayed in Geiser.")
        `(#:modules
          ((ice-9 match)
           (srfi srfi-1)
-          ,@%default-gnu-modules)
+          ,@%gnu-build-system-modules)
          #:tests? #f                    ; there are none
          #:make-flags
          (list (string-append "PICT_DIR="
@@ -3462,7 +3480,8 @@ serializing continuations or delimited continuations.")
              ;; TODO: It would be better to patch the Makefile.
              (setenv "GUILE_LOAD_PATH"
                      (string-append ".:"
-                                    (getenv "GUILE_LOAD_PATH")))))
+                                    (getenv "GUILE_LOAD_PATH")))
+             #t))
          (add-after 'install 'wrap
            (lambda* (#:key outputs #:allow-other-keys)
              ;; Wrap the 'python' executable so it can find its
@@ -3487,9 +3506,10 @@ serializing continuations or delimited continuations.")
                  `("GUILE_LOAD_PATH" ":" prefix
                    (,load-path))
                  `("GUILE_LOAD_COMPILED_PATH" ":" prefix
-                   (,compiled-path)))))))))
+                   (,compiled-path)))
+               #t))))))
     (inputs
-     (list bash-minimal guile-3.0 guile-persist guile-readline guile-stis-parser))
+     (list guile-3.0 guile-persist guile-readline guile-stis-parser))
     (native-inputs
      (list autoconf automake libtool pkg-config))
     (synopsis "Python implementation in Guile")
@@ -4013,7 +4033,7 @@ or errors (Left).")
                     (call-with-input-file "srfi-197-syntax-case.scm"
                       (lambda (in-port)
                         (display (get-string-all in-port) port)))))))
-            (add-after 'build 'check-installed
+            (add-after 'install 'check-installed
               (lambda _
                 (define-values (scm go) (target-guile-scm+go #$output))
                 (invoke "guile" "-L" scm "-C" go
@@ -4121,8 +4141,7 @@ applied to surplus arguments.")
        ("texinfo" ,texinfo)
        ("texlive" ,(texlive-updmap.cfg (list texlive-epsf)))))
     (inputs
-     (list bash-minimal
-           dbus-glib
+     (list dbus-glib
            guile-3.0
            guile-lib
            guile-readline
@@ -4332,8 +4351,7 @@ processing filters.")
        ("gettext" ,gettext-minimal)
        ("perl" ,perl)))
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ;; Guile
+     `(;; Guile
        ("guile" ,guile-2.2)
        ("guile-lib" ,guile2.2-lib)
        ("guile-readline" ,guile2.2-readline)
@@ -4793,6 +4811,7 @@ and space linear in the size of the input text.")
     (build-system guile-build-system)
     (arguments
      (list
+      #:implicit-inputs? #f             ;needs nothing but Guile
       #:compile-flags #~(list "--r6rs" "-Wunbound-variable" "-Warity-mismatch")
       #:phases
       #~(modify-phases %standard-phases
@@ -4839,7 +4858,7 @@ and space linear in the size of the input text.")
                     (("#!/usr/bin/env scheme-script")
                      (string-append "#!" (which "guile")))))
                 (invoke "./run-tests.sh"))))
-          (add-after 'build-doc 'install-doc
+          (add-after 'install 'install-doc
             (lambda _
               (install-file "docs/ac-d-bus.info"
                             (string-append #$output "/share/info")))))))
@@ -4894,50 +4913,6 @@ as signed sessions, multipart message support, etc.")
      (list guile-2.2))
     (propagated-inputs
      (list guile2.2-irregex guile2.2-gcrypt))))
-
-(define-public guile-web-driver-ng
-  (package
-    (name "guile-web-driver-ng")
-    (version "1.0.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/artyom-poptsov/guile-web-driver-ng")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "0saljgf3kj3p9b1mk5211s8np2vwkzf072xp6j2xnc10vdn891ja"))))
-    (build-system gnu-build-system)
-    (native-inputs (list autoconf
-                         automake
-                         pkg-config
-                         texinfo
-                         ;; needed when cross-compiling.
-                         guile-lib
-                         guile-json-4
-                         guile-gnutls
-                         guile-3.0))
-    (propagated-inputs (list guile-json-4 guile-gnutls guile-lib guile-3.0
-                             inetutils))
-    (arguments
-     (list
-      #:phases #~(modify-phases %standard-phases
-                   (delete 'strip))))
-    (home-page "https://github.com/artyom-poptsov/guile-web-driver-ng")
-    (synopsis "Web driver (Selenium) client for Guile")
-    (description
-     "This is a web-driver, or Selenium 2, client.  It's purpose is to automate
-browsers, specifically for automatic web server testing.  Chrome or Firefox can be
-used as the automated browsers, or it can connect to arbitrary server providing
-webdriver interface.  The client implements most of the WebDriver
-@url{https://www.w3.org/TR/webdriver2/, specification}.
-
-@code{guile-web-driver-ng} also provides a proxy implemented as a Guile module.  If
-configured, the proxy can intercept and modify HTTP/HTTPS traffic (for example, add,
-delete and replace HTTP headers) which is useful for Selenium WebDriver as it does
-not provide a way to change the headers on its own.")
-    (license license:gpl3+)))
 
 (define-public guile-lens
   (let ((commit "14b15d07255f9d3f55d40a3b750d13c9ee3a154f")
@@ -5576,7 +5551,7 @@ using a short read-capability.")
       (arguments
        (list
         #:phases #~(modify-phases %standard-phases
-                     (add-after 'build 'link-and-wrap-executable
+                     (add-after 'install 'link-and-wrap-executable
                        (lambda _
                          (let* ((bin (string-append #$output "/bin"))
                                 ;; bin directory for PATH.
@@ -5664,7 +5639,7 @@ including parsing and code generation.")
            (lambda _
              (delete-file-recursively "docs")
              #t))
-         (add-after 'build 'install-info-documentation
+         (add-after 'install 'install-info-documentation
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((share (string-append (assoc-ref outputs "out") "/share"))
                     (doc (string-append share "/doc/" ,name "-" ,version))
@@ -5731,9 +5706,9 @@ schedulers.")
       (arguments
        `(#:modules (((guix build guile-build-system)
                      #:prefix guile:)
-                    ,@%default-gnu-modules)
+                    ,@%gnu-build-system-modules)
          #:imported-modules ((guix build guile-build-system)
-                             ,@%default-gnu-imported-modules)
+                             ,@%gnu-build-system-modules)
          #:tests? #false ; there are none
          #:phases
          (modify-phases %standard-phases
@@ -5817,41 +5792,6 @@ binary which is smaller and faster to generate and parse.  This package provides
 a Guile implementation of CBOR.")
     (home-page "https://inqlab.net/git/guile-cbor.git")
     (license license:gpl3+)))
-
-(define-public guile-qr-code
-  (package
-    (name "guile-qr-code")
-    (version "0.1.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/artyom-poptsov/guile-qr-code")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1pbsnkz8pw1x8n9mjq8rm37wmalzbcz98gk8mcfycyd896qdmf4w"))))
-    (build-system gnu-build-system)
-    (arguments
-     (list
-      #:phases #~(modify-phases %standard-phases
-                   (delete 'strip))))
-    (native-inputs (list autoconf
-                         automake
-                         pkg-config
-                         texinfo
-                         ;; needed when cross-compiling.
-                         guile-3.0
-                         guile-lib
-                         guile-png))
-    (inputs (list bash-minimal guile-3.0 guile-lib guile-png))
-    (synopsis "Guile QR Code library")
-    (description
-     "GNU Guile QR code generator that can create QR codes from text and binary data.
-The resulting QR codes can be rendered to ASCII art strings or to PNG images (using
-@url{https://github.com/artyom-poptsov/guile-png, Guile-PNG} API.)")
-    (home-page "https://github.com/artyom-poptsov/guile-qr-code")
-    (license (list license:gpl3+ license:expat))))
 
 (define-public guile-quickcheck
   (package
@@ -5953,9 +5893,9 @@ high-level API for network management that uses rtnetlink.")
      `(#:make-flags '("GUILE_AUTO_COMPILE=0") ;to prevent guild warnings
        #:modules (((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:phases (modify-phases %standard-phases
                   (add-after 'install 'wrap-program
                     (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -5982,7 +5922,6 @@ high-level API for network management that uses rtnetlink.")
     (native-inputs (list autoconf automake pkg-config texinfo))
     (inputs (list bash-minimal guile-2.2 guile2.2-json guile2.2-lib
                   guile2.2-gnutls))
-
     (home-page "https://github.com/artyom-poptsov/guile-gitlab")
     (synopsis "Guile interface to GitLab")
     (description
@@ -6010,9 +5949,9 @@ GitLab instance.")
      `(#:make-flags '("GUILE_AUTO_COMPILE=0")     ;to prevent guild warnings
        #:modules (((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:phases
        (modify-phases %standard-phases
          (delete 'strip)

@@ -18,7 +18,6 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages phabricator)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages php)
   #:use-module (gnu packages version-control)
   #:use-module (guix build-system gnu)
@@ -65,7 +64,7 @@
                                (string-append (assoc-ref %build-inputs i) "/bin"))
                              '("php" "git" "mercurial" "subversion")))))))))))
       (inputs
-       (list bash-minimal php git mercurial subversion))
+       (list php git mercurial subversion))
       (home-page "https://github.com/phacility/arcanist")
       (synopsis "Command-line interface for Phabricator")
       (description

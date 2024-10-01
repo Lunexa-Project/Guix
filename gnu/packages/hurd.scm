@@ -3,7 +3,7 @@
 ;;; Copyright © 2018, 2020-2023 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2020 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2020, 2022, 2023, 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020, 2022, 2023 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2020 Rene Saavedra <pacoon@protonmail.com>
 ;;; Copyright © 2023 Josselin Poiret <dev@jpoiret.xyz>
@@ -57,38 +57,36 @@
                  version ".tar.gz"))
 
 (define-public gnumach-headers
-  (let ((revision "0")
-        (commit "2556fdece900d67529d5eda01f1bdaae4ffe96b0"))
-    (package
-      (name "gnumach-headers")
-      (version (git-version "1.8" revision commit))
-      (source
-       (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url "https://git.savannah.gnu.org/git/hurd/gnumach.git")
-               (commit commit)))
-         (file-name (git-file-name "gnumach" version))
-         (sha256
-          (base32
-           "1lzsbix0l4jhab38pvwnmk7ip1lsn7m5smhnrciqajsqnadsnlzs"))))
-      (build-system gnu-build-system)
-      (arguments
-       `(#:phases
-         (modify-phases %standard-phases
-           (replace 'install
-             (lambda _
-               (invoke "make" "install-data" "install-data-hook")))
-           (delete 'build))
-         #:tests? #f))
-      (native-inputs
-       (list autoconf automake texinfo-4))
-      (supported-systems %hurd-systems)
-      (home-page "https://www.gnu.org/software/hurd/microkernel/mach/gnumach.html")
-      (synopsis "GNU Mach kernel headers")
-      (description
-       "Headers of the GNU Mach kernel.")
-      (license gpl2+))))
+  (package
+    (name "gnumach-headers")
+    (version "1.8+git20221224") ;; This is an upstream tag
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://git.savannah.gnu.org/git/hurd/gnumach.git")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name "gnumach" version))
+       (sha256
+        (base32
+         "0f49zqxf64ds75rmskizpybl2mw7sxs05k59gjp3pgspvr87w7gs"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'install
+           (lambda _
+             (invoke "make" "install-data")))
+         (delete 'build))
+       #:tests? #f))
+    (native-inputs
+     (list autoconf automake texinfo-4))
+    (supported-systems %hurd-systems)
+    (home-page "https://www.gnu.org/software/hurd/microkernel/mach/gnumach.html")
+    (synopsis "GNU Mach kernel headers")
+    (description
+     "Headers of the GNU Mach kernel.")
+    (license gpl2+)))
 
 (define-public mig
   (package
@@ -132,11 +130,13 @@ communication.")
     (license gpl2+)))
 
 (define-public hurd-headers
-  (let ((revision "3")
-        (commit "v0.9.git20231217"))
+  ;; This commit is now slightly behind 0.9.git20220818 as this one needs a
+  ;; newer glibc
+  (let ((revision "2")
+        (commit "v0.9.git20230216"))
     (package
       (name "hurd-headers")
-      (version (string-drop commit 1))
+      (version commit)
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
@@ -144,7 +144,7 @@ communication.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "1d138kzhil6s5gf9di8grpz1iziakyfv037wkc8s7qyd61imm31d"))
+                  "0jm1dnqkx4kdwmby0z5w0yqp9m5qp4hbxd4jxlyhiqm8nkw9mkvv"))
                 (file-name (git-file-name name version))))
       (build-system gnu-build-system)
       (native-inputs
@@ -181,7 +181,6 @@ communication.")
                              "ac_cv_func__hurd_exec_paths=no"
                              "ac_cv_func__hurd_libc_proc_init=no"
                              "ac_cv_func_file_futimens=no"
-                             "ac_cv_func_file_utimens=no"
                              "ac_cv_lib_acpica_acpi_init=no")
 
          #:tests? #f))
@@ -254,21 +253,30 @@ Hurd-minimal package which are needed for both glibc and GCC.")
   (package
     (inherit gnumach-headers)
     (name "gnumach")
+    (source (origin
+              (inherit (package-source gnumach-headers))
+              (patches
+               (append
+                (search-patches "gnumach-support-noide.patch")
+                (origin-patches (package-source gnumach-headers))))))
     (arguments
      (substitute-keyword-arguments (package-arguments gnumach-headers)
+       ((#:make-flags flags ''())
+        `(cons "CFLAGS=-fcommon" ,flags))
        ((#:configure-flags flags ''())
-        `(cons* "--enable-kdb"          ;enable kernel debugger
+        `(cons* "--enable-kdb" ;enable kernel debugger
                 "--disable-net-group"
                 "--disable-pcmcia-group"
                 "--disable-wireless-group"
-                ,flags))
+               ,flags))
        ((#:phases phases '%standard-phases)
-        #~(modify-phases %standard-phases
-            (add-after 'install 'produce-image
-              (lambda _
-                (let ((boot (string-append #$output "/boot")))
-                  (invoke "make" "gnumach.gz")
-                  (install-file "gnumach.gz" boot))))))))
+        `(modify-phases %standard-phases
+           (add-after 'install 'produce-image
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out  (assoc-ref outputs "out"))
+                      (boot (string-append out "/boot")))
+                 (invoke "make" "gnumach.gz")
+                 (install-file "gnumach.gz" boot))))))))
     (native-inputs
      (list autoconf
            automake
@@ -277,7 +285,7 @@ Hurd-minimal package which are needed for both glibc and GCC.")
                mig)
            perl
            texinfo-4))
-    (supported-systems `("i686-linux" ,@%hurd-systems))
+    (supported-systems %hurd-systems)
     (synopsis "Microkernel of the GNU system")
     (description
      "GNU Mach is the microkernel upon which a GNU Hurd system is based.")))
@@ -295,7 +303,7 @@ Hurd-minimal package which are needed for both glibc and GCC.")
 
 (define dde-sources
   ;; This is the current tip of the dde branch
-  (let ((commit "066797b576ebf8364ad157f50bef2a655597deeb"))
+  (let ((commit "ce8810277fa3584eb36ecb23da58394153fabe6f"))
     (origin
       (method git-fetch)
       (uri (git-reference
@@ -303,8 +311,8 @@ Hurd-minimal package which are needed for both glibc and GCC.")
             (commit commit)))
       (sha256
        (base32
-        "19f2awlfnar5gyhi0w5zawla5brzck2s88iv0f20022pd1l5v9hl"))
-      (file-name (git-file-name "dde" (string-take commit 7))))))
+        "0ygk7jm4jmhpvh0zzi5bk638242z7sbcab2i57fkb4y2mmdkjjbw"))
+      (file-name (git-file-name "dde" commit)))))
 
 (define %import-from-dde
   (list "libmachdevdde" "libddekit" "libdde_linux26"))
@@ -317,7 +325,8 @@ Hurd-minimal package which are needed for both glibc and GCC.")
     (name "hurd")
     (source (origin
               (inherit (package-source hurd-headers))
-              (patches (search-patches "hurd-rumpdisk-no-hd.patch"))))
+              (patches (search-patches "hurd-fix-rumpdisk-build.patch"
+                                       "hurd-rumpdisk-no-hd.patch"))))
     (version (package-version hurd-headers))
     (arguments
      `(#:tests? #f                      ;no "check" target
@@ -466,8 +475,7 @@ exec ${system}/rc \"$@\"
                                     (assoc-ref (or native-inputs inputs) "bash")
                                     "/bin/bash")
                      (string-append "CC="
-                                    ,(cc-for-target))
-                     "ARCH=x86")))
+                                    ,(cc-for-target)))))
          (add-after 'install 'install-goodies
            (lambda* (#:key inputs native-inputs outputs #:allow-other-keys)
              ;; Install additional goodies.
@@ -483,8 +491,7 @@ exec ${system}/rc \"$@\"
                                       "/bin/bash")
                        (string-append "INSTALLDIR="
                                       out
-                                      "/share/libdde_linux26/build/include")
-                       "ARCH=x86")
+                                      "/share/libdde_linux26/build/include"))
                ;; Install the fancy UTF-8 motd.
                (mkdir-p (string-append out "/etc"))
                (copy-file "console/motd.UTF8"
@@ -574,8 +581,7 @@ implementing them.")
          (list (string-append "SHELL="
                               (search-input-file %build-inputs "/bin/bash"))
                "PKGDIR=libdde_linux26"
-               (string-append "CC=" ,(cc-for-target))
-               "ARCH=x86")
+               (string-append "CC=" ,(cc-for-target)))
          #:configure-flags
          ,#~(list (string-append "LDFLAGS=-Wl,-rpath=" #$output "/lib"))
          #:phases
@@ -652,7 +658,7 @@ in userland processes thanks to the DDE layer.")
                 (sha256
                  (base32
                   "0fv0k52qqcg3nq9012hibgsamvsd7mnvn2ikdasmzjhsp8qh5q3r"))
-                (file-name (git-file-name name version))))
+                (file-name (git-file-name name commit))))
       (build-system gnu-build-system)
       (arguments
        (list

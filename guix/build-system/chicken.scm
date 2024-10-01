@@ -42,7 +42,7 @@ EXTENSION is the file name extension, such as '.tar.gz'."
   ;; Build-side modules imported and used by default.
   `((guix build chicken-build-system)
     (guix build union)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-chicken)
   ;; Lazily resolve the binding to avoid a circular dependency.

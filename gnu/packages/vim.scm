@@ -1217,14 +1217,6 @@ to Lisp.")
      '(#:plugin-name "vlime"
        #:phases
        (modify-phases %standard-phases
-         (add-after 'install 'symlink-files
-           (lambda* (#:key outputs plugin-name mode #:allow-other-keys)
-             (with-directory-excursion
-               (string-append (assoc-ref outputs "out")
-                              "/share/vim/vimfiles/pack/guix/" mode "/" plugin-name)
-               (for-each (lambda (dir)
-                           (symlink (string-append "./vim/" dir) dir))
-                         (list "after" "autoload" "doc" "ftplugin" "syntax")))))
          (add-after 'symlink-files 'install-lisp-files
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -1234,7 +1226,15 @@ to Lisp.")
                (copy-recursively "lisp" (string-append common-lisp "/source/vlime"))
                (mkdir-p (string-append common-lisp "/systems/"))
                (symlink (string-append common-lisp "/source/vlime/vlime.asd")
-                        (string-append common-lisp "/systems/vlime.asd"))))))))
+                        (string-append common-lisp "/systems/vlime.asd")))))
+         (add-after 'install 'symlink-files
+           (lambda* (#:key outputs plugin-name mode #:allow-other-keys)
+             (with-directory-excursion
+               (string-append (assoc-ref outputs "out")
+                              "/share/vim/vimfiles/pack/guix/" mode "/" plugin-name)
+               (for-each (lambda (dir)
+                           (symlink (string-append "./vim/" dir) dir))
+                         (list "after" "autoload" "doc" "ftplugin" "syntax"))))))))
     (propagated-inputs
      (list cl-alexandria
            cl-slime-swank

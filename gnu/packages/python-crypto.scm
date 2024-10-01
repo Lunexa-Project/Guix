@@ -29,7 +29,6 @@
 ;;; Copyright © 2022 Antero Mejr <antero@mailbox.org>
 ;;; Copyright © 2023 Juliana Sims <juli@incana.org>
 ;;; Copyright © 2023 Zheng Junjie <873216071@qq.com>
-;;; Copyright © 2024 jgart <jgart@dismail.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -91,14 +90,12 @@
        (sha256
         (base32
          "1317ly0db7nnjg5k58f6nqa0svfcvn446xd5bpiyi0bfbczwpl65"))))
-    (build-system pyproject-build-system)
+    (build-system python-build-system)
     (arguments
-     (list
-      #:phases
-      #~(modify-phases %standard-phases
-          (replace 'check
-            (lambda* (#:key tests? #:allow-other-keys)
-              (when tests? (invoke "pytest" "-vv")))))))
+     '(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda* (#:key tests? #:allow-other-keys)
+                      (when tests? (invoke "pytest" "-vv")))))))
     (native-inputs
      (list python-pyhamcrest python-pytest python-pytest-benchmark))
     (home-page "https://github.com/keis/base58")
@@ -472,12 +469,27 @@ for example, for recording or replaying web content.")
   (package
     (name "python-certifi")
     (version "2022.6.15")
+    (replacement python-certifi/fixed)
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "certifi" version))
               (sha256
                (base32
-                "03c2l11lgljx0kz17cvdc4hlc3p1594ajdih9zq0a4dig285mj44"))
+                "03c2l11lgljx0kz17cvdc4hlc3p1594ajdih9zq0a4dig285mj44"))))
+    (build-system python-build-system)
+    (arguments '(#:tests? #f))          ;no tests
+    (home-page "https://certifi.io/")
+    (synopsis "Python CA certificate bundle")
+    (description
+     "Certifi is a Python library that contains a CA certificate bundle, which
+is used by the Requests library to verify HTTPS requests.")
+    (license license:asl2.0)))
+
+(define python-certifi/fixed
+  (package
+    (inherit python-certifi)
+    (source (origin
+              (inherit (package-source python-certifi))
               (snippet
                #~(begin
                    (delete-file "certifi/cacert.pem")
@@ -506,15 +518,7 @@ def where() -> str:
 
 def contents() -> str:
     with open(where(), \"r\", encoding=\"ascii\") as data:
-        return data.read()")))))))
-    (build-system python-build-system)
-    (arguments '(#:tests? #f))          ;no tests
-    (home-page "https://certifi.io/")
-    (synopsis "Python CA certificate bundle")
-    (description
-     "Certifi is a Python library that contains a CA certificate bundle, which
-is used by the Requests library to verify HTTPS requests.")
-    (license license:asl2.0)))
+        return data.read()")))))))))
 
 (define-public python-cryptography-vectors
   (package

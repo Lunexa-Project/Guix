@@ -40,7 +40,6 @@
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages compton)
@@ -680,8 +679,7 @@ allows for launching applications or shutting down the system.")
         (base32 "0xa5nqiq9mxwfynnw91i4c2cgpmpapl4nxys084nbs7yd88kbm2l"))))
     (build-system cmake-build-system)
     (inputs
-     (list bash-minimal
-           eudev
+     (list eudev
            kwindowsystem-5
            liblxqt
            qtxdg-tools

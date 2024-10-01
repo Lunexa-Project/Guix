@@ -384,10 +384,10 @@ Learning usecases.")
                   "07kdsngvr4n1qxpqzv1nlay7g41d6jzjppa8vzmrg220s8ing87z"))))
       (build-system gnu-build-system)
       (arguments
-       `(#:imported-modules (,@%default-gnu-imported-modules
+       `(#:imported-modules (,@%gnu-build-system-modules
                              (guix build python-build-system))
          #:modules          ((guix build python-build-system)
-                             ,@%default-gnu-modules)
+                             ,@%gnu-build-system-modules)
          #:phases
          (modify-phases %standard-phases
            (add-after 'unpack 'enter-dir

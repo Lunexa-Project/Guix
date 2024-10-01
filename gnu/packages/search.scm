@@ -14,7 +14,6 @@
 ;;; Copyright © 2022 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2023 Adam Faiz <adam.faiz@disroot.org>
 ;;; Copyright © 2023 David Pflug <david@pflug.io>
-;;; Copyright © 2024 Ashish SHUKLA <ashish.is@lostca.se>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -47,7 +46,6 @@
   #:use-module (gnu packages aspell)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages check)
   #:use-module (gnu packages databases)
@@ -632,7 +630,7 @@ suitable as a default locate on your system.")
     ;; building: xpdf, catdoc, MP3::Tag, Spreadsheet::ParseExcel,
     ;; HTML::Entities.
     (inputs
-     (list bash-minimal perl perl-uri perl-html-parser perl-html-tagset
+     (list perl perl-uri perl-html-parser perl-html-tagset
            perl-mime-types))
     (arguments
      `(;; XXX: This fails to build with zlib (API mismatch) and tests fail
@@ -739,14 +737,14 @@ bibliographic data and simple document and bibtex retrieval.")
 (define-public ugrep
   (package
     (name "ugrep")
-    (version "6.5.0")
+    (version "6.4.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
                     (url "https://github.com/Genivia/ugrep")
                     (commit (string-append "v" version))))
               (sha256
-               (base32 "0a8ni1klqfpd00m5fks0q6ngwx64nvrh41r4azxc1fcxz4glfv90"))
+               (base32 "027jm4ki3rsvs9sylrzzjywni9q1f6bdk3j6r10ypjg18h87jgm0"))
               (file-name (git-file-name name version))
               (modules '((guix build utils)))
               (snippet

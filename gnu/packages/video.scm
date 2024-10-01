@@ -68,7 +68,6 @@
 ;;; Copyright © 2023 Saku Laesvuori <saku@laesvuori.fi>
 ;;; Copyright © 2023 Jaeme Sifat <jaeme@runbox.com>
 ;;; Copyright © 2023 Zheng Junjie <873216071@qq.com>
-;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -123,7 +122,6 @@
   #:use-module (gnu packages bittorrent)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages cdrom)
-  #:use-module (gnu packages certs)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cpp)
@@ -733,20 +731,26 @@ other software.")
 (define-public tslib
   (package
     (name "tslib")
-    (version "1.23")
+    (version "1.22")
     (source
      (origin
-       (method url-fetch)
-       (uri (string-append "https://github.com/libts/tslib/releases/download/"
-                           version "/tslib-" version ".tar.xz"))
+       (method git-fetch)
+       (uri
+        (git-reference
+         (url "https://github.com/libts/tslib")
+         (commit version)))
+       (file-name (git-file-name name version))
        (sha256
-        (base32 "1b0xk746dcf72rd8xkxnjfn3axc57y6ahmg95wgj01l0sia9lj4v"))))
+        (base32 "197p6vy539wvfrv23agbvmay4rjya1jnisi46llm0nx4cvqh48by"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "tests"
-       #:configure-flags (list "--with-sdl2")))
-    (native-inputs (list pkg-config))
-    (inputs (list sdl2))
+       #:configure-flags
+       (list "--with-sdl2")))
+    (native-inputs
+     (list autoconf automake libtool pkg-config))
+    (inputs
+     `(("sdl2" ,sdl2)))
     (synopsis "Touchscreen access library")
     (description "TSLib is a cross-platform library that provides access to
 touchscreen devices and the ability to apply filters to their input events.")
@@ -1255,8 +1259,7 @@ H.264 (MPEG-4 AVC) video streams.")
     (native-inputs
      (list perl-module-build perl-test-pod perl-test-simple))
     (inputs
-     (list bash-minimal
-           perl-data-dump
+     (list perl-data-dump
            perl-digest-md5
            perl-encode
            ffmpeg
@@ -1546,7 +1549,7 @@ libebml is a C++ library to read and write EBML files.")
 (define-public libplacebo
   (package
     (name "libplacebo")
-    (version "6.338.2")
+    (version "6.338.1")
     (source
      (origin
        (method git-fetch)
@@ -1555,7 +1558,7 @@ libebml is a C++ library to read and write EBML files.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0d8pvv88bw21myf3pvnls2cv6bvdzsv76n5iy5hy3c3gf4mb4kl0"))))
+        (base32 "1miqk3gfwah01xkf4a6grwq29im0lfh94gp92y7js855gx3v169m"))))
     (build-system meson-build-system)
     (arguments
      (list #:configure-flags
@@ -1710,7 +1713,6 @@ operate properly.")
             soxr
             speex
             srt
-            svt-av1
             twolame
             vidstab
             x265
@@ -1799,7 +1801,6 @@ operate properly.")
          "--enable-libsoxr"
          "--enable-libspeex"
          "--enable-libsrt"
-         "--enable-libsvtav1"
          "--enable-libtheora"
          "--enable-libtwolame"
          "--enable-libvidstab"
@@ -1836,18 +1837,6 @@ operate properly.")
          "--disable-mipsfpu")
       #:phases
       #~(modify-phases %standard-phases
-          #$@(if (target-x86-32?)
-                 #~((add-before 'configure 'bypass-openal-check
-                      ;; configure fails linking to openal when using binutils
-                      ;; >= 2.38 due to openal's usage of protected visibility
-                      ;; for its dynamic symbols. Bypass this configure time
-                      ;; check for now. See:
-                      ;; https://lists.gnu.org/archive/html/guix-devel/2024-08/msg00159.html
-                      (lambda _
-                        (substitute* "configure"
-                          (("alGetError \\|\\|")
-                           "alGetError \|\| true \|\|")))))
-                 #~())
           (replace 'configure
             ;; configure does not work followed by "SHELL=..." and
             ;; "CONFIG_SHELL=..."; set environment variables instead
@@ -1901,9 +1890,7 @@ audio/video codec library.")
                                  version ".tar.xz"))
              (sha256
               (base32
-               "14xadxm1yaamp216nq09xwasxg5g133v86dbb33mdg5di1zrlhdg"))
-             (patches (search-patches "ffmpeg-remove-compressed_ten_bit_format.patch"
-                                      "ffmpeg-4-binutils-2.41.patch"))))
+               "14xadxm1yaamp216nq09xwasxg5g133v86dbb33mdg5di1zrlhdg"))))
     (inputs (modify-inputs (package-inputs ffmpeg)
               (replace "sdl2" sdl2-2.0)))
     (arguments
@@ -1921,11 +1908,10 @@ audio/video codec library.")
                                  version ".tar.xz"))
              (sha256
               (base32
-               "0np0yalqdrm7rn7iykgfzz3ly4vbgigrajg48c1l6n7qrzqvfszv"))
-             (patches (search-patches "ffmpeg-4-binutils-2.41.patch"))))
+               "0np0yalqdrm7rn7iykgfzz3ly4vbgigrajg48c1l6n7qrzqvfszv"))))
     (arguments
      (substitute-keyword-arguments (package-arguments ffmpeg-4)
-       ((#:modules modules %default-gnu-modules)
+       ((#:modules modules %gnu-build-system-modules)
         `((srfi srfi-1)
           ,@modules))
        ((#:configure-flags flags)
@@ -1933,8 +1919,7 @@ audio/video codec library.")
                 '("--enable-libdav1d"
                   "--enable-libaom"
                   "--enable-librav1e"
-                  "--enable-libsrt"
-                  "--enable-libsvtav1")))))
+                  "--enable-libsrt")))))
     (inputs (modify-inputs (package-inputs ffmpeg-4)
               (delete "dav1d" "libaom" "rav1e" "srt")))))
 
@@ -1948,8 +1933,7 @@ audio/video codec library.")
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0c8m4hhv2k5fybha908wzrpnf3wqkq52hayl658jq4bah0igdfqz"))
-              (patches (search-patches "ffmpeg-4-binutils-2.41.patch"))))
+                "0c8m4hhv2k5fybha908wzrpnf3wqkq52hayl658jq4bah0igdfqz"))))
     (arguments
      `(#:tests? #f               ; XXX: Enable them later, if required
        #:configure-flags
@@ -2002,8 +1986,7 @@ audio/video codec library.")
               (commit "eda6effcabcf9c238e4635eb058d72371336e09b")))
         (sha256
          (base32 "1by8rmbva8mfrivdbbkr2gx4kga89zqygkd4cfjl76nr8mdcdamb"))
-        (file-name (git-file-name "ffmpeg" version))
-        (patches (search-patches "ffmpeg-4-binutils-2.41.patch"))))
+        (file-name (git-file-name "ffmpeg" version))))
      (arguments
       (substitute-keyword-arguments (package-arguments ffmpeg-4)
         ((#:configure-flags flags)
@@ -2499,7 +2482,8 @@ input files is possible, including video files.")
                ;; Some of the tests require using the display to test out VLC,
                ;; which fails in our sandboxed build system
                (substitute* "test/run_vlc.sh"
-                 (("./vlc --ignore-config") "echo")))))
+                 (("./vlc --ignore-config") "echo"))
+               #t)))
          (add-after 'strip 'regenerate-plugin-cache
            (lambda* (#:key outputs #:allow-other-keys)
              ;; The 'install-exec-hook' rule in the top-level Makefile.am
@@ -2525,7 +2509,8 @@ input files is possible, including video files.")
              (let ((out (assoc-ref outputs "out"))
                    (plugin-path (getenv "QT_PLUGIN_PATH")))
                (wrap-program (string-append out "/bin/vlc")
-                 `("QT_PLUGIN_PATH" ":" prefix (,plugin-path)))))))))
+                 `("QT_PLUGIN_PATH" ":" prefix (,plugin-path))))
+             #t)))))
     (home-page "https://www.videolan.org/")
     (synopsis "Audio and video framework")
     (description "VLC is a cross-platform multimedia player and framework
@@ -2633,7 +2618,7 @@ SVCD, DVD, 3ivx, DivX 3/4/5, WMV and H.264 movies.")
 (define-public mpv
   (package
     (name "mpv")
-    (version "0.38.0")
+    (version "0.37.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -2641,7 +2626,7 @@ SVCD, DVD, 3ivx, DivX 3/4/5, WMV and H.264 movies.")
                     (commit (string-append "v" version))))
               (file-name (git-file-name name version))
               (sha256
-               (base32 "11l8b9cka81xwrcc148g6avj7jcz8khz3h3xpyadm5265afa6mkl"))))
+               (base32 "1xcyfpd543lbmg587wi0mahrz8vhyrlr4432054vp6wsi3s36c4b"))))
     (build-system meson-build-system)
     (arguments
      (list
@@ -2843,7 +2828,7 @@ Jellyfin.  It has support for various media files without transcoding.")
 (define-public gallery-dl
   (package
     (name "gallery-dl")
-    (version "1.27.3")
+    (version "1.27.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/mikf/gallery-dl"
@@ -2851,7 +2836,7 @@ Jellyfin.  It has support for various media files without transcoding.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "08j9spy3vzqc8xq5a8cps073qxf46mn9jfsz750p09i2fipfgf90"))))
+                "17gkrz5cw2lfi12x3snzsmxvfk5373klkny1ny9070wp6qgadj6c"))))
     (build-system python-build-system)
     (inputs (list python-requests ffmpeg))
     (home-page "https://github.com/mikf/gallery-dl")
@@ -2922,6 +2907,7 @@ To load this plugin, specify the following option when starting mpv:
   (package
     (name "libvpx")
     (version "1.12.0")
+    (replacement libvpx/fixed)
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -2931,8 +2917,7 @@ To load this plugin, specify the following option when starting mpv:
               (sha256
                (base32
                 "1x12f2bd4jqd532rnixmwvcx8d29yxiacpcxqqh86qczc49la8gm"))
-              (patches (search-patches "libvpx-CVE-2016-2818.patch"
-                                       "libvpx-CVE-2023-5217.patch"))))
+              (patches (search-patches "libvpx-CVE-2016-2818.patch"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list "--enable-shared"
@@ -2960,6 +2945,16 @@ To load this plugin, specify the following option when starting mpv:
     (description "libvpx is a codec for the VP8/VP9 video compression format.")
     (license license:bsd-3)
     (home-page "https://www.webmproject.org/")))
+
+(define libvpx/fixed
+  (package
+    (inherit libvpx)
+    (source
+     (origin
+       (inherit (package-source libvpx))
+       (patches (search-patches "libvpx-CVE-2016-2818.patch"
+                                "libvpx-CVE-2023-5217.patch"
+                                "libvpx-CVE-2023-44488.patch"))))))
 
 (define-public orfondl
   (package
@@ -3133,7 +3128,7 @@ YouTube.com and many more sites.")
 (define-public yt-dlp
   (package
     (name "yt-dlp")
-    (version "2024.08.06")
+    (version "2024.07.09")
     (source
      (origin
        (method git-fetch)
@@ -3142,7 +3137,7 @@ YouTube.com and many more sites.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0k44p1a9nckj7m6gxz7zggci0iihflivxvkh9l8wwbnsfvqhyfrn"))))
+        (base32 "1zw8zaihfx6fg1l9ynwm0d4zy6k30jwi7qbq9ylsl93yg1a73js9"))))
     (build-system pyproject-build-system)
     (arguments
      `(#:tests? ,(not (%current-target-system))
@@ -3189,7 +3184,7 @@ YouTube.com and many more sites.")
        (if (supported-package? pandoc)
          (list pandoc)
          '())
-       (list nss-certs-for-test python-hatchling python-pytest zip)))
+       (list python-hatchling python-pytest zip)))
     (synopsis "Download videos from YouTube.com and other sites")
     (description
      "yt-dlp is a small command-line program to download videos from
@@ -3254,8 +3249,7 @@ audio, images) from the Web.  It can use either mpv or vlc for playback.")
     (native-inputs
      (list perl-module-build))
     (inputs
-     (list bash-minimal
-           perl-data-dump
+     (list perl-data-dump
            perl-file-sharedir
            perl-gtk2
            perl-json
@@ -3289,7 +3283,8 @@ audio, images) from the Web.  It can use either mpv or vlc for playback.")
                             "bin/gtk3-youtube-viewer")
                (("'xdg-open'")
                 (format #f "'~a/bin/xdg-open'"
-                        (assoc-ref inputs "xdg-utils"))))))
+                        (assoc-ref inputs "xdg-utils"))))
+             #t))
          (add-after 'install 'install-desktop
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -3297,7 +3292,8 @@ audio, images) from the Web.  It can use either mpv or vlc for playback.")
                (install-file "share/gtk-youtube-viewer.desktop"
                              (string-append sharedir "/applications"))
                (install-file "share/icons/gtk-youtube-viewer.png"
-                             (string-append sharedir "/pixmaps")))))
+                             (string-append sharedir "/pixmaps"))
+               #t)))
          (add-after 'install 'wrap-program
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -3306,7 +3302,8 @@ audio, images) from the Web.  It can use either mpv or vlc for playback.")
                     (lib-path (getenv "PERL5LIB")))
                (for-each (cut wrap-program <>
                               `("PERL5LIB" ":" prefix (,lib-path ,site-dir)))
-                         (find-files bin-dir))))))))
+                         (find-files bin-dir))
+               #t))))))
     (synopsis
      "Lightweight application for searching and streaming videos from YouTube")
     (description
@@ -4185,37 +4182,6 @@ masks.
 @end itemize\n")
     (license license:gpl2)))
 
-(define-public obs-gradient-source
-  (package
-    (name "obs-gradient-source")
-    (version "0.3.2")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/exeldro/obs-gradient-source")
-                    (commit version)))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "1s1frbax6md9bvlm4zynp9lab9fmh95xk7dq9b2f8q0rhprnb6g6"))))
-    (build-system cmake-build-system)
-    (arguments
-     (list
-      #:modules '((guix build cmake-build-system)
-                  (guix build utils))
-      #:tests? #f ;no tests
-      #:configure-flags
-      #~(list (string-append "-DLIBOBS_INCLUDE_DIR="
-                             #$(this-package-input "obs") "/lib")
-              "-DBUILD_OUT_OF_TREE=On"
-              "-Wno-dev")))
-    (inputs (list obs qtbase-5))
-    (home-page "https://github.com/exeldro/obs-gradient-source")
-    (synopsis "Plugin for adding a gradient Source to OBS Studio")
-    (description "This package provides a plugin for adding a gradient Source
-to OBS Studio.")
-    (license license:gpl2)))
-
 (define-public obs-looking-glass
   (package
     (name "obs-looking-glass")
@@ -4390,55 +4356,6 @@ configuration (bitrate).")
     (description "This plugin adds 3 sources for capturing audio outputs,
 inputs and applications using PipeWire.")
     (license license:gpl2+)))
-
-(define-public obs-shaderfilter
-  (package
-    (name "obs-shaderfilter")
-    (version "2.0.0")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/exeldro/obs-shaderfilter")
-                    (commit version)))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "1kqa8323gcnyqjcya4ynhwvd38y0xsxvxndzndpmg18q88svyiq8"))))
-    (build-system cmake-build-system)
-    (arguments
-     (list
-      #:modules '((guix build cmake-build-system)
-                  (guix build utils))
-      #:tests? #f ;no tests
-      #:configure-flags
-      #~(list (string-append "-DLIBOBS_INCLUDE_DIR="
-                             #$(this-package-input "obs") "/lib")
-              "-DBUILD_OUT_OF_TREE=On"
-              "-Wno-dev")
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'install 'fix-effects
-            (lambda _
-              (for-each
-               (lambda (directory)
-                 (mkdir-p
-                  (string-append
-                   #$output "/share/obs/obs-plugins/obs-shaderfilter"))
-                 (rename-file
-                  (string-append
-                   #$output "/data/obs-plugins/obs-shaderfilter/" directory)
-                  (string-append
-                   #$output "/share/obs/obs-plugins/obs-shaderfilter/"
-                   directory)))
-               '("examples" "textures")))))))
-    (inputs (list obs qtbase-5))
-    (home-page "https://github.com/exeldro/obs-shaderfilter")
-    (synopsis "OBS filter for applying an arbitrary shader to a source")
-    (description "Plugin for OBS Studio which is intended to allow users to
-apply their own shaders to OBS sources.  This theoretically makes possible
-some simple effects like drop shadows that can be implemented strictly in
-shader code.")
-    (license license:gpl2)))
 
 (define-public obs-source-clone
   (package
@@ -4815,17 +4732,17 @@ and MPEG system streams.")
 (define-public libbdplus
   (package
     (name "libbdplus")
-    (version "0.2.0")
+    (version "0.1.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://ftp.videolan.org/pub/videolan/libbdplus/"
                            version "/" name "-" version ".tar.bz2"))
        (sha256
-        (base32 "0n0ayjq2ld7lfhrfcdj9bam96m2hih34phyjan8nwggkmqzflgmr"))))
-    (build-system gnu-build-system)
+        (base32 "02n87lysqn4kg2qk7d1ffrp96c44zkdlxdj0n16hbgrlrpiwlcd6"))))
     (inputs
      (list libgcrypt))
+    (build-system gnu-build-system)
     (home-page "https://www.videolan.org/developers/libbdplus.html")
     (synopsis "Library for decrypting certain Blu-Ray discs")
     (description "libbdplus is a library which implements the BD+ System
@@ -5441,8 +5358,7 @@ programmers to access a standard API to open and decompress media files.")
                 "11b83qazc8h0iidyj1rprnnjdivj1lpphvpa08y53n42bfa36pn5"))
               (patches (search-patches "aegisub-icu59-include-unistr.patch"
                                        "aegisub-make43.patch"
-                                       "aegisub-boost68.patch"
-                                       "aegisub-boost81.patch"))))
+                                       "aegisub-boost68.patch"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -5898,8 +5814,7 @@ API.  It includes bindings for Python, Ruby, and other languages.")
            (delete-file-recursively "src/images/fonts") #t))))
     (build-system python-build-system)
     (inputs
-     (list bash-minimal
-           ffmpeg
+     (list ffmpeg
            font-dejavu
            libopenshot
            python
@@ -5928,12 +5843,14 @@ API.  It includes bindings for Python, Ruby, and other languages.")
                         (substitute* "src/classes/app.py"
                           (("info.IMAGES_PATH") (string-append "\"" font "\""))
                           (("fonts") "share/fonts/truetype")
-                          (("[A-Za-z_-]+.ttf") "DejaVuSans.ttf")))))
+                          (("[A-Za-z_-]+.ttf") "DejaVuSans.ttf")))
+                      #t))
                   (add-before 'install 'set-tmp-home
                     (lambda _
                       ;; src/classes/info.py "needs" to create several
                       ;; directories in $HOME when loaded during build
-                      (setenv "HOME" "/tmp")))
+                      (setenv "HOME" "/tmp")
+                      #t))
                   (add-after 'install 'wrap-program
                     (lambda* (#:key outputs inputs #:allow-other-keys)
                       (let ((out (assoc-ref outputs "out"))
@@ -6088,8 +6005,7 @@ video from a Wayland session.")
     (native-inputs
      (list gettext-minimal pkg-config))
     (inputs
-     (list bash-minimal
-           python-pygobject
+     (list python-pygobject
            gtk+
            python-pycairo ; Required or else clicking on a subtitle line fails.
            python-chardet ; Optional: Character encoding detection.
@@ -6540,10 +6456,7 @@ brightness, contrast, and frame rate.")
                  `("PERL5LIB" ":"
                    prefix (,(string-append perllib ":" (getenv "PERL5LIB")))))))))))
     (inputs
-     (list bash-minimal
-           perl-mojolicious
-           perl-lwp-protocol-https
-           perl-xml-libxml))
+     (list perl-mojolicious perl-lwp-protocol-https perl-xml-libxml))
     (home-page "https://github.com/get-iplayer/get_iplayer")
     (synopsis "Download or stream available BBC iPlayer TV and radio programmes")
     (description "@code{get_iplayer} lists, searches and records BBC iPlayer

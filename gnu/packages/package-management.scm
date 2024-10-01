@@ -12,7 +12,7 @@
 ;;; Copyright © 2019-2024 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2019 Jonathan Brielmaier <jonathan.brielmaier@web.de>
 ;;; Copyright © 2020 Mathieu Othacehe <m.othacehe@gmail.com>
-;;; Copyright © 2020, 2023, 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020, 2023 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;; Copyright © 2020 Jesse Gibbons <jgibbons2357+guix@gmail.com>
 ;;; Copyright © 2020 Martin Becze <mjbecze@riseup.net>
@@ -465,8 +465,7 @@ $(prefix)/etc/openrc\n")))
                     ;; the 'patch-shebangs' phase, which would otherwise
                     ;; change it to 'GUILE/bin/guile'.
                     (delete 'patch-shebangs))))
-      (native-inputs `(("locales" ,(libc-utf8-locales-for-target))
-                       ("pkg-config" ,pkg-config)
+      (native-inputs `(("pkg-config" ,pkg-config)
 
                        ;; Guile libraries are needed here for
                        ;; cross-compilation.
@@ -484,7 +483,6 @@ $(prefix)/etc/openrc\n")))
                        ("guile-zstd" ,guile-zstd)
                        ("guile-ssh" ,guile-ssh)
                        ("guile-git" ,guile-git)
-                       ("guile-semver" ,guile-semver)
 
                        ;; XXX: Keep the development inputs here even though
                        ;; they're unnecessary, just so that 'guix environment
@@ -493,13 +491,14 @@ $(prefix)/etc/openrc\n")))
                        ("automake" ,automake)
                        ("gettext" ,gettext-minimal)
                        ("texinfo" ,texinfo)
-                       ("graphviz" ,graphviz-minimal)
+                       ("graphviz" ,graphviz) ;non-minimal for PDF support
                        ("font-ghostscript" ,font-ghostscript) ;fonts for 'dot'
+                       ("imagemagick" ,imagemagick) ;for 'make dist'
+                       ("perl" ,perl)               ;for 'make dist'
                        ("help2man" ,help2man)
                        ("po4a" ,po4a-minimal)))
       (inputs
-       `(("bash-minimal", bash-minimal)
-         ("bzip2" ,bzip2)
+       `(("bzip2" ,bzip2)
          ("gzip" ,gzip)
          ("sqlite" ,sqlite)
          ("libgcrypt" ,libgcrypt)
@@ -793,7 +792,7 @@ which are indicated in the file name.")
     (build-system guile-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
-                  (add-after 'build 'move-to-extension-directory
+                  (add-after 'install 'move-to-extension-directory
                     (lambda* (#:key outputs #:allow-other-keys)
                       (let* ((out (assoc-ref outputs "out"))
                              (target (string-append
@@ -1008,8 +1007,8 @@ transactions from C or Python.")
     (license license:gpl2+)))
 
 (define-public bffe
-  (let ((commit "0fc06c7dad2904989fc8c48f5a20c46a60254e9b")
-        (revision "7"))
+  (let ((commit "7df2aa647d11342e3a446f44ef7626e58a1d5902")
+        (revision "6"))
     (package
       (name "bffe")
       (version (git-version "0" revision commit))
@@ -1020,7 +1019,7 @@ transactions from C or Python.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "0wkszdlsxw335wwh3qi2g7hfyrrnmmqx0kr02yqb8vasmn3vm8jz"))
+                  "04gg21rjl3c1l8i2wnq8w1w6zfh2qmp9ay839ll90c1jf9bc3sn4"))
                 (file-name (string-append name "-" version "-checkout"))))
       (build-system gnu-build-system)
       (native-inputs
@@ -1549,8 +1548,8 @@ environments.")
                   "0k9zkdyyzir3fvlbcfcqy17k28b51i20rpbjwlx2i1mwd2pw9cxc")))))))
 
 (define-public guix-build-coordinator
-  (let ((commit "492d4628887ea726cedc1c2b55743acfe32dfe0c")
-        (revision "110"))
+  (let ((commit "406db8a8db53731de432c452902a098915e876c2")
+        (revision "109"))
     (package
       (name "guix-build-coordinator")
       (version (git-version "0" revision commit))
@@ -1561,16 +1560,16 @@ environments.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "0ssns2l4dl54igqrr874g6z32s9r9qdf7dzfrqar4mmjz343n8rp"))
+                  "0yi3xji5qm6r5h6nmfbxqgaipp4al08h2mn6sci85ikm80vvy66a"))
                 (file-name (string-append name "-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
        (list
         #:modules `(((guix build guile-build-system)
                      #:select (target-guile-effective-version))
-                    ,@%default-gnu-modules)
+                    ,@%gnu-build-system-modules)
         #:imported-modules `((guix build guile-build-system)
-                             ,@%default-gnu-imported-modules)
+                             ,@%gnu-build-system-modules)
         #:phases
         #~(modify-phases %standard-phases
             (add-before 'build 'set-GUILE_AUTO_COMPILE
@@ -1826,9 +1825,9 @@ in an isolated environment, in separate namespaces.")
        (list
         #:modules `(((guix build guile-build-system)
                      #:select (target-guile-effective-version))
-                    ,@%default-gnu-modules)
+                    ,@%gnu-build-system-modules)
         #:imported-modules `((guix build guile-build-system)
-                             ,@%default-gnu-imported-modules)
+                             ,@%gnu-build-system-modules)
         #:phases
         #~(modify-phases %standard-phases
             (add-before 'build 'set-GUILE_AUTO_COMPILE
@@ -2251,18 +2250,19 @@ Python eggs, Ruby gems, and more to RPMs, debs, Solaris packages and more.")
                         (mkdir-p datadir)
                         (invoke "touch" (string-append datadir "index.db"))
                         (setenv "HOME" home))
-                      (invoke "./bootstrap")))
+                      (invoke "./bootstrap")
+                      #t))
                   (add-after 'install 'wrap-executables
                     (lambda* (#:key outputs inputs #:allow-other-keys)
                       (let ((out (assoc-ref outputs "out"))
                             (curl (assoc-ref inputs "curl")))
                         (wrap-program (string-append out "/bin/akku")
-                          `("LD_LIBRARY_PATH" ":" prefix
-                            (,(string-append curl "/lib"))))))))))
+                          `("LD_LIBRARY_PATH" ":" prefix (,(string-append curl "/lib"))))
+                        #t))))))
     (native-inputs
      (list which autoconf automake pkg-config))
     (inputs
-     (list bash-minimal guile-3.0 curl))
+     (list guile-3.0 curl))
     (home-page "https://akkuscm.org/")
     (synopsis "Language package manager for Scheme")
     (description

@@ -9,7 +9,7 @@
 ;;; Copyright © 2018, 2019, 2022 Marius Bakke <marius@gnu.org>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
-;;; Copyright © 2021, 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2021 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2022, 2024 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2022 Imran Iqbal <imran@imraniqbal.org>
 ;;;
@@ -37,7 +37,6 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system ruby)
   #:use-module (guix utils)
-  #:use-module (gnu packages base)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages dbm)
   #:use-module (gnu packages flex)
@@ -128,14 +127,14 @@ a flexible and convenient way.")
 (define-public man-db
   (package
     (name "man-db")
-    (version "2.12.0")
+    (version "2.11.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://savannah/man-db/man-db-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "15bak56wf99xdr1p3kaish6pkrrvhl6p2rhgzwiasr17la264nj1"))))
+                "1k5nhy2c33k0p2f1sbb4hxpwrjw6v4scchwykkg4g61la59amarf"))))
     (build-system gnu-build-system)
     (arguments
      (list #:phases
@@ -295,7 +294,7 @@ pages into HTML format.")
                         (("^PREFIX=.*")
                          (string-append "PREFIX=" (assoc-ref outputs "out")
                                         "\n"))))))))
-    (native-inputs (list (libc-utf8-locales-for-target) perl)) ;used to run tests
+    (native-inputs (list perl))             ;used to run tests
     (inputs (list zlib))
     (native-search-paths
      (list (search-path-specification
@@ -375,11 +374,11 @@ Linux kernel and C library interfaces employed by user-space programs.")
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f
-       #:make-flags ,#~(list (string-append "prefix=" #$output))
+       ;; The compress-documentation phase doesn't pick up on our manpages as
+       ;; its regex doesn't support trailing letters, so manually compress.
+       #:make-flags ,#~(list (string-append "prefix=" #$output) "gz")
        #:license-file-regexp "POSIX-COPYRIGHT"
-       ;; The build phase only compresses documentation, which we already do.
-       #:phases (modify-phases %standard-phases (delete 'configure)
-                                                (delete 'build))))
+       #:phases (modify-phases %standard-phases (delete 'configure))))
     (home-page "https://www.kernel.org/doc/man-pages/")
     (synopsis "Man pages from the POSIX.1-2013 standard")
     (description

@@ -62,8 +62,6 @@
       ;; https://github.com/jemalloc/jemalloc/issues/937
       #~'("--disable-initial-exec-tls"
           #$@(match (%current-system)
-               ("aarch64-linux"
-                (list "--with-lg-page=14"))
                ("powerpc-linux"
                 (list "CPPFLAGS=-maltivec"))
                (_

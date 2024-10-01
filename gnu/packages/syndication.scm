@@ -137,8 +137,7 @@
        ("xmllint" ,libxml2)
        ("xorg-server" ,xorg-server-for-tests)))
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("glib" ,glib)
+     `(("glib" ,glib)
        ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("gspell" ,gspell)
        ("gstreamer" ,gstreamer)
@@ -202,8 +201,7 @@ cards.")
            (list gtk "bin")
            pkg-config))
     (inputs
-     (list bash-minimal
-           blueprint-compiler-0.4
+     (list blueprint-compiler-0.4
            glib
            gtk
            gtksourceview
@@ -381,8 +379,7 @@ file system, and many more features.")
            pkg-config
            which))
     (inputs
-     (list bash-minimal
-           glib
+     (list glib
            glib-networking
            gnome-keyring
            gsettings-desktop-schemas

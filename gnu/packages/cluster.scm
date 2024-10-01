@@ -139,6 +139,7 @@
                (list docbook-xml
                      docbook-xml-4.4            ;used by documentation/ra2refentry.xsl
                      docbook-xsl
+                     libxml2                    ;for XML_CATALOG_FILES
                      libxslt                    ;for xsltproc
                      ruby-asciidoctor)
                '())))

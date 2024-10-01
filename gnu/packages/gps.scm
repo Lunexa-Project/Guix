@@ -29,7 +29,6 @@
   #:use-module (guix download)
   #:use-module (guix gexp)
   #:use-module (guix git-download)
-  #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system scons)
   #:use-module (guix build-system qt)
@@ -38,11 +37,9 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages build-tools)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages docbook)
-  #:use-module (gnu packages geo)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
@@ -61,7 +58,7 @@
 (define-public gpsbabel
   (package
     (name "gpsbabel")
-    (version "1.9.0")
+    (version "1.7.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -72,37 +69,28 @@
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0pyrbykf15znn63y9j1npdv148i9b8sgc947xq6dqw8gwx023ji5"))
+                "010g0vd2f5knpq5p7qfnl31kv3r8m5sjdsafcinbj5gh02j2nzpy"))
+              (patches (search-patches "gpsbabel-fix-i686-test.patch"))
               (modules '((guix build utils)))
               (snippet
                '(begin
                   (delete-file-recursively "zlib")
-                  (delete-file-recursively "shapelib")
-                  (delete-file-recursively "mac")
+                  (substitute* "Makefile.in"
+                    ((" zlib/z.*\\.h") ""))
+                  ;; Delete files under GPL-compatible licences but never used
+                  ;; on GNU systems, rather than bloating the LICENSE field.
+                  (delete-file "gui/serial_mac.cc")           ; Apple MIT
+                  (delete-file "mingw/include/ddk/hidsdi.h") ; public domain
                   #t))))
+    (build-system gnu-build-system)
     ;; TODO: "make doc" requires Docbook & co.
-    (build-system cmake-build-system)
     (arguments
-     (list #:phases
-           #~(modify-phases %standard-phases
-               (add-before 'check 'set-up-test-environment
-                 (lambda* (#:key inputs #:allow-other-keys)
-                   (setenv "TZDIR" (search-input-directory inputs "share/zoneinfo"))))
-
-               (replace 'install
-                 (lambda _
-                   (install-file "gpsbabel" (string-append #$output "/bin")))))
-
-           #:configure-flags
-           #~(list
-              "-DGPSBABEL_MAPPREVIEW=OFF"
-              "-DGPSBABEL_WITH_LIBUSB=pkgconfig"
-              "-DGPSBABEL_WITH_SHAPELIB=pkgconfig"
-              "-DGPSBABEL_WITH_ZLIB=pkgconfig")))
+     `(#:configure-flags
+       '("--with-zlib=system")))
     (inputs
-     (list expat libusb libxkbcommon shapelib qt5compat qtbase qtserialport qttranslations zlib))
+     (list expat libusb qtbase-5 zlib))
     (native-inputs
-     (list which pkg-config qttools libxml2 tzdata-for-tests)) ;'xmllint' needed for the KML tests
+     (list which qttools-5 libxml2))              ;'xmllint' needed for the KML tests
     (home-page "https://www.gpsbabel.org/")
     (synopsis "Convert and exchange data with GPS and map programs")
     (description
@@ -111,7 +99,8 @@ popular GPS receivers and mapping programs.  It contains extensive data
 manipulation abilities making it a convenient for server-side processing or as
 the back-end for other tools.  It does not convert, transfer, send, or
 manipulate maps.")
-    (license (list license:gpl2+))))
+    (license (list license:expat        ; shapelib/*.[ch]
+                   license:gpl2+))))    ; everything else
 
 (define-public gpscorrelate
   (package
@@ -240,8 +229,7 @@ such as elevation, speed, heart rate, power, temperature, and gear shifts.")
     (native-inputs
      (list bc pkg-config))
     (inputs
-     (list bash-minimal
-           bluez
+     (list bluez
            dbus
            gtk+
            libcap

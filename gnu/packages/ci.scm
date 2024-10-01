@@ -34,7 +34,6 @@
   #:use-module ((guix search-paths) #:select ($SSL_CERT_DIR))
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages docbook)
@@ -136,8 +135,7 @@
                          `("GUILE_LOAD_COMPILED_PATH" ":" prefix
                            ,objs))))))))
       (inputs
-       (list bash-minimal
-             guile-3.0-latest
+       (list guile-3.0-latest
              guile-avahi
              guile-fibers
              guile-gcrypt

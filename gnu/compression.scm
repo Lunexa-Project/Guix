@@ -56,8 +56,7 @@
                     ;; The default level 3 compresses better than gzip in a
                     ;; fraction of the time, while the highest level 19
                     ;; (de)compresses more slowly and worse than xz.
-                    #~(list #+(file-append zstd "/bin/zstd") "-3"
-                            (format #f "--threads=~a" (parallel-job-count))))
+                    #~(list #+(file-append zstd "/bin/zstd") "-3"))
         (compressor "none" "" #f)))
 
 (define (lookup-compressor name)

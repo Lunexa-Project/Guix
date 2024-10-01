@@ -24,7 +24,7 @@
 ;;; Copyright © 2019 Giacomo Leidi <goodoldpaul@autistici.org>
 ;;; Copyright © 2020 Brendan Tildesley <mail@brendan.scot>
 ;;; Copyright © 2020 Guillaume Le Vaillant <glv@posteo.net>
-;;; Copyright © 2020, 2021, 2022, 2023, 2024 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020, 2021, 2022, 2023 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2021 Simon Streit <simon@netpanic.org>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
@@ -61,7 +61,6 @@
   #:use-module (guix download)
   #:use-module (guix bzr-download)
   #:use-module (guix git-download)
-  #:use-module (guix search-paths)
   #:use-module ((guix build utils) #:select (alist-replace))
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system glib-or-gtk)
@@ -183,45 +182,45 @@ such as mate-panel and xfce4-panel.")
      `(#:tests? #f ; see http://lists.gnu.org/archive/html/bug-guix/2013-06/msg00085.html
        #:glib-or-gtk? #t
        #:configure-flags
-       ,#~(list "-Dtests=disabled")
+       (list "-Dtests=disabled")
        ,@(if (%current-target-system)
-             (list
-              #:phases
-              #~(modify-phases %standard-phases
-                  (add-after 'unpack 'fix-cross-compilation
-                    (lambda _
-                      ;; XXX: Let meson-build-system customize the property
-                      (substitute* "meson.build"
-                        (("'ipc_rmid_deferred_release', 'auto'")
-                         ;; see https://github.com/NixOS/nixpkgs/blob/df51f2293e935e85f6a2e69bcf89a40cb31bbc3d/pkgs/development/libraries/cairo/default.nix#L65
-                         ;; XXX: check it on hurd.
-                         "'ipc_rmid_deferred_release', 'true'"))))))
+             `(#:phases
+               (modify-phases %standard-phases
+                 (add-after 'unpack 'fix-cross-compilation
+                   (lambda _
+                     ;; XXX: Let meson-build-system customize the property
+                     (substitute* "meson.build"
+                       (("'ipc_rmid_deferred_release', 'auto'")
+                        ;; see https://github.com/NixOS/nixpkgs/blob/df51f2293e935e85f6a2e69bcf89a40cb31bbc3d/pkgs/development/libraries/cairo/default.nix#L65
+                        ;; XXX: check it on hurd.
+                        "'ipc_rmid_deferred_release', 'true'"))))))
              '())))
     (native-inputs
-     (append (list pkg-config
-                   python-wrapper)
-             (if (target-hurd?)
-                 '()
-                 (list gobject-introspection))))
+     `(,@(if (target-hurd?)
+             '()
+             `(("gobject-introspection" ,gobject-introspection)))
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)))
     (inputs
-     (append
-      (list bash-minimal                ;for glib-or-gtk-wrap
-            ghostscript
-            libspectre)
-      (if (target-hurd?)
-          '()
-          (list libdrm
-                poppler))))
+     `(("bash-minimal" ,bash-minimal)   ;for glib-or-gtk-wrap
+       ,@(if (target-hurd?)
+             '()
+             `(("drm" ,libdrm)))
+       ("ghostscript" ,ghostscript)
+       ("libspectre" ,libspectre)
+       ,@(if (target-hurd?)
+             '()
+             `(("poppler" ,poppler)))))
     (propagated-inputs
-     (list fontconfig
-           freetype
-           glib
-           libpng
-           pixman
-           libx11
-           libxcb
-           libxext
-           libxrender))
+     `(("fontconfig" ,fontconfig)
+       ("freetype" ,freetype)
+       ("glib" ,glib)
+       ("libpng" ,libpng)
+       ("pixman" ,pixman)
+       ("x11" ,libx11)
+       ("xcb" ,libxcb)
+       ("xext" ,libxext)
+       ("xrender" ,libxrender)))
     (synopsis "Multi-platform 2D graphics library")
     (description "Cairo is a 2D graphics library with support for multiple output
 devices.  Currently supported output targets include the X Window System (via
@@ -653,7 +652,7 @@ printing and other features typical of a source code editor.")
      (list `(,glib "bin")               ; for glib-genmarshal, etc.
            gettext-minimal
            gi-docgen
-           gobject-introspection
+           gobject-introspection-next
            pkg-config
            vala
            ;; For testing.
@@ -831,38 +830,38 @@ ever use this library.")
      (arguments
       (list
        #:glib-or-gtk? #t              ;to wrap binaries and/or compile schemas
-       #:tests? (not (or (target-ppc32?)
-                         (%current-target-system)))
        #:phases
        #~(modify-phases %standard-phases
            (delete 'check)
-           (add-after 'install 'check
-             (lambda* (#:key tests? #:allow-other-keys)
-               (when tests?
-                 ;; xfconfd requires a writable HOME
-                 (setenv "HOME" (getenv "TMPDIR"))
-                 ;; dbus-run-session may crash if XDG_DATA_DIRS has too
-                 ;; many entries, maybe related to
-                 ;; https://gitlab.freedesktop.org/dbus/dbus/-/issues/481.
-                 (setenv "XDG_DATA_DIRS"
-                         (string-append
-                          #$output "/share:"
-                          #$(this-package-native-input
-                             "gsettings-desktop-schemas")
-                          "/share"))
-                 ;; Don't fail on missing  '/etc/machine-id'.
-                 (setenv "DBUS_FATAL_WARNINGS" "0")
-                 (with-directory-excursion (string-append "../at-spi2-core-"
-                                                          #$version "")
-                   (invoke "dbus-run-session" "--" "ci/run-registryd-tests.sh")
-                   (substitute* "tests/atspi/meson.build"
-                     ;; Remove a timeout that caused aarch64 build failures.
-                     ((", timeout: [0-9]+") ""))
-                   (substitute* "ci/run-tests.sh"
-                     (("ps auxwww") "")   ;avoid a dependency on procps
-                     (("meson test -C _build")
-                      "meson test -C ../build")) ;adjust build directory
-                   (invoke "dbus-run-session" "--" "ci/run-tests.sh"))))))))
+           ;; The CI test suite fails completely on powerpc-linux.
+           ;; The name org.gnome.SessionManager was not provided by any .service
+           ;; TODO: Wrap 'check phase with 'tests?'.
+           #$@(if (not (or (target-ppc32?)
+                           (%current-target-system)))
+                #~((add-after 'install 'check
+                     (lambda _
+                       ;; xfconfd requires a writable HOME
+                       (setenv "HOME" (getenv "TMPDIR"))
+                       ;; dbus-run-session may crash if XDG_DATA_DIRS has too
+                       ;; many entries, maybe related to
+                       ;; https://gitlab.freedesktop.org/dbus/dbus/-/issues/481.
+                       (setenv "XDG_DATA_DIRS"
+                               (string-append
+                                #$output "/share:"
+                                #$(this-package-native-input
+                                   "gsettings-desktop-schemas")
+                                "/share"))
+                       ;; Don't fail on missing  '/etc/machine-id'.
+                       (setenv "DBUS_FATAL_WARNINGS" "0")
+                       (with-directory-excursion (string-append "../at-spi2-core-"
+                                                                #$version "")
+                         (invoke "dbus-run-session" "--" "ci/run-registryd-tests.sh")
+                         (substitute* "ci/run-tests.sh"
+                           (("ps auxwww") "")   ;avoid a dependency on procps
+                           (("meson test -C _build")
+                            "meson test -C ../build")) ;adjust build directory
+                         (invoke "dbus-run-session" "--" "ci/run-tests.sh")))))
+                #~()))))
      (inputs
       (list bash-minimal libxml2))
      (propagated-inputs
@@ -1141,7 +1140,7 @@ application suites.")
 (define-public gtk
   (package
     (name "gtk")
-    (version "4.14.5")
+    (version "4.14.2")
     (source
      (origin
        (method url-fetch)
@@ -1149,7 +1148,7 @@ application suites.")
                            (version-major+minor version)  "/"
                            name "-" version ".tar.xz"))
        (sha256
-        (base32 "0kg286za53qhl6ngw4rrvbpm3q04g30qf2q77sck7c86y2wz4ism"))
+        (base32 "0wp0w259rkwf6g8sk2b9jkms47vx5gp7mfs345grx9wq53plqq12"))
        (patches
         (search-patches "gtk4-respect-GUIX_GTK4_PATH.patch"))
        (modules '((guix build utils)))))
@@ -1207,6 +1206,11 @@ application suites.")
                  "find_program('rst2man.py'"))))
           (add-after 'unpack 'patch
             (lambda* (#:key inputs native-inputs outputs #:allow-other-keys)
+              ;; Correct DTD resources of docbook.
+              (substitute* (find-files "docs" "\\.xml$")
+                (("http://www.oasis-open.org/docbook/xml/4.3/")
+                 (string-append #$(this-package-native-input "docbook-xml")
+                                "/xml/dtd/docbook/")))
               ;; Disable building of icon cache.
               (substitute* "meson.build"
                 (("gtk_update_icon_cache: true")
@@ -1813,7 +1817,7 @@ text rendering library.")
     (build-system meson-build-system)
     (outputs '("out" "doc"))
     (arguments
-     `(#:glib-or-gtk? #t             ; To wrap binaries and/or compile schemas
+     `(#:glib-or-gtk? #t     ; To wrap binaries and/or compile schemas
        #:configure-flags
        (list
         "-Dbuild-documentation=true")
@@ -1828,14 +1832,14 @@ text rendering library.")
                 (string-append out "/share/doc")
                 (string-append doc "/share/doc"))))))))
     (native-inputs
-     (list graphviz
-           doxygen
-           m4
-           mm-common
-           perl
-           pkg-config
-           python
-           libxslt))
+     `(("dot" ,graphviz)
+       ("doxygen" ,doxygen)
+       ("m4" ,m4)
+       ("mm-common" ,mm-common)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python)
+       ("xsltproc" ,libxslt)))
     (propagated-inputs
      (list glibmm at-spi2-core))
     (synopsis "C++ bindings for ATK")
@@ -1907,16 +1911,16 @@ text rendering library.")
                 (string-append out "/share/doc")
                 (string-append doc "/share/doc"))))))))
     (native-inputs
-     (list graphviz
-           doxygen
-           `(,glib "bin")
-           m4
-           mm-common
-           perl
-           pkg-config
-           python
-           libxslt
-           xorg-server-for-tests))
+     `(("dot" ,graphviz)
+       ("doxygen" ,doxygen)
+       ("glib:bin" ,glib "bin")
+       ("m4" ,m4)
+       ("mm-common" ,mm-common)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python)
+       ("xsltproc" ,libxslt)
+       ("xorg-server" ,xorg-server-for-tests)))
     (propagated-inputs
      (list cairomm glibmm gtk pangomm))
     (synopsis "C++ Interfaces for GTK+ and GNOME")
@@ -1949,11 +1953,11 @@ tutorial.")
        (sha256
         (base32 "1kj4mla3z9kxhdby5w88nl744xkmq6xchf79m1kfa72p0kjbzm9h"))))
     (propagated-inputs
-     (list atkmm-2.28
-           cairomm-1.14
-           glibmm
-           gtk+
-           pangomm-2.46))))
+     `(("atkmm-2.28" ,atkmm-2.28)
+       ("cairomm-1.14" ,cairomm-1.14)
+       ("glibmm" ,glibmm)
+       ("gtk+" ,gtk+)
+       ("pangomm-2.42" ,pangomm-2.46)))))
 
 (define-public gtkmm-2
   (package
@@ -2136,18 +2140,15 @@ yet remaining very close in spirit to original API.")
              (system "Xvfb :1 +extension GLX &")
              (setenv "DISPLAY" ":1"))))))
     (native-inputs
-     (list adwaita-icon-theme
-           `(,gtk+ "bin")
-           gobject-introspection
-           perl-extutils-depends
-           perl-extutils-pkgconfig
-           perl-test-simple
-           xorg-server-for-tests))
+     `(("adwaita-icon-theme" ,adwaita-icon-theme)
+       ("gtk+:bin" ,gtk+ "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("perl-extutils-depends" ,perl-extutils-depends)
+       ("perl-extutils-pkgconfig" ,perl-extutils-pkgconfig)
+       ("perl-test-simple" ,perl-test-simple)
+       ("xorg-server" ,xorg-server-for-tests)))
     (propagated-inputs
-     (list gtk+
-           perl-cairo-gobject
-           perl-carp
-           perl-exporter
+     (list gtk+ perl-cairo-gobject perl-carp perl-exporter
            perl-glib-object-introspection))
     (home-page "https://metacpan.org/dist/Gtk3")
     (synopsis "Perl interface to the 3.x series of the gtk+ toolkit")
@@ -2262,22 +2263,36 @@ information.")
                (search-patches "gtk-doc-respect-xml-catalog.patch"))))
     (build-system meson-build-system)
     (arguments
-     (list
-      #:phases
-      #~(modify-phases %standard-phases
-         (add-after 'install 'wrap-executables
+     `(#:parallel-tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-gtk-doc-scan
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "gtk-doc.xsl"
+               (("http://docbook.sourceforge.net/release/xsl/current/html/chunk.xsl")
+                (string-append (assoc-ref inputs "docbook-xsl")
+                               "/xml/xsl/docbook-xsl-"
+                               ,(package-version docbook-xsl)
+                               "/html/chunk.xsl"))
+               (("http://docbook.sourceforge.net/release/xsl/current/common/en.xml")
+                (string-append (assoc-ref inputs "docbook-xsl")
+                               "/xml/xsl/docbook-xsl-"
+                               ,(package-version docbook-xsl)
+                               "/common/en.xml")))
+             #t))
+         (add-after 'unpack 'disable-failing-tests
            (lambda _
-             (let ((docbook-xsl-catalog
-                    #$(let ((docbook-xsl (this-package-input "docbook-xsl")))
-                        (file-append docbook-xsl
-                                     "/xml/xsl/" (package-name docbook-xsl)
-                                     "-" (package-version docbook-xsl)
-                                     "/catalog.xml"))))
+             (substitute* "tests/Makefile.am"
+               (("annotations.sh bugs.sh empty.sh fail.sh gobject.sh program.sh")
+                ""))
+             #t))
+         (add-after 'install 'wrap-executables
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
                (for-each (lambda (prog)
                            (wrap-program prog
-                             `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH")))
-                             `("XML_CATALOG_FILES" " " suffix (,docbook-xsl-catalog))))
-                         (find-files (string-append #$output "/bin")))))))))
+                             `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH")))))
+                         (find-files (string-append out "/bin")))))))))
     (native-inputs
      (list gettext-minimal
            `(,glib "bin")
@@ -2287,8 +2302,7 @@ information.")
            pkg-config
            python-wrapper))
     (inputs
-     (list bash-minimal
-           bc
+     (list bc
            dblatex
            docbook-xml-4.3
            docbook-xsl
@@ -2302,8 +2316,6 @@ information.")
            python-pygments
            source-highlight
            yelp-tools))
-    ;; xsltproc's search paths, to avoid propagating libxslt.
-    (native-search-paths %libxslt-search-paths)
     (home-page "https://wiki.gnome.org/DocumentationProject/GtkDoc")
     (synopsis "GTK+ DocBook Documentation Generator")
     (description "GtkDoc is a tool used to extract API documentation from C-code
@@ -2777,12 +2789,12 @@ popovers.")
         (base32 "141fm7mbqib0011zmkv3g8vxcjwa7hypmq71ahdyhnj2sjvy4a67"))))
     (build-system gnu-build-system)
     (native-inputs
-     (list gettext-minimal
-           `(,glib "bin")
-           gobject-introspection
-           gtk-doc/stable
-           pkg-config
-           python))
+     `(("gettext" ,gettext-minimal)
+       ("glib-bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("gtk-doc" ,gtk-doc/stable)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python)))
     (inputs
      (list cairo glib gtk+ python-pygobject))
     (arguments
@@ -2798,7 +2810,8 @@ popovers.")
                                (assoc-ref inputs "python-pygobject")
                                "\\\", \\\""
                                (assoc-ref outputs "out")
-                               "\\\"))"))))))))
+                               "\\\"))")))
+             #t)))))
     (synopsis "Canvas widget for GTK+")
     (description "GooCanvas is a canvas widget for GTK+ that uses the cairo 2D
 library for drawing.")

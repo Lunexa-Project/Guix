@@ -28,10 +28,8 @@
 
 (define-module (gnu packages openldap)
   #:use-module (gnu packages autotools)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages dbm)
@@ -224,15 +222,7 @@ servers from Python programs.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1sdvfbjfg0091f47562gw3gdc2vgvvhyhdi21lrpwnw9lqc8xdxk"))
-              (modules '((guix build utils)))
-              (snippet
-               ;; Put '#define f_type' after '#include <sys/statvfs.h>' to
-               ;; avoid name conflict.
-               '(substitute* "ldap/servers/slapd/slap.h"
-                  (("#include <sys/types\\.h>")
-                   "#include <sys/types.h>
-#include <sys/statvfs.h>")))))
+                "1sdvfbjfg0091f47562gw3gdc2vgvvhyhdi21lrpwnw9lqc8xdxk"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -242,7 +232,7 @@ servers from Python programs.")
                    #:select (add-installed-pythonpath python-version))
                   (guix build utils))
       #:imported-modules `((guix build python-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
       #:disallowed-references (list httpd)
       #:configure-flags
       #~(list "--enable-cmocka"
@@ -329,8 +319,7 @@ servers from Python programs.")
                             "/bin/ds-logpipe.py"
                             "/bin/ds-replcheck"))))))))
     (inputs
-     (list bash-minimal
-           bdb
+     (list bdb
            cracklib
            cyrus-sasl
            gnutls
@@ -340,7 +329,6 @@ servers from Python programs.")
            libevent
            libselinux
            linux-pam
-           libxcrypt
            lmdb
            mit-krb5
            net-snmp

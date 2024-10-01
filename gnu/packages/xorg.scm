@@ -34,7 +34,6 @@
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 qblade <qblade@protonmail.com>
 ;;; Copyright © 2021 Lu Hui <luhux76@gmail.com>
-;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2023 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2023 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2023, 2024 John Kehayias <john.kehayias@protonmail.com>
@@ -1290,17 +1289,17 @@ with the Cygwin XWin server when running X11 in a rootless mode.")
 (define-public libxcomposite
   (package
     (name "libxcomposite")
-    (version "0.4.6")
+    (version "0.4.5")
     (source
       (origin
         (method url-fetch)
         (uri (string-append
                "mirror://xorg/individual/lib/libXcomposite-"
                version
-               ".tar.xz"))
+               ".tar.bz2"))
         (sha256
           (base32
-            "11rcvk380l5540gfqy9p8mbzw3l1p5g8l214p870f28smvqbqh7y"))))
+            "13sfcglvz87vl58hd9rszwr73z0z4nwga3c12rfh7f5s2ln8l8dk"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--disable-static")))
@@ -1343,17 +1342,17 @@ with the Cygwin XWin server when running X11 in a rootless mode.")
 (define-public libxft
   (package
     (name "libxft")
-    (version "2.3.8")
+    (version "2.3.4")
     (source
       (origin
         (method url-fetch)
         (uri (string-append
                "mirror://xorg/individual/lib/libXft-"
                version
-               ".tar.gz"))
+               ".tar.bz2"))
         (sha256
           (base32
-            "1a3qybcvhdshgj1wynhsahdnrlmfv2wrjklyh1j2whj4v3i8zr1j"))))
+            "1pdbr6gzfvixc791pjf42i9gg8wvfq6cpq6sdca04h4i42mxmpjp"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--disable-static")))
@@ -1462,17 +1461,17 @@ treat it as part of their software base when porting.")
 (define-public libxres
   (package
     (name "libxres")
-    (version "1.2.2")
+    (version "1.2.1")
     (source
       (origin
         (method url-fetch)
         (uri (string-append
                "mirror://xorg/individual/lib/libXres-"
                version
-               ".tar.xz"))
+               ".tar.bz2"))
         (sha256
           (base32
-            "0pvlzahqd8fcyq10wi7ipbxvgrg93hn0vqsymhw7b6sb93rlcx4s"))))
+            "049b7dk6hx47161hg47ryjrm6pwsp27r5pby05b0wqb1pcggprmn"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--disable-static")))
@@ -4051,15 +4050,15 @@ it for output on various types of printers.")
 (define-public xprop
   (package
     (name "xprop")
-    (version "1.2.6")
+    (version "1.2.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://xorg/individual/app/xprop-"
-                           version ".tar.xz"))
+                           version ".tar.bz2"))
        (sha256
         (base32
-         "0vjqnn42gscw1z2wdj24kdwjwvd7mw58pj0nm9203k1fn4jqa2sq"))))
+         "18ckr8g1z50zkc01hprkpm1npwbq32yqib4b3l98c95z2q1yv4lv"))))
     (build-system gnu-build-system)
     (inputs
      (list libx11 xorgproto))
@@ -4150,17 +4149,17 @@ up your screen.")
 (define-public xset
   (package
     (name "xset")
-    (version "1.2.5")
+    (version "1.2.4")
     (source
       (origin
         (method url-fetch)
         (uri (string-append
                "mirror://xorg/individual/app/xset-"
                version
-               ".tar.xz"))
+               ".tar.bz2"))
         (sha256
           (base32
-            "0bsyyx3k32k9vpb8x3ks7hlfr03nm0i14fv3cg6n4f2vcdajsscz"))))
+            "0my987wjvra7l92ry6q44ky383yg3phzxhdbn3lqhapm1ll9bzg4"))))
     (build-system gnu-build-system)
     (inputs
       (list xorgproto libxmu libxext libx11))
@@ -4662,7 +4661,7 @@ protocol and arbitrary X extension protocol.")
                  (,(dirname
                     (search-input-file inputs "/bin/mkfontscale"))))))))))
     (inputs
-      (list bash-minimal mkfontscale))
+      (list mkfontscale))
     (native-inputs
      (list pkg-config automake)) ;For up to date 'config.guess' and 'config.sub'.
     (home-page "https://www.x.org/wiki/")
@@ -4709,17 +4708,17 @@ common definitions and porting layer.")
 (define-public libice
   (package
     (name "libice")
-    (version "1.1.1")
+    (version "1.0.10")
     (source
       (origin
         (method url-fetch)
         (uri (string-append
                "mirror://xorg/individual/lib/libICE-"
                version
-               ".tar.xz"))
+               ".tar.bz2"))
         (sha256
           (base32
-            "0lg4sddalwmmzsnxv3fgdm2hzqp66j8b3syc0ancfhi9yzx7mrq3"))))
+            "0j638yvmyna2k4mz465jywgdybgdchdqppfx6xfazg7l5khxr1kg"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--disable-static")))
@@ -6159,7 +6158,7 @@ basic eye-candy effects.")
 (define-public xpra
   (package
     (name "xpra")
-    (version "6.1.2")
+    (version "6.0.2")
     (source
      (origin
        (method git-fetch)
@@ -6168,9 +6167,9 @@ basic eye-candy effects.")
            (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0zw1zsv5348bbykg6qaz2bn5ayrz5xgmnpfhi4i8pjlw0k7z8raa"))
+        (base32 "176qxrksgr07jhrlny3zxybnvf091kxkfmfnv9ci3h2k1nbwqh2x"))
        (patches (search-patches "xpra-6.0-systemd-run.patch"
-                                "xpra-6.1-install_libs.patch"))))
+                                "xpra-6.0-install_libs.patch"))))
     (build-system python-build-system)
     (inputs
      (list bash-minimal                 ; for wrap-program
@@ -6317,7 +6316,7 @@ X11 servers, Windows, or macOS.")
      `(#:modules ((guix build gnu-build-system)
                   (guix build utils)
                   (guix build emacs-utils))
-       #:imported-modules (,@%default-gnu-imported-modules
+       #:imported-modules (,@%gnu-build-system-modules
                            (guix build emacs-utils))
        #:configure-flags
        (list "--with-anthy-utf8"
@@ -6334,7 +6333,7 @@ X11 servers, Windows, or macOS.")
                  ("uim-el-agent" (string-append out "/bin/uim-el-agent"))
                  ("uim-el-helper-agent" (string-append out "/bin/uim-el-helper-agent"))))
              #t))
-         (add-after 'install 'make-autoloads
+         (add-after 'fix-install-path 'make-autoloads
            (lambda* (#:key outputs #:allow-other-keys)
              (emacs-generate-autoloads
               ,name (string-append (assoc-ref outputs "out")
@@ -6453,14 +6452,14 @@ mouse click.  You can do everything mouse can do with a keyboard.")
 (define-public transset
   (package
     (name "transset")
-    (version "1.0.3")
+    (version "1.0.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.x.org/releases/individual/app/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "095q1xnr0m1y88gkk85g64plypk813fif0gcfm9bxpmc3nl0vfmd"))))
+                "0rya202y87dwl35jnmq8hs3arzdrv5z4vf1xmi0py4rnmhdpszaw"))))
     (build-system gnu-build-system)
     (native-inputs
      (list pkg-config))

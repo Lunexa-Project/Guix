@@ -22,7 +22,6 @@
   #:use-module (guix git-download)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages geo)
@@ -55,8 +54,7 @@
      `(("gettext" ,gettext-minimal)
        ("intltool" ,intltool)))
     (inputs
-     (list bash-minimal
-           cairo
+     (list cairo
            font-gnu-freefont
            geocode-glib
            gexiv2
@@ -102,7 +100,8 @@
                                         #f))))
                                inputs)))
                (wrap-program (string-append out "/bin/gramps")
-                 `("GI_TYPELIB_PATH" ":" prefix ,(filter identity paths))))))
+                 `("GI_TYPELIB_PATH" ":" prefix ,(filter identity paths))))
+             #t))
          (add-after 'wrap 'glib-or-gtk-wrap
            (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
     (home-page "https://gramps-project.org")

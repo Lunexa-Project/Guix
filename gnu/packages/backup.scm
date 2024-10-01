@@ -88,7 +88,6 @@
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
-  #:use-module (gnu packages prometheus)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-build)
@@ -260,6 +259,7 @@ backups (called chunks) to allow easy burning to CD/DVD.")
 (define-public libarchive
   (package
     (name "libarchive")
+    (replacement libarchive/fixed)
     (version "3.6.1")
     (source
      (origin
@@ -269,7 +269,6 @@ backups (called chunks) to allow easy burning to CD/DVD.")
                   (string-append "https://github.com/libarchive/libarchive"
                                  "/releases/download/v" version "/libarchive-"
                                  version ".tar.xz")))
-       (patches (search-patches "libarchive-remove-potential-backdoor.patch"))
        (sha256
         (base32
          "1rj8q5v26lxxr8x4b4nqbrj7p06qvl91hb8cdxi3xx3qp771lhas"))))
@@ -348,6 +347,25 @@ archive.  In particular, note that there is currently no built-in support for
 random access nor for in-place modification.  This package provides the
 @command{bsdcat}, @command{bsdcpio} and @command{bsdtar} commands.")
     (license license:bsd-2)))
+
+(define-public libarchive/fixed
+ (hidden-package
+  (package
+    (inherit libarchive)
+    (version "3.6.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (list (string-append "https://libarchive.org/downloads/libarchive-"
+                                 version ".tar.xz")
+                  (string-append "https://github.com/libarchive/libarchive"
+                                 "/releases/download/v" version "/libarchive-"
+                                 version ".tar.xz")))
+       (patches (search-patches "libarchive-remove-potential-backdoor.patch"))
+       (sha256
+        (base32
+         "1rj8q5v26lxxr8x4b4nqbrj7p06qvl91hb8cdxi3xx3qp771lhas")))))))
+
 
 (define-public rdup
   (package
@@ -743,7 +761,7 @@ detection, and lossless compression.")
                             "docs/misc/internals-picture.txt"
                             "docs/misc/prune-example.txt"))
                 (copy-recursively "docs/man" man))))
-          (add-after 'install-doc 'install-shell-completions
+          (add-after 'install-docs 'install-shell-completions
             (lambda _
               (let ((etc (string-append #$output "/etc"))
                     (share (string-append #$output "/share")))
@@ -824,7 +842,7 @@ NTFS volumes using @code{ntfs-3g}, preserving NTFS-specific attributes.")
                 "1kbxa1irszp2zw8hd5qzqnrrzb4vxfivs1vn64yxnj0lak1jjzvb"))))
     (arguments
      `(#:modules ((ice-9 match) (ice-9 rdelim)
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:phases
        ;; This mostly mirrors the steps taken in the install.sh that ships
        ;; with dirvish, but simplified because we aren't prompting interactively
@@ -900,9 +918,10 @@ NTFS volumes using @code{ntfs-3g}, preserving NTFS-specific attributes.")
                ;; Write out executables
                (for-each write-pl executables)
                ;; Write out man pages
-               (for-each write-man man-pages)))))))
+               (for-each write-man man-pages)
+               #t))))))
     (inputs
-     (list bash-minimal perl rsync perl-libtime-period perl-libtime-parsedate))
+     (list perl rsync perl-libtime-period perl-libtime-parsedate))
     (home-page "http://dirvish.org/")
     (synopsis "Fast, disk based, rotating network backup system")
     (description
@@ -1308,13 +1327,13 @@ compression parameters used by Gzip.")
 (define-public borgmatic
   (package
     (name "borgmatic")
-    (version "1.8.13")
+    (version "1.8.9")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "borgmatic" version))
        (sha256
-        (base32 "08vlknlhczi98kwcrkaqvrwfxm9v284b4iaagrwgfzk32fdn57p1"))))
+        (base32 "1xmqv0gg2ic7lp5kmygr9f6qkabsr86mma7pigan12vk2bcdbw31"))))
     (build-system python-build-system)
     (arguments
      (list

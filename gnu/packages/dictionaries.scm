@@ -38,7 +38,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages emacs)
   #:use-module (gnu packages flex)
@@ -243,14 +242,14 @@ and a Python library.")
     (name "translate-shell")
     (version "0.9.7.1")
     (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url"https://github.com/soimort/translate-shell")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "0jfrypcz963pfvwwaz2i0xvwp2909ldzp15v68mgd2mbqkqw9d90"))))
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url"https://github.com/soimort/translate-shell")
+               (commit (string-append "v" version))))
+        (file-name (git-file-name name version))
+        (sha256
+         (base32 "0jfrypcz963pfvwwaz2i0xvwp2909ldzp15v68mgd2mbqkqw9d90"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -281,18 +280,18 @@ and a Python library.")
            (assoc-ref emacs:%standard-phases 'build)))
        #:make-flags (list (string-append "PREFIX=" %output)
                           "NETWORK_ACCESS=no test")
-       #:imported-modules (,@%default-gnu-imported-modules
-                           (guix build emacs-build-system)
-                           (guix build emacs-utils))
+       #:imported-modules (,@%gnu-build-system-modules
+                            (guix build emacs-build-system)
+                            (guix build emacs-utils))
        #:modules ((guix build gnu-build-system)
                   ((guix build emacs-build-system) #:prefix emacs:)
                   (guix build utils))
        #:test-target "test"))
     (inputs
-     (list bash-minimal curl fribidi rlwrap))
+     (list curl fribidi rlwrap))
     (native-inputs
-     (list emacs-minimal
-           util-linux))                 ; hexdump, for the test
+     `(("emacs" ,emacs-minimal)
+       ("util-linux" ,util-linux)))     ; hexdump, for the test
     (home-page "https://www.soimort.org/translate-shell/")
     (synopsis "Translations from the command line")
     (description

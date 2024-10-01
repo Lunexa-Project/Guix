@@ -67,7 +67,7 @@
 (define-public crun
   (package
     (name "crun")
-    (version "1.16.1")
+    (version "1.15")
     (source
      (origin
        (method url-fetch)
@@ -77,7 +77,7 @@
              "/crun-" version ".tar.gz"))
        (sha256
         (base32
-         "17i8vwj9zmr6dvi1w9i359vwr3rzwa9g03q83rz9w32ghzj8sm3h"))))
+         "0zq8vcn2vg9snaqmf8k5gngskiclpm1ln0hhs1vsw8w8igjs2fx0"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--disable-systemd")
@@ -274,7 +274,7 @@ containers or various tools.")
                   (add-after 'unpack 'fix-hardcoded-paths
                     (lambda _
                       (substitute* (find-files "tests" "\\.sh")
-                        (("ping") "/run/privileged/bin/ping")))))))
+                        (("ping") "/run/setuid-programs/ping")))))))
     (inputs
      (list glib
            libcap
@@ -464,7 +464,7 @@ Its main purpose is to support the key usage by @code{docker-init}:
 (define-public podman
   (package
     (name "podman")
-    (version "5.2.1")
+    (version "5.1.2")
     (source
      (origin
        (method git-fetch)
@@ -472,7 +472,7 @@ Its main purpose is to support the key usage by @code{docker-init}:
              (url "https://github.com/containers/podman")
              (commit (string-append "v" version))))
        (sha256
-        (base32 "1xa629vbh6mpish5cwr87pcv01hgzh92y7k7jdpm9wz7z445y1n7"))
+        (base32 "1v0qqzfl0nqkqmqimv89nrggb7n1ryhqpdi8v7yn2c7m0dm8xq91"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -536,7 +536,7 @@ Its main purpose is to support the key usage by @code{docker-init}:
                    ,(string-append #$iptables       "/sbin")
                    ,(string-append #$passt          "/bin")
                    ,(string-append #$procps         "/bin") ; ps
-                   "/run/privileged/bin")))))
+                   "/run/setuid-programs")))))
           (add-after 'install 'install-completions
             (lambda _
               (invoke "make" "install.completions"
@@ -606,7 +606,7 @@ being rootless and not requiring any daemon to be running.")
 (define-public buildah
   (package
     (name "buildah")
-    (version "1.37.1")
+    (version "1.37.0")
     (source
      (origin
        (method git-fetch)
@@ -614,7 +614,7 @@ being rootless and not requiring any daemon to be running.")
              (url "https://github.com/containers/buildah")
              (commit (string-append "v" version))))
        (sha256
-        (base32 "1c15djlnqiawrahcyp7nl7bsnj0nz60ngncbwbab09f28szfk61g"))
+        (base32 "13xqv28p33jr4r1j3lzi0p83m8nxww91ssmvdx4wrbnzq0w88k3x"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (arguments
@@ -669,7 +669,7 @@ being rootless and not requiring any daemon to be running.")
                   (,(string-append #$crun           "/bin")
                    ,(string-append #$gcc            "/bin") ; cpp
                    ,(string-append #$passt          "/bin")
-                   "/run/privileged/bin")))))
+                   "/run/setuid-programs")))))
           (add-after 'install 'install-completions
             (lambda _
               (invoke "make" "install.completions"

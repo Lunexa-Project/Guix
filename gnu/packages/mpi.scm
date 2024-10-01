@@ -8,7 +8,6 @@
 ;;; Copyright © 2018–2022 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Paul Garlick <pgarlick@tourbillion-technology.com>
 ;;; Copyright © 2019, 2021 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2024 Romain Garbage <romain.garbage@inria.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -44,7 +43,6 @@
   #:use-module (gnu packages libevent)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages pciutils)
-  #:use-module (gnu packages python)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages xml)
@@ -52,7 +50,6 @@
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages parallel)
   #:use-module (gnu packages pkg-config)
-  #:use-module (gnu packages python)
   #:use-module (gnu packages valgrind)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 match))
@@ -188,7 +185,7 @@ bind processes, and much more.")
   ;; The latest stable series of hwloc.
   hwloc-2)
 
-(define-public openmpi-4
+(define-public openmpi
   (package
     (name "openmpi")
     (version "4.1.6")
@@ -312,65 +309,6 @@ software vendors, application developers and computer science researchers.")
     ;; See file://LICENSE
     (license license:bsd-2)))
 
-(define-public openmpi openmpi-4)
-
-(define-public openmpi-5
-  (package
-    (inherit openmpi)
-    (version "5.0.3")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (string-append "https://www.open-mpi.org/software/ompi/v"
-                           (version-major+minor version)
-                           "/downloads/openmpi-" version ".tar.bz2"))
-       (sha256
-        (base32 "02x9xmpggw77mdpikjjx83j6i4v3gkqbncda73lk5axk0vr841cr"))))
-
-    (inputs (modify-inputs (package-inputs openmpi)
-              ;; As of Open MPI 5.0.X, PMIx is used to communicate
-              ;; with SLURM, so SLURM'S PMI is no longer needed.
-              (delete "slurm")
-              (append ucx)              ;for Infiniband support
-              (append openpmix)         ;for PMI support (launching via "srun")
-              (append prrte)))          ;for PMI support (launching via "srun")
-    (native-inputs (modify-inputs (package-native-inputs openmpi)
-                     (append python)))
-
-    (outputs '("out" "debug"))
-    (arguments
-     (substitute-keyword-arguments (package-arguments openmpi)
-       ((#:configure-flags _)
-        #~(list "--enable-mpi-ext=affinity" ;cr doesn't work
-                "--with-sge"
-
-                #$@(if (package? (this-package-input "valgrind"))
-                       #~("--enable-memchecker"
-                          "--with-valgrind")
-                       #~("--without-valgrind"))
-
-                "--with-hwloc=external"
-                "--with-libevent"
-
-                ;; This replaces --enable-mpirun-prefix-by-default wich is deprecated
-                ;; since 5.x.
-                "--enable-prte-prefix-by-default"
-
-                ;; Enable support for the 'Process Management Interface for Exascale'
-                ;; (PMIx) used e.g. by Slurm for the management communication and
-                ;; coordination of MPI processes.
-                (string-append "--with-pmix=" #$(this-package-input "openpmix"))
-                (string-append "--with-prrte=" #$(this-package-input "prrte"))
-
-                ;; Since 5.x, Infiniband support is provided by ucx.
-                ;; See https://docs.open-mpi.org/en/main/release-notes/networks.html#miscellaneous-network-notes
-                (string-append "--with-ucx=" #$(this-package-input "ucx"))))
-
-       ((#:phases phases)
-        #~(modify-phases #$phases
-            (delete 'remove-absolute)
-            (delete 'scrub-timestamps)))))))
-
 (define-public openmpi-c++
   (package/inherit openmpi
     (name "openmpi-c++")
@@ -399,7 +337,7 @@ software vendors, application developers and computer science researchers.")
                   ((guix build ant-build-system) #:prefix ant:)
                   (guix build utils))
       #:imported-modules `((guix build ant-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
       (substitute-keyword-arguments (package-arguments openmpi)
         ((#:configure-flags flags)
          #~(cons "--enable-mpi-java" #$flags))
@@ -512,14 +450,14 @@ arrays) that expose a buffer interface.")
 (define-public mpich
   (package
     (name "mpich")
-    (version "4.2.2")
+    (version "3.3.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://www.mpich.org/static/downloads/"
                                   version "/mpich-" version ".tar.gz"))
               (sha256
                (base32
-                "0h8xg1wi2d88hnfmj3xydf1hj78r7fh05jljhk5jgxmbmsrmngw8"))))
+                "1farz5zfx4cd0c3a0wb9pgfypzw0xxql1j1294z1sxslga1ziyjb"))))
     (build-system gnu-build-system)
     (inputs
      `(,zlib
@@ -530,7 +468,7 @@ arrays) that expose a buffer interface.")
              (list ucx)
              '())))
     (native-inputs
-     (list perl which gfortran python-minimal))
+     (list perl which gfortran))
     (outputs '("out" "debug"))
     (arguments
      `(#:configure-flags
@@ -609,28 +547,3 @@ Gigabit Ethernet, InfiniBand, Myrinet, Quadrics), and proprietary high-end
 computing systems (Blue Gene, Cray).  It enables research in MPI through a
 modular framework for other derived implementations.")
     (license license:bsd-2)))
-
-(define-public mpich-ofi
-  (package/inherit mpich
-    (name "mpich-ofi")
-    (inputs (modify-inputs (package-inputs mpich)
-              (delete ucx)
-              (append libfabric)
-              (append rdma-core)
-              (append psm2)))
-    (arguments
-      (substitute-keyword-arguments (package-arguments mpich)
-        ((#:configure-flags flags)
-         #~(list "--disable-silent-rules" ;let's see what's happening
-                 "--enable-debuginfo"
-                 "--with-device=ch4:ofi"
-
-                 (string-append "--with-hwloc-prefix="
-                                #$(this-package-input "hwloc"))
-
-                 (string-append "--with-libfabric="
-                                #$(this-package-input "libfabric"))))
-        ((#:phases phases
-          '%standard-phases)
-         phases)))
-    (synopsis "Implementation of the Message Passing Interface (MPI) for OmniPath")))

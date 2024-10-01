@@ -20,7 +20,6 @@
 ;;; Copyright © 2023 Hilton Chain <hako@ultrarare.space>
 ;;; Copyright © 2023 Katherine Cox-Buday <cox.katherine.e@gmail.com>
 ;;; Copyright © 2024 Greg Hogan <code@greghogan.com>
-;;; Copyright © 2024 Sharlatan Hellseher <sharlatanus@gmail.com>
 ;;; Copyright © 2024 Troy Figiel <troy@troyfigiel.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -287,7 +286,7 @@ workloads.  This kind of profiling is also known as wall-clock profiling.")
 (define-public go-github-com-frankban-quicktest
   (package
     (name "go-github-com-frankban-quicktest")
-    (version "1.14.6")
+    (version "1.11.1")
     (source
      (origin
        (method git-fetch)
@@ -296,13 +295,13 @@ workloads.  This kind of profiling is also known as wall-clock profiling.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0gnh9v4cg39pw8y356299zhh5jmq2p4cf9945lfiqsjsk7h6ld70"))))
+        (base32
+         "0b1b44b2hli2p969gqz30z8v9z6ahlklpqzi17nwk1lsjz9yv938"))))
     (build-system go-build-system)
     (arguments
-     (list
-      #:import-path "github.com/frankban/quicktest"))
+     '(#:import-path "github.com/frankban/quicktest"))
     (propagated-inputs
-     (list go-github-com-google-go-cmp go-github-com-kr-pretty))
+     (list go-github-com-google-go-cmp-cmp go-github-com-kr-pretty))
     (home-page "https://github.com/frankban/quicktest")
     (synopsis "Quick helpers for testing Go applications")
     (description
@@ -310,36 +309,10 @@ workloads.  This kind of profiling is also known as wall-clock profiling.")
 tests.")
     (license license:expat)))
 
-(define-public go-github-com-go-quicktest-qt
-  (package
-    (name "go-github-com-go-quicktest-qt")
-    (version "1.101.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/go-quicktest/qt")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1mc10cszgm760aw82jyrgvld5dqcfnrsjy9zx1dzf9px34d8vlgx"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:import-path "github.com/go-quicktest/qt"))
-    (propagated-inputs
-     (list go-github-com-google-go-cmp go-github-com-kr-pretty))
-    (home-page "https://github.com/go-quicktest/qt")
-    (synopsis "qt: quicker Go tests")
-    (description
-     "Package qt implements assertions and other helpers wrapped around the
-standard library's testing types.")
-    (license license:expat)))
-
 (define-public go-github-com-go-test-deep
   (package
     (name "go-github-com-go-test-deep")
-    (version "1.1.1")
+    (version "1.0.8")
     (source
      (origin
        (method git-fetch)
@@ -348,7 +321,7 @@ standard library's testing types.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1vjzmd4gc3zr9hlpzhhq4g1d0k6rbhply10vdl49gvir4dzmzzrl"))))
+        (base32 "1mmw2w3by7y24jjpjwmf2gfl08c65jihn3si9m0sswmagmdsk8q0"))))
     (build-system go-build-system)
     (arguments
      (list #:import-path "github.com/go-test/deep"))
@@ -403,7 +376,7 @@ when comparing complex types like structures and maps.")
       (arguments
        '(#:import-path "github.com/google/go-cmdtest"))
       (propagated-inputs
-       (list go-github-com-google-renameio go-github-com-google-go-cmp))
+       (list go-github-com-google-renameio go-github-com-google-go-cmp-cmp))
       (home-page "https://github.com/google/go-cmdtest")
       (synopsis "Testing for your CLI")
       (description
@@ -709,7 +682,7 @@ Gomega matcher library.")
   (package
     (inherit go-github-com-onsi-ginkgo)
     (name "go-github-com-onsi-ginkgo-v2")
-    (version "2.19.0")
+    (version "2.18.0")
     (source
      (origin
        (method git-fetch)
@@ -718,7 +691,7 @@ Gomega matcher library.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0dwnkcysb5d9dyg8p84hhx5a3sj85g3bwgki1pgay4i8glz7xa7q"))))
+        (base32 "1w5dldjjcz2kpyxml4zd9yah7galfpmhcpc2l4zc5pr3skpwpibv"))))
     (arguments
      (list
       #:import-path "github.com/onsi/ginkgo/v2"))
@@ -905,7 +878,7 @@ current goroutine's ID.")
 (define-public go-github-com-stretchr-testify
   (package
     (name "go-github-com-stretchr-testify")
-    (version "1.9.0")
+    (version "1.7.0")
     (source
      (origin
        (method git-fetch)
@@ -915,7 +888,7 @@ current goroutine's ID.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "12cnhk96h8b3ddlb7jfvwwavzc0j1c2iva92pszl9rv6r571ckzg"))))
+         "0ixgjsvafr3513pz3r6pmgk074s2dxkll0dadvl25gkf30rkmh10"))))
     (build-system go-build-system)
     (arguments
      '(#:import-path "github.com/stretchr/testify"))
@@ -950,34 +923,25 @@ Features include:
       (propagated-inputs
        (list go-gopkg-in-yaml-v3)))))
 
-(define-public go-github-com-stvp-go-udp-testing
+(define-public go-github-com-stretchr-testify-next
   (package
-    (name "go-github-com-stvp-go-udp-testing")
-    (version "0.0.0-20201019212854-469649b16807")
+    (inherit go-github-com-stretchr-testify)
+    (name "go-github-com-stretchr-testify")
+    (version "1.9.0")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/stvp/go-udp-testing")
-             (commit (go-version->git-ref version))))
+             (url "https://github.com/stretchr/testify")
+             (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "03dzhwnvbshiivbcawaxsl963d8hh18yf3ydvzvhyjgz60g8lxil"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:import-path "github.com/stvp/go-udp-testing"))
-    (home-page "https://github.com/stvp/go-udp-testing")
-    (synopsis "UDP test helpers for Golang")
-    (description
-     "This package implements UDP test helpers.  It lets assert that certain
-strings must or must not be sent to a given local UDP listener.")
-    (license license:expat)))
+        (base32 "12cnhk96h8b3ddlb7jfvwwavzc0j1c2iva92pszl9rv6r571ckzg"))))))
 
 (define-public go-github-com-tdewolff-test
   (package
     (name "go-github-com-tdewolff-test")
-    (version "1.0.10")
+    (version "1.0.9")
     (source
      (origin
        (method git-fetch)
@@ -986,43 +950,16 @@ strings must or must not be sent to a given local UDP listener.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1ihlcnygwdgxq068b29d3n9n1gdbb2j03sc0al1qk5i5dkvgziyx"))))
+        (base32
+         "10myz3zdkqmx37cvj507h7l2ncb0rq9shqvz9ggq1swijbsvazff"))))
     (build-system go-build-system)
     (arguments
-     (list
-      #:import-path "github.com/tdewolff/test"))
+     (list #:import-path "github.com/tdewolff/test"))
     (home-page "https://github.com/tdewolff/test")
     (synopsis "Go test helper functions")
     (description
      "This package implements a few functions that are useful for io testing,
 such as readers and writers that fail after N consecutive reads/writes.")
-    (license license:expat)))
-
-(define-public go-github-com-tj-assert
-  (package
-    (name "go-github-com-tj-assert")
-    (version "0.0.3")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/tj/assert")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1j5swk3fjq1h5fpqkipddz2ccnbidr7qrpm5dpdaflg9q5jnc673"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:import-path "github.com/tj/assert"))
-    (propagated-inputs
-     (list go-github-com-stretchr-testify))
-    (home-page "https://github.com/tj/assert")
-    (synopsis "Golang @code{testify/assert} but as @code{testify/require}")
-    (description
-     "Package assert implements the same assertions as the
-@url{https://github.com/stretchr/testify, assert} package but stops test
-execution when a test fails.")
     (license license:expat)))
 
 (define-public go-github.com-smartystreets-assertions
@@ -1074,7 +1011,7 @@ functions for writing tests in Go.")
     (arguments
      '(#:import-path "github.com/smartystreets/goconvey"))
     (propagated-inputs
-     (list go-github-com-jtolds-gls go-github.com-smartystreets-assertions))
+     (list go-github.com-jtolds-gls go-github.com-smartystreets-assertions))
     (home-page "https://github.com/smartystreets/goconvey")
     (synopsis "Go testing tool with both a web and terminal user interface")
     (description "GoConvey is a testing tool for Go. It integrates with go
@@ -1114,7 +1051,7 @@ under test) much simpler.")
 (define-public go-go-etcd-io-gofail
   (package
     (name "go-go-etcd-io-gofail")
-    (version "0.2.0")
+    (version "0.1.0")
     (source
      (origin
        (method git-fetch)
@@ -1123,7 +1060,7 @@ under test) much simpler.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0wxjaq1v5w0wjyv84af5cazrmv369i1416ar0dx8r9ag1szcfvpc"))))
+        (base32 "0jh0qjgfb2irshwj7an3lj0w9bv6c5gbnkdhisgpdr7x7hk682m1"))))
     (build-system go-build-system)
     (arguments
      (list
@@ -1143,34 +1080,32 @@ under test) much simpler.")
     (license license:asl2.0)))
 
 (define-public go-golang-org-sql-mock
-  (package
-    (name "go-golang-org-sql-mock")
-    (version "1.5.2")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/DATA-DOG/go-sqlmock")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1vpvdx9hwmx9gm27aq5r5219xpaxz0gy4q1iqskk4saz05bspn0f"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:import-path "github.com/DATA-DOG/go-sqlmock"
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'remove-examples
-            (lambda* (#:key import-path #:allow-other-keys)
-              (delete-file-recursively
-               (string-append "src/" import-path "/examples")))))))
-    (home-page "https://github.com/DATA-DOG/go-sqlmock")
-    (synopsis "Mock library implementing @code{sql/driver}")
-    (description
-     "This library simulates SQL-driver behavior in tests without requiring a
-real database connection.")
-    (license license:expat)))
+  (let ((commit "e98392b8111b45f8126e00af035a0dd95dc12e8b")
+        (version "1.3.3")
+        (revision "1"))
+    (package
+      (name "go-golang-org-sql-mock")
+      (version (git-version version revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/DATA-DOG/go-sqlmock")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "033vv29g2wf6fd757ajfmha30bqin3b07377037zkl051mk6mghs"))
+         (modules '((guix build utils)))
+         (snippet '(delete-file-recursively "examples"))))
+      (build-system go-build-system)
+      (arguments
+       '(#:import-path "github.com/DATA-DOG/go-sqlmock"))
+      (synopsis "Mock library implementing @code{sql/driver}")
+      (description "This library simulates SQL-driver behavior in tests
+without requiring a real database connection.")
+      (home-page "https://github.com/DATA-DOG/go-sqlmock")
+      (license license:expat))))
 
 (define-public go-golang-org-x-lint
   (let ((commit "83fdc39ff7b56453e3793356bcff3070b9b96445")
@@ -1329,7 +1264,7 @@ gracefully enhance standard library testing package and behaviors of the
 (define-public go-go-uber-org-goleak
   (package
     (name "go-go-uber-org-goleak")
-    (version "1.3.0")
+    (version "1.2.0")
     (source
      (origin
        (method git-fetch)
@@ -1338,13 +1273,14 @@ gracefully enhance standard library testing package and behaviors of the
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "14rvkxh3znp9jzbdjqdkrly3zfg3rmhgg5845biqqrq17w8jvv5s"))))
+        (base32
+         "1lpqw7ygffak8qki9i4vw8b99l25l8jrw8iwcplqsclk6fzkl24p"))))
     (build-system go-build-system)
     (arguments
      (list
       #:import-path "go.uber.org/goleak"))
     (native-inputs
-     (list go-github-com-stretchr-testify))
+     (list go-github-com-stretchr-testify-next))
     (home-page "https://pkg.go.dev/go.uber.org/goleak")
     (synopsis "Goroutine leak detector")
     (description
@@ -1439,23 +1375,16 @@ advanced Go linter.")
     (build-system go-build-system)
     (arguments
      (list
-      #:import-path "pgregory.net/rapid"
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'remove-failing-tests
-            (lambda* (#:key import-path #:allow-other-keys)
-              (with-directory-excursion (string-append "src/" import-path)
-                ;; Remove test file failing on go-1.21, see
-                ;; <https://github.com/flyingmutant/rapid/issues/68>.
-                (delete-file "strings_example_test.go")))))))
+      #:go go-1.18
+      #:import-path "pgregory.net/rapid"))
     (home-page "https://pgregory.net/rapid/")
     (synopsis "Go property-based testing library")
     (description
      "@code{Rapid} is a Go library for property-based testing.
 
-Rapid checks that properties you define hold for a large number of
-automatically generated test cases.  If a failure is found, rapid
-automatically minimizes the failing test case before presenting it.
+Rapid checks that properties you define hold for a large number of automatically
+generated test cases.  If a failure is found, rapid automatically minimizes the
+failing test case before presenting it.
 
 Features:
 @itemize

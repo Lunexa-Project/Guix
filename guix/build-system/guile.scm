@@ -36,7 +36,7 @@
 (define %guile-build-system-modules
   ;; Build-side modules imported by default.
   `((guix build guile-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define* (lower name
                 #:key source inputs native-inputs outputs system target
@@ -64,7 +64,7 @@
                     ,@native-inputs
                     ,@(if implicit-inputs?
                           (map (cute assoc <> (standard-packages))
-                               '("tar" "gzip" "bzip2" "xz"))
+                               '("tar" "gzip" "bzip2" "xz" "locales"))
                           '())))
     (outputs outputs)
     (build (if target guile-cross-build guile-build))

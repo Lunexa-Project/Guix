@@ -349,6 +349,7 @@ compatibility to existing emulators like xterm, gnome-terminal, konsole, etc.")
              automake
              libtool
              libxslt ;to build the man page
+             libxml2 ;for XML_CATALOG_FILES
              docbook-xsl))
       (inputs
        `(("libdrm" ,libdrm)
@@ -848,7 +849,7 @@ eye-candy, customizable, and reasonably lightweight.")
 (define-public foot
   (package
     (name "foot")
-    (version "1.18.1")
+    (version "1.18.0")
     (home-page "https://codeberg.org/dnkl/foot")
     (source
      (origin
@@ -858,7 +859,7 @@ eye-candy, customizable, and reasonably lightweight.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "15s7fbkibvq53flf5yy9ad37y53pl83rcnjwlnfh96a4s5mj6v5d"))))
+        (base32 "1znfk64kimm0vr3alvj66i1yn5glig3bw60n2lv9cn4jzi1b7qhb"))))
     (build-system meson-build-system)
     (arguments
      (list
@@ -1018,28 +1019,30 @@ programmer to write text-based user interfaces.")
 (define-public go-github-com-junegunn-fzf
   (package
     (name "go-github-com-junegunn-fzf")
-    (version "0.54.3")
+    (version "0.41.0")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
              (url "https://github.com/junegunn/fzf")
-             (commit (string-append "v" version))))
+             (commit version)))
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0mdj3z7w2igkvy8r304k9rcr2l6xm459ifshdm55iy6mazd8cmci"))))
+         "1l9nsvziip3azyvg8wi4g3x606fh6w9vpfcbcgjdzdnp2ywqciim"))))
     (build-system go-build-system)
     (arguments
      `(#:import-path "github.com/junegunn/fzf"))
     (inputs
-     (list go-github-com-charlievieth-fastwalk
-           go-github-com-gdamore-tcell-v2
-           go-github-com-mattn-go-isatty
+     (list go-github-com-mattn-go-runewidth
            go-github-com-mattn-go-shellwords
+           go-github-com-mattn-go-isatty
+           go-github-com-gdamore-tcell
            go-github-com-rivo-uniseg
-           go-golang-org-x-sys
-           go-golang-org-x-term))
+           go-github-com-saracen-walker
+           go-golang-org-x-sync
+           go-golang-org-x-term
+           go-golang-org-x-crypto))
     (home-page "https://github.com/junegunn/fzf")
     (synopsis "Command-line fuzzy-finder")
     (description "This package provides an interactive command-line filter
@@ -1091,7 +1094,6 @@ usable with any list--including files, command history, processes and more.")
                              (string-append zsh-completion "/_fzf"))))))))))
     (inputs
      `(,@(package-inputs go-github-com-junegunn-fzf)
-       ("bash" ,bash-minimal) ; for wrap-program
        ("findutils" ,findutils)
        ("ncurses" ,ncurses)))))
 
@@ -1498,22 +1500,18 @@ terminal are replicated to the others.
 (define-public tio
   (package
     (name "tio")
-    (version "3.6")
+    (version "3.3")
     (source
      (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/tio/tio")
-             (commit (string-append "v" version))))
+       (method url-fetch)
+       (uri (string-append
+             "https://github.com/tio/tio/releases/download/v"
+             version "/tio-" version ".tar.xz"))
        (sha256
-        (base32 "050zm7nh9niag1amjql859cj3xc9gbidk3zz546h6fhhh3vykmfl"))))
+        (base32 "13favpvl343nbc0h26snn53lddwbznvd106rvvinnc12x6r3arjh"))))
     (build-system meson-build-system)
     (native-inputs (list pkg-config))
     (inputs (list glib lua))
-    (arguments
-     (list
-      #:configure-flags
-      #~(list "-Dbashcompletiondir=share/bash-completion/completions")))
     (home-page "https://tio.github.io/")
     (synopsis "Simple TTY terminal I/O application")
     (description "tio is a simple TTY terminal application which features a

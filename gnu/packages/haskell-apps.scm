@@ -19,7 +19,6 @@
 ;;; Copyright © 2021 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2021 Morgan Smith <Morgan.J.Smith@outlook.com>
 ;;; Copyright © 2022 David Thompson <dthompson2@worcester.edu>
-;;; Copyright © 2024 jgart <jgart@dismail.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -44,7 +43,6 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system haskell)
   #:use-module (gnu packages)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gl)
@@ -618,9 +616,9 @@ and mIRC chat codes.")
 
 (define-public kmonad
   ;; Project is active, but no new releases exist. Pick current master
-  ;; HEAD as of 2024-08-18.
-  (let ((commit "07cd1cb4fddb46a8d9de3bb9d06196d08b7a8ed2")
-        (revision "1"))
+  ;; HEAD as of 2023-01-08.
+  (let ((commit "31c591b647d277fe34cb06fc70b0d053dd15f867")
+        (revision "0"))
     (package
       (name "kmonad")
       (version (git-version "0.4.2" revision commit))
@@ -632,7 +630,7 @@ and mIRC chat codes.")
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "08ybif2lw0jy9h2hrlvx3469a3hkvih9gsg60kp9qnklzvqjdy5i"))))
+          (base32 "0k1dfyy1q86l5yivv1jrclgvp9k48qm8pzk1j9wavq92li77y7r5"))))
       (build-system haskell-build-system)
       (arguments
        `(#:haddock? #f ; Haddock fails to generate docs
@@ -859,8 +857,7 @@ Haskell.")
                                     "/lib"))))
                #t))))))
     (inputs
-     (list bash-minimal
-           ghc-extensible-exceptions
+     (list ghc-extensible-exceptions
            ghc-random
            ghc-glut
            freeglut
@@ -924,31 +921,30 @@ too slow and you'll get wound up in the scroll and crushed.")
 (define-public shellcheck
   (package
     (name "shellcheck")
-    (version "0.10.0")
+    (version "0.9.0")
     (source
      (origin
        (method url-fetch)
        (uri (hackage-uri "ShellCheck" version))
        (sha256
-        (base32 "08bdjcdl457xz2vh8y2w29bcwh1k7sfzyvszln3498vm5m1xn22d"))
+        (base32 "071k2gc8rzpg9lwq9g10c9xx0zm1wcgsf8v4n1csj9fm56vy7gmb"))
        (file-name (string-append name "-" version ".tar.gz"))))
     (build-system haskell-build-system)
     (arguments
-     (list #:haddock? #f ; TODO: Fails to build.
-           #:phases
-           #~(modify-phases %standard-phases
-               (add-after 'build 'build-man-page
-                 (lambda _
-                   (chmod "manpage" #o555)
-                   (invoke "./manpage")))
-               (add-after 'install 'install-man-page
-                 (lambda* (#:key outputs #:allow-other-keys)
-                   (install-file "shellcheck.1"
-                                 (string-append #$output
-                                                "/share/man/man1/"))))
-               (add-after 'register 'remove-libraries
-                 (lambda* (#:key outputs #:allow-other-keys)
-                   (delete-file-recursively (string-append #$output "/lib")))))))
+     '(#:haddock? #f ; TODO: Fails to build.
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'build 'build-man-page
+           (lambda _
+             (invoke "./manpage")))
+         (add-after 'install 'install-man-page
+           (lambda* (#:key outputs #:allow-other-keys)
+             (install-file "shellcheck.1"
+                           (string-append (assoc-ref outputs "out")
+                                          "/share/man/man1/"))))
+         (add-after 'register 'remove-libraries
+           (lambda* (#:key outputs #:allow-other-keys)
+             (delete-file-recursively (string-append (assoc-ref outputs "out") "/lib")))))))
     (native-inputs
      (list pandoc))
     (inputs

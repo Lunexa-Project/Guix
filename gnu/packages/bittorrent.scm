@@ -150,8 +150,7 @@
                  ;; its own icons in pure environments.
                  `("GDK_PIXBUF_MODULE_FILE" =
                    (,(getenv "GDK_PIXBUF_MODULE_FILE")))))))))
-    (inputs (list bash-minimal
-                  curl
+    (inputs (list curl
                   (list glib "bin")
                   gtkmm
                   libappindicator

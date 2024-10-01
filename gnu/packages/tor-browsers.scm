@@ -398,7 +398,7 @@ Browser.")
                   (rnrs io ports)
                   (guix elf)
                   (guix build gremlin)
-                  ,@%default-gnu-imported-modules)
+                  ,@%gnu-build-system-modules)
       #:phases
       #~(modify-phases %standard-phases
           (add-after 'unpack 'apply-guix-specific-patches

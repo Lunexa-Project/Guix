@@ -220,7 +220,7 @@
            (lambda _
              (substitute* "configure.ac"
                (("supath=`which su 2>/dev/null`")
-                "supath=/run/privileged/bin/su"))
+                "supath=/run/setuid-programs/su"))
              #t)))))
     (native-inputs
      (list autoconf automake libtool pkg-config))
@@ -415,7 +415,7 @@ interface and is based on GNU Guile.")
               (replace "guile-fibers"
                 (this-package-native-input "guile-fibers"))))))
 
-(define-public shepherd shepherd-0.10)
+(define-public shepherd shepherd-0.9)
 
 (define-public guile2.2-shepherd
   (package
@@ -532,10 +532,9 @@ inspired by @command{vi}.")
                               (list "bin/readlink"
                                     "sbin/sfdisk")))))))))))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           coreutils                    ;for readlink
+     (list coreutils                    ; for readlink
            python
-           util-linux))                 ;sfdisk for growpart
+           util-linux))                 ; sfdisk for growpart
     (home-page "https://launchpad.net/cloud-utils")
     (synopsis "Set of utilities for cloud computing environments")
     (description
@@ -629,7 +628,7 @@ services.")
      "daemonize runs a command as a Unix daemon.  It will close all open file
 descriptors, change working directory of the process to the root filesystem,
 reset its umask, run in the background, ignore I/O signals, handle
-@code{SIGCHLD}, etc.  Most programs that are designed to be run as daemons do
+@code{SIGCLD}, etc.  Most programs that are designed to be run as daemons do
 that work for themselves.  However, you’ll occasionally run across one that
 does not.  When you must run a daemon program that does not properly make
 itself into a true Unix daemon, you can use daemonize to force it to run as a
@@ -651,7 +650,7 @@ true daemon.")
         "0m1fd7l85ckb7bq4c5c3g257bkjglm8gq7x42pkmpp87fkknc94n"))))
    (build-system cmake-build-system)
    (arguments '(#:tests? #f)) ; There are no tests.
-   (native-inputs (list gettext-minimal))
+   (native-inputs `(("gettext" ,gettext-minimal)))
    (home-page "https://projects.gw-computing.net/projects/dfc")
    (synopsis "Display file system space usage using graphs and colors")
    (description
@@ -951,7 +950,6 @@ memory, disks, network and processes.  It's a Python port and continuation of
                           (("\"/bin/sh\"")
                            (string-append "\"" bash "/bin/sh\"")))))))))
     (native-inputs (list bison flex))
-    (inputs (list libxcrypt))
     (home-page "https://www.gnu.org.ua/software/pies/")
     (synopsis "Program invocation and execution supervisor")
     (description
@@ -964,48 +962,45 @@ re-executing them as necessary.")
 (define-public inetutils
   (package
     (name "inetutils")
-    (version "2.5")
+    (version "2.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/inetutils/inetutils-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0q1257ci22g2jbdiqs00mharc1lqkbibdlkhj23f3si6qjxkn17s"))))
+                "1dj4ilxy1wrfxhxc85iya3x28h1mhjpqc5nv862xcq3ww2gqkv8w"))))
     (build-system gnu-build-system)
     (arguments
-     (list
-      #:configure-flags
-      #~(list "--localstatedir=/var"
+     `(#:configure-flags '("--localstatedir=/var"
 
-              ;; Make sure 'PATH_PROCNET_DEV' gets defined when
-              ;; cross-compiling (by default it does not.)
-              #$@(if (%current-target-system)
-                     '("--with-path-procnet-dev=/proc/net/dev")
-                     '())
-              #$@(if (target-hurd?)
-                     '("--disable-rcp"
-                       "--disable-rexec"
-                       "--disable-rexecd"
-                       "--disable-rlogin"
-                       "--disable-rlogind"
-                       "--disable-rsh"
-                       "--disable-rshd"
-                       "--disable-uucpd"
-                       "--disable-whois")
-                     '()))
-      ;; Make sure that canonical "coreutils" package is not referred.
-      #:make-flags
-      #~(list (string-append "CPPFLAGS=-DPATHDEF_CP=\\\""
-                             (search-input-file %build-inputs "bin/cp")
-                             "\\\""))
-      ;; On some systems, 'libls.sh' may fail with an error such as:
-      ;; "Failed to tell switch -a apart from -A".
-      #:parallel-tests? #f))
+                           ;; Make sure 'PATH_PROCNET_DEV' gets defined when
+                           ;; cross-compiling (by default it does not.)
+                           ,@(if (%current-target-system)
+                                 '("--with-path-procnet-dev=/proc/net/dev")
+                                 '())
+                           ,@(if (target-hurd?)
+                                 '("--disable-rcp"
+                                   "--disable-rexec"
+                                   "--disable-rexecd"
+                                   "--disable-rlogin"
+                                   "--disable-rlogind"
+                                   "--disable-rsh"
+                                   "--disable-rshd"
+                                   "--disable-uucpd"
+                                   "--disable-whois")
+                                 '()))
+       ;; Make sure that canonical "coreutils" package is not referred.
+       #:make-flags
+       (list (string-append "CPPFLAGS=-DPATHDEF_CP=\\\""
+                            (search-input-file %build-inputs "bin/cp")
+                            "\\\""))
+       ;; On some systems, 'libls.sh' may fail with an error such as:
+       ;; "Failed to tell switch -a apart from -A".
+       #:parallel-tests? #f))
     (inputs
      (list coreutils
            shadow                     ;for login (used in telnetd and rlogind)
-           libxcrypt
            ncurses
            readline))                   ;for 'ftp'
     (native-inputs
@@ -1056,7 +1051,9 @@ hostname.")
          ,@(if (%current-target-system)
                '((add-before 'configure 'set-runtime-shell
                    (lambda* (#:key inputs #:allow-other-keys)
-                     (let ((shell (search-input-file inputs "/bin/bash")))
+                     (let ((shell (string-append
+                                   (assoc-ref inputs "bash")
+                                   "/bin/bash")))
                        (setenv "RUNTIME_SHELL" shell)
                        (substitute* "configure.ac"
                          (("\\$SHELL")
@@ -1087,13 +1084,12 @@ hostname.")
                (delete-file (string-append bin "/groups"))
                (for-each delete-file (find-files man "^groups\\."))))))))
     (inputs
-     (append (if (target-hurd?)
-                 '()
-                 (list linux-pam))
-             (if (%current-target-system)
-                 (list bash-minimal)
-                 '())
-             (list libxcrypt)))
+     `(,@(if (target-hurd?)
+           '()
+           `(("linux-pam" ,linux-pam)))
+       ,@(if (%current-target-system)
+             `(("bash" ,bash-minimal))
+             '())))
     (home-page "https://github.com/shadow-maint/shadow")
     (synopsis "Authentication-related tools such as passwd, su, and login")
     (description
@@ -1806,7 +1802,8 @@ by bandwidth they use.")
              (substitute* (list "lib/App/ClusterSSH/Config.pm"
                                 "t/15config.t")
                (("xterm")
-                (which "xterm")))))
+                (which "xterm")))
+             #t))
          (add-before 'check 'delete-failing-tests
            (lambda _
              ;; This checks whether all code is nicely formatted.  The above
@@ -1814,7 +1811,8 @@ by bandwidth they use.")
              (delete-file "t/perltidy.t")
              ;; Update the manifest so t/manifest.t happily passes.
              (substitute* "MANIFEST"
-               (("t/perltidy.t\n") ""))))
+               (("t/perltidy.t\n") ""))
+             #t))
          (add-after 'install 'augment-library-path
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -1839,7 +1837,8 @@ by bandwidth they use.")
                                                "perl-try-tiny"
                                                "perl-x11-protocol"
                                                "perl-x11-protocol-other")))))))
-                  (find-files "." ".*")))))))))
+                  (find-files "." ".*")))
+               #t))))))
     (native-inputs
      (list perl-cpan-changes
            perl-file-slurp
@@ -1854,8 +1853,7 @@ by bandwidth they use.")
            perl-test-trap
            perltidy))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           perl-exception-class
+     (list perl-exception-class
            perl-sort-naturally
            perl-tk
            perl-try-tiny
@@ -1944,10 +1942,10 @@ realms/domains like Active Directory or IPA.")
                     (wrap-program program
                       `("PERL5LIB" ":" prefix
                         (,(string-append out "/lib/perl5/site_perl")))))
-                  (find-files "." ".*")))))))))
+                  (find-files "." ".*")))
+               #t))))))
     (native-inputs
      (list perl-module-build perl-test-pod perl-test-pod-coverage))
-    (inputs (list bash-minimal))        ;for wrap-program
     (home-page "https://metacpan.org/pod/distribution/File-Rename/rename.PL")
     (synopsis "Perl extension for renaming multiple files")
     (description
@@ -2158,7 +2156,7 @@ commands and their arguments.")
              (substitute* "doas.c"
                (("safepath =" match)
                 (string-append match " \""
-                               "/run/privileged/bin:"
+                               "/run/setuid-programs:"
                                "/run/current-system/profile/bin:"
                                "/run/current-system/profile/sbin:"
                                "\" ")))))
@@ -2178,8 +2176,6 @@ commands and their arguments.")
        #:tests? #f))                 ; no test suite
     (native-inputs
      (list bison))
-    (inputs
-     (list libxcrypt))
     (home-page "https://github.com/Duncaen/OpenDoas")
     (synopsis "Portable version of OpenBSD's doas command")
     (description "Doas is a minimal replacement for the venerable sudo.  It was
@@ -2338,14 +2334,10 @@ command.")
     (native-inputs
      ;; For icons.
      (modify-inputs (package-native-inputs wpa-supplicant)
-       (prepend imagemagick/stable
-                inkscape/stable)))
+       (prepend imagemagick inkscape/stable)))
     (build-system qt-build-system)
     (arguments
      (list
-      ;; Make sure the (rarely updated) package 'imagemagick/stable'
-      ;; does not end up in the closure.
-      #:disallowed-references (list imagemagick/stable)
       #:test-target "check"
       #:phases
       #~(modify-phases %standard-phases
@@ -2601,11 +2593,7 @@ system is under heavy load.")
         (base32 "1z9vjn2131iv3pwrh04z6r5ygi1qgad5bi3jhghcvc3v1b4k5ran"))))
     (build-system gnu-build-system)
     (arguments
-     ;; XXX The test suite seems to cause instability on the VisionFive 2
-     ;; build machines, maybe it's stressing them as intended but this is
-     ;; unhelpful
-     (list #:tests? (not (target-riscv64?))
-           #:make-flags
+     (list #:make-flags
            #~(list (string-append "CC=" #$(cc-for-target))
                    (string-append "BINDIR=" #$output "/bin")
                    ;; XXX Really: MAN1DIR, or man pages won't be found.
@@ -2753,14 +2741,14 @@ features of ls(1), find(1), stat(1) and du(1).")
 (define-public direvent
   (package
     (name "direvent")
-    (version "5.4")
+    (version "5.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/direvent/direvent-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1flmswj1by9afqal55hc70l2hshcawyn0j2if92y6rxb58cwdfqx"))))
+                "15y4jk5vlcd003bvf42c6z9zd4gz4pwqpwaapqmyk7x4gnksh1cl"))))
     (build-system gnu-build-system)
     (arguments
      (list #:phases
@@ -3466,8 +3454,7 @@ rules is done with the @code{auditctl} utility.")
        ;; Nmap can't cope with out-of-source building.
        #:out-of-source? #f))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           libpcap
+     (list libpcap
            lua
            openssl-3.0
            pcre
@@ -3503,26 +3490,26 @@ results (ndiff), and a packet generation and response analysis tool (nping).")
                                 "dstat-skip-devices-without-io.patch"))))
     (build-system gnu-build-system)
     (arguments
-     (list
-      #:tests? #f                       ; no make check
-      #:make-flags
-      #~(list (string-append "prefix=" #$output))
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'fix-python3-DeprecationWarning
-            (lambda _
-              (substitute* "dstat"
-                (("collections") "collections.abc"))))
-          (delete 'configure)           ; no configure script
-          (add-after 'install 'wrap
-            (lambda _
-              (wrap-program (string-append #$output "/bin/dstat")
-                `("GUIX_PYTHONPATH" ":" prefix
-                  (,(getenv "GUIX_PYTHONPATH")))))))))
+     `(#:tests? #f                      ; no make check
+       #:make-flags
+       (list (string-append "prefix=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-python3-DeprecationWarning
+           (lambda _
+             (substitute* "dstat"
+               (("collections") "collections.abc"))
+             #t))
+         (delete 'configure)            ; no configure script
+         (add-after 'install 'wrap
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/dstat")
+                 `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH"))))
+               #t))))))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           python-wrapper
-           python-six))
+     `(("python" ,python-wrapper)
+       ("python-six" ,python-six)))
     (synopsis "Versatile resource statistics tool")
     (description "Dstat is a versatile replacement for @command{vmstat},
 @command{iostat}, @command{netstat}, and @command{ifstat}.  Dstat overcomes
@@ -3627,14 +3614,14 @@ a new command using the matched rule, and runs it.")
 (define-public di
   (package
     (name "di")
-    (version "4.53")
+    (version "4.52")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/diskinfo-di/"
                            "di-" version ".tar.gz"))
        (sha256
-        (base32 "0gp806m7jk2rfymy5r62a2lfd8jq879qy94blrjqvb0xq7pmpp80"))))
+        (base32 "07vsnn1gxm3r7dchbrq63iazd64gza2ac7b2m1039708rf5flxdp"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -4373,7 +4360,7 @@ hard-coded.")
            autoconf-archive
            automake
            `(,glib "bin") ; for glib-genmarshal, etc.
-           gtk-doc/stable
+           gtk-doc
            pkg-config))
     (inputs
      (list dbus-glib libevdev libxml2 upower xz))
@@ -5099,7 +5086,7 @@ text table representation to stdout.")
                                 ":" (assoc-ref %build-inputs "grep") "/bin"
                                 ":" (assoc-ref %build-inputs "ncurses") "/bin"
                                 ":" (assoc-ref %build-inputs "sed") "/bin"
-                                ":" "/run/privileged/bin"
+                                ":" "/run/setuid-programs"
                                 ":" (getenv "PATH")))
          (substitute* "hosts"
            (("#!/usr/bin/env bash")
@@ -5178,14 +5165,14 @@ Netgear devices.")
 (define-public atop
   (package
     (name "atop")
-    (version "2.11.0")
+    (version "2.10.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.atoptool.nl/download/atop-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "083fckjn2s3276fqyjb3rcwqrws7qc3fgk1f82zzgzrfc1kcd54v"))
+                "14szbpvsm9czib1629cbh8qcp7pxhgn0vjrfv1yqwmw25k7p79p7"))
               (snippet
                ;; The 'mkdate' script generates a new 'versdate.h' header
                ;; containing the build date.  That makes builds
@@ -6239,7 +6226,7 @@ file or files to several hosts.")
                (install-file "completions/dust.fish"
                              (string-append share "/fish/vendor_completions.d"))
                (install-file "completions/_dust"
-                             (string-append share "/zsh/site-functions"))))))))
+                             (string-append share "/zsh/site-fuctions"))))))))
     (home-page "https://github.com/bootandy/dust")
     (synopsis "Graphical disk usage analyzer")
     (description "This package provides a graphical disk usage analyzer in
@@ -6358,27 +6345,3 @@ versions of @command{find}, including POSIX, GNU, and *BSD find.")
 their content instead of their file names.  It is useful for compressing
 backup directories or just finding duplicate files.")
     (license license:gpl2+)))
-
-(define-public sshguard
-  (package
-    (name "sshguard")
-    (version "2.4.3")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://bitbucket.org/sshguard/sshguard")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1dkijr287zpwdz1bjdchxzmwf1sk6vzpkycz1skm25lkaba6nd9r"))))
-    (build-system gnu-build-system)
-    (native-inputs
-     (list autoconf automake bison flex python-docutils))
-    (home-page "https://sshguard.net/")
-    (synopsis "Daemon to blocks SSH brute-force attacks")
-    (description
-     "SSHGuard protects hosts from brute-force attacks against SSH and other
-services.  It aggregates system logs and blocks repeat offenders using one of
-several firewall backends.")
-    (license license:isc)))

@@ -54,7 +54,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
@@ -276,18 +275,7 @@ of external libraries that provide additional functionality.")
     (build-system cmake-build-system)
     (arguments
      ;; XXX: GPU tests are failing.
-     (list #:configure-flags #~(list "-DOCIO_BUILD_GPU_TESTS=false")
-           #:phases #~(modify-phases %standard-phases
-                        (add-after 'install 'fix-OpenColorIOConfig
-                          (lambda _
-                            ;; Work around a CMake Zlib-detection bug:
-                            ;; https://gitlab.kitware.com/cmake/cmake/-/issues/25200
-                            ;; make OpenColorIOConfig.cmake is a normal cmake file
-                            (substitute*
-                                (string-append #$output
-                                               "/lib/cmake/OpenColorIO/OpenColorIOConfig.cmake")
-                              (("\\.#define ZLIB_VERSION \"1\\.3\"")
-                               "")))))))
+     (list #:configure-flags #~(list "-DOCIO_BUILD_GPU_TESTS=false")))
     (native-inputs
      ;; XXX: OCIO has unit tests for OpenShadingLanguage, but they fail.
      ;; They also require OIIO, but OCIO is an optional dependency to it.
@@ -488,7 +476,7 @@ integrates with various databases on GUI toolkits such as Qt and Tk.")
 (define-public opencv
   (package
     (name "opencv")
-    (version "4.10.0")
+    (version "4.9.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -527,7 +515,7 @@ integrates with various databases on GUI toolkits such as Qt and Tk.")
                   (for-each delete-file (find-files "." "\\.jar$"))))
               (sha256
                (base32
-                "0vinljqhq3r8sffy2396q688irb6iz389sv5vlg04z9y7mvddb8x"))))
+                "1s3d2bzf74biz18flb33533dfx3j31305ddh4gzgvg55hpr1zp55"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
@@ -710,7 +698,7 @@ integrates with various databases on GUI toolkits such as Qt and Tk.")
            (file-name (git-file-name "opencv_extra" version))
            (sha256
             (base32
-             "16gykga4cc8q8iqx9sj25ggxrp6mqbppwwib734nhlk1b6s2q15j"))))
+             "1x095sgc0fkl8zzpxlswpnmxkf80cvzab1ddcq792dys5qm2s1x4"))))
        ("opencv-contrib"
         ,(origin
            (method git-fetch)
@@ -719,7 +707,7 @@ integrates with various databases on GUI toolkits such as Qt and Tk.")
            (file-name (git-file-name "opencv_contrib" version))
            (sha256
             (base32
-             "07sanb0kb90rwghlp4jpgvmicr39hgrsjmsc5nifcryw3d0r0m14"))))))
+             "17xrvzllbcrprxn6c0g4x25i2wa7yqa0ycv177wah3if9s30dgib"))))))
     (inputs
      (list eigen
            ffmpeg-4
@@ -1495,8 +1483,7 @@ combine the information contained in both.")
                                           "/lib/qt5/plugins"))
                          '("qtbase" "qtdeclarative-5"))))))))))
     (inputs
-     (list bash-minimal
-           curl
+     (list curl
            fftw
            fftwf
            glu
@@ -1569,30 +1556,37 @@ full-featured UI aimed at clinical researchers.")
          (sha256
           (base32 "0r7n3a6bvcxkbpda4mwmrpicii09iql5z69nkjqygkwxw7ny3309"))))
       (build-system gnu-build-system)
-      (arguments
-       (list
-        #:tests? #f                    ; No tests.
-        #:make-flags
-        #~(list
-           (string-append "PREFIX=" #$output)
-           (format #f "MANPAGE_XSL=~a/xml/xsl/~a-~a/manpages/docbook.xsl"
-                   #$(this-package-native-input "docbook-xsl")
-                   #$(package-name
-                      (this-package-native-input "docbook-xsl"))
-                   #$(package-version
-                      (this-package-native-input "docbook-xsl"))))
-        #:phases
-        #~(modify-phases %standard-phases
-            (delete 'configure)
-            (add-before 'install 'fix-directory-creation
-              (lambda _
-                (mkdir-p (string-append #$output "/share/man/man1")))))))
       (inputs
-       (list giflib libjpeg-turbo libpng
-             perl))
+       `(("giflib" ,giflib)
+         ("libjpeg" ,libjpeg-turbo)
+         ("libpng" ,libpng)
+         ("perl" ,perl)))
       (native-inputs
-       (list docbook-xml-4.2 docbook-xsl
-             libxslt pkg-config))
+       `(("pkg-config" ,pkg-config)
+         ("docbook-xml" ,docbook-xml)
+         ("docbook-xsl" ,docbook-xsl)
+         ("xsltproc" ,libxslt)))
+      (arguments
+       `(#:tests? #f                    ; No tests.
+         #:make-flags (list
+                       (string-append "PREFIX=" (assoc-ref %outputs "out"))
+                       (string-append "MANPAGE_XSL="
+                                      (assoc-ref %build-inputs "docbook-xsl")
+                                      "/xml/xsl/docbook-xsl-*/manpages/docbook.xsl"))
+         #:phases
+         (modify-phases %standard-phases
+           (delete 'configure)
+           (add-before 'install 'make-local-docbook-xml
+             (lambda* (#:key inputs #:allow-other-keys)
+               (substitute* "metapixel.xml"
+                 (("http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd")
+                  (string-append (assoc-ref inputs "docbook-xml")
+                                 "/xml/dtd/docbook/docbookx.dtd")))
+               #t))
+           (add-before 'install 'fix-directory-creation
+             (lambda* (#:key outputs #:allow-other-keys)
+               (mkdir-p (string-append (assoc-ref outputs "out") "/share/man/man1"))
+               #t)))))
       (home-page "https://www.complang.tuwien.ac.at/schani/metapixel/")
       (synopsis "Photomosaics generator")
       (description "Metapixel is a program for generating photomosaics.  It can

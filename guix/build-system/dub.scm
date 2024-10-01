@@ -59,7 +59,7 @@
 (define %dub-build-system-modules
   ;; Build-side modules imported by default.
   `((guix build dub-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define* (dub-build name inputs
                     #:key

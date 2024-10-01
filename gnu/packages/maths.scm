@@ -472,10 +472,9 @@ programming language.")
                      "0w3kl58y7fq9paaq8ayn5gwylc4n8jbk6lf42kkcj9ar4i8v8myr"))))
    (build-system gnu-build-system)
    (inputs
-     (list bash-minimal       ;for wrap-program
-           readline
-           python-wrapper   ;for 'units_cur' script
-           python-requests))
+    `(("readline" ,readline)
+      ("python" ,python-wrapper)        ;for 'units_cur' script
+      ("python-requests" ,python-requests)))
    (arguments
     `(#:phases (modify-phases %standard-phases
                  (add-after 'install 'wrap-units_cur
@@ -484,8 +483,8 @@ programming language.")
                             (bin (string-append out "/bin")))
                        (wrap-program (string-append bin "/units_cur")
                          `("GUIX_PYTHONPATH" ":" prefix
-                           ,(search-path-as-string->list
-                             (getenv "GUIX_PYTHONPATH"))))))))))
+                           ,(search-path-as-string->list (getenv "GUIX_PYTHONPATH"))))
+                       #t))))))
    (synopsis "Conversion between thousands of scales")
    (description
     "GNU Units converts numeric quantities between units of measure.  It
@@ -493,8 +492,8 @@ can handle scale changes through adaptive usage of standard scale
 prefixes (micro-, kilo-, etc.).  It can also handle nonlinear
 conversions such as Fahrenheit to Celsius.  Its interpreter is powerful
 enough to be used effectively as a scientific calculator.")
-    (license license:gpl3+)
-    (home-page "https://www.gnu.org/software/units/")))
+   (license license:gpl3+)
+   (home-page "https://www.gnu.org/software/units/")))
 
 (define-public double-conversion
   (package
@@ -725,71 +724,56 @@ precision floating point numbers.")
               (sha256
                (base32
                 "0jxkxrnpys2j3rh8bzx0bmnh4w6xm28jd57rgxsjp0s863agpc6w"))))
-    (outputs '("out" "static"))
     (build-system gnu-build-system)
     (arguments
-     (list ;; FIXME: Setting CFLAGS=-fPIC is not only unnecessary, it's also
-           ;; harmful because it removes the default '-O2 -g', meaning that the
-           ;; library ends up being compiled as -O0.  Consequently, some
-           ;; numerical tests fail, notably on i686-linux.  TODO: Remove
-           ;; 'CFLAGS=-fPIC' for all systems and revisit or remove
-           ;; 'disable-failing-tests' phases accordingly.
-           #:make-flags (if (and (not (%current-target-system))
-                                 (string=? (%current-system) "i686-linux"))
-                            #~'()
-                            #~(list "CFLAGS=-fPIC"))
-           #:phases
-           #~(modify-phases %standard-phases
-               #$@(cond
-                   ((and (target-riscv64?)
-                         (%current-target-system))
-                    #~((add-after 'unpack 'force-bootstrap
-                         (lambda _
-                           ;; gsl ships with an old configure script that does not
-                           ;; support riscv64. Regenerate it.
-                           (delete-file "configure")))))
+     (let ((system (%current-system)))
+       `(#:configure-flags (list "--disable-static") ;halves package size
+         #:phases
+         (modify-phases %standard-phases
+           ,@(cond
+              ((and (target-riscv64?)
+                    (%current-target-system))
+               '((add-after 'unpack 'force-bootstrap
+                   (lambda _
+                     ;; gsl ships with an old configure script that does not
+                     ;; support riscv64. Regenerate it.
+                     (delete-file "configure")))))
 
-                   ((or (string-prefix? "aarch64" (%current-system))
-                        (string-prefix? "powerpc" (%current-system)))
-                    ;; Some sparse matrix tests are failing on AArch64 and PowerPC:
-                    ;; https://lists.gnu.org/archive/html/bug-gsl/2020-04/msg00001.html
-                    #~((add-before 'check 'disable-failing-tests
-                         (lambda _
-                           (substitute* "spmatrix/test.c"
-                             ((".*test_complex.*")
-                              "\n"))))))
+              ((or (string-prefix? "aarch64" system)
+                   (string-prefix? "powerpc" system))
+               ;; Some sparse matrix tests are failing on AArch64 and PowerPC:
+               ;; https://lists.gnu.org/archive/html/bug-gsl/2020-04/msg00001.html
+               '((add-before 'check 'disable-failing-tests
+                   (lambda _
+                     (substitute* "spmatrix/test.c"
+                       ((".*test_complex.*") "\n"))))))
 
-                   ((string-prefix? "i686" (%current-system))
-                    ;; There are rounding issues with these tests on i686:
-                    ;; https://lists.gnu.org/archive/html/bug-gsl/2016-10/msg00000.html
-                    ;; https://lists.gnu.org/archive/html/bug-gsl/2020-04/msg00000.html
-                    #~((add-before 'check 'disable-failing-tests
-                         (lambda _
-                           (substitute* "spmatrix/test.c"
-                             ((".*test_all.*") "\n")
-                             ((".*test_float.*") "\n")
-                             ((".*test_complex.*") "\n"))
+              ((string-prefix? "i686" system)
+               ;; There are rounding issues with these tests on i686:
+               ;; https://lists.gnu.org/archive/html/bug-gsl/2016-10/msg00000.html
+               ;; https://lists.gnu.org/archive/html/bug-gsl/2020-04/msg00000.html
+               '((add-before 'check 'disable-failing-tests
+                   (lambda _
+                     (substitute* "linalg/test.c"
+                       ((".*gsl_test\\(test_LU_decomp.*") "\n")
+                       ((".*gsl_test\\(test_LUc_decomp.*") "\n")
+                       ((".*gsl_test\\(test_QR_decomp_r.*") "\n")
+                       ((".*gsl_test\\(test_cholesky_decomp.*") "\n")
+                       ((".*gsl_test\\(test_pcholesky_solve.*") "\n")
+                       ((".*gsl_test\\(test_COD_lssolve2.*") "\n"))
+                     (substitute* "spmatrix/test.c"
+                       ((".*test_all.*") "\n")
+                       ((".*test_float.*") "\n")
+                       ((".*test_complex.*") "\n"))
 
-                           ;; XXX: These tests abort with:
-                           ;; gsl: cholesky.c:645: ERROR: matrix is not positive definite
-                           (substitute* '("multifit_nlinear/test.c"
-                                          "multilarge_nlinear/test.c")
-                             (("gsl_ieee_env_setup.*" all)
-                              (string-append "exit (77);\n" all)))))))
+                     ;; XXX: These tests abort with:
+                     ;; gsl: cholesky.c:645: ERROR: matrix is not positive definite
+                     (substitute* '("multifit_nlinear/test.c"
+                                    "multilarge_nlinear/test.c")
+                       (("gsl_ieee_env_setup.*" all)
+                        (string-append "exit (77);\n" all)))))))
 
-                   (else #~()))
-               (add-after 'install 'move-static-library
-                 (lambda* (#:key outputs #:allow-other-keys)
-                   (let ((static (string-append (assoc-ref outputs
-                                                           "static")
-                                                "/lib/"))
-                         (out (string-append (assoc-ref outputs "out")
-                                             "/lib/")))
-                     (mkdir-p static)
-                     (rename-file (string-append out "libgsl.a")
-                                  (string-append static "libgsl.a"))
-                     (rename-file (string-append out "libgslcblas.a")
-                                  (string-append static "libgslcblas.a"))))))))
+              (else '()))))))
     (native-inputs
      (if (and (target-riscv64?)
               (%current-target-system))
@@ -808,6 +792,15 @@ numbers.")
     (properties `((tunable? . #t)))
 
     (license license:gpl3+)))
+
+;; TODO: Merge back into the gsl package as a separate output.
+(define-public gsl-static
+  (package/inherit gsl
+    (name "gsl-static")
+    (arguments
+     `(,@(package-arguments gsl)
+        #:configure-flags (list "--disable-shared")
+        #:make-flags (list "CFLAGS=-fPIC")))))
 
 (define-public sleef
   (package
@@ -1367,7 +1360,7 @@ singular value problems.")
                `("PERL5LIB" ":" suffix (,PERL5LIB))
                `("PATH" ":" suffix (,(dirname gnuplot))))))))))
     (inputs
-     (list bash-minimal gnuplot perl-list-moreutils vnlog))
+     (list gnuplot perl-list-moreutils vnlog))
     (native-inputs
      ;; For tests.
      (list perl-ipc-run perl-string-shellquote))
@@ -1821,7 +1814,7 @@ extremely large and complex data collections.")
 (define-public hdf5-1.14
   (package
     (inherit hdf5-1.8)
-    (version "1.14.3")
+    (version "1.14.0")
     (source
      (origin
        (method url-fetch)
@@ -1835,19 +1828,8 @@ extremely large and complex data collections.")
                                         (take (string-split version #\.) 2))
                                  "/src/hdf5-" version ".tar.bz2")))
        (sha256
-        (base32 "05zr11y3bivfwrbvzbky1q2gjf6r7n92cvvdnh5jilbmxljg49cl"))
-       (patches (search-patches "hdf5-config-date.patch"))))
-    (arguments
-     (substitute-keyword-arguments (package-arguments hdf5-1.8)
-       ((#:phases phases #~%standard-phases)
-        #~(modify-phases #$phases
-            (add-after 'configure 'skip-version-test
-              (lambda _
-                ;; Skip test_check_version since the 'patch-settings' phase
-                ;; modifies the test reference.
-                (substitute* "test/test_check_version.sh.in"
-                  (("TESTING\\(\\).*" all)
-                   (string-append all "\nSKIP; exit 0\n")))))))))))
+        (base32 "181bdh8hp7v9xqwcby3lknr92lxlicc2hqscba3f5nhf8lrr9rz4"))
+       (patches (search-patches "hdf5-config-date.patch"))))))
 
 (define-public hdf5
   ;; Default version of HDF5.
@@ -2087,34 +2069,35 @@ Swath).")
     (license (license:non-copyleft home-page))))
 
 (define-public hdf5-parallel-openmpi
-  (package/inherit hdf5-1.14                      ;use the latest
+  (package/inherit hdf5-1.10                      ;use the latest
     (name "hdf5-parallel-openmpi")
     (inputs
      `(("mpi" ,openmpi)
        ,@(package-inputs hdf5)))
     (arguments
-     (substitute-keyword-arguments (package-arguments hdf5-1.14)
+     (substitute-keyword-arguments (package-arguments hdf5)
        ((#:configure-flags flags)
-        #~(cons "--enable-parallel"
-                (delete "--enable-cxx"
-                        (delete "--enable-threadsafe" #$flags))))
+        ``("--enable-parallel"
+           ,@(delete "--enable-cxx"
+                     (delete "--enable-threadsafe" ,flags))))
        ((#:phases phases)
-        #~(modify-phases #$phases
-            (add-after 'build 'mpi-setup
-              #$%openmpi-setup)
-            (add-before 'check 'patch-tests
-              (lambda _
-                ;; OpenMPI's mpirun will exit with non-zero status if it
-                ;; detects an "abnormal termination", i.e. any process not
-                ;; calling MPI_Finalize().  Since the test is explicitly
-                ;; avoiding MPI_Finalize so as not to have at_exit and thus
-                ;; H5C_flush_cache from being called, mpirun will always
-                ;; complain, so turn this test off.
-                (substitute* "testpar/Makefile"
-                  (("(^TEST_PROG_PARA.*)t_pflush1(.*)" front back)
-                   (string-append front back "\n")))
-                (substitute* "tools/test/h5diff/testph5diff.sh"
-                  (("/bin/sh") (which "sh")))))))))
+        `(modify-phases ,phases
+           (add-after 'build 'mpi-setup
+             ,%openmpi-setup)
+           (add-before 'check 'patch-tests
+             (lambda _
+               ;; OpenMPI's mpirun will exit with non-zero status if it
+               ;; detects an "abnormal termination", i.e. any process not
+               ;; calling MPI_Finalize().  Since the test is explicitly
+               ;; avoiding MPI_Finalize so as not to have at_exit and thus
+               ;; H5C_flush_cache from being called, mpirun will always
+               ;; complain, so turn this test off.
+               (substitute* "testpar/Makefile"
+                 (("(^TEST_PROG_PARA.*)t_pflush1(.*)" front back)
+                  (string-append front back "\n")))
+               (substitute* "tools/test/h5diff/testph5diff.sh"
+                 (("/bin/sh") (which "sh")))
+               #t))))))
     (synopsis "Management suite for data with parallel IO support")))
 
 (define-public hdf5-blosc
@@ -3447,7 +3430,8 @@ ASCII text files using Gmsh's own scripting language.")
          (add-after 'unpack 'fix-sip-dir
            (lambda _
              (substitute* "pyqtdistutils.py"
-               (("os.path.join\\(sip_dir, 'PyQt5'\\)") "sip_dir"))))
+               (("os.path.join\\(sip_dir, 'PyQt5'\\)") "sip_dir"))
+             #t))
          ;; Now we have to pass the correct sip_dir to setup.py.
          (replace 'build
            (lambda* (#:key inputs #:allow-other-keys)
@@ -3455,7 +3439,8 @@ ASCII text files using Gmsh's own scripting language.")
              ((@@ (guix build python-build-system) call-setuppy)
               "build_ext"
               (list (string-append "--sip-dir="
-                                   (search-input-directory inputs "share/sip"))))))
+                                   (search-input-directory inputs "share/sip")))
+              #t)))
          ;; Ensure that icons are found at runtime.
          (add-after 'install 'wrap-executable
            (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -3469,8 +3454,7 @@ ASCII text files using Gmsh's own scripting language.")
            ;;("python-astropy" ,python-astropy) ;; FIXME: Package this.
            qttools-5 python-sip-4))
     (inputs
-     (list bash-minimal
-           ghostscript ;optional, for EPS/PS output
+     (list ghostscript ;optional, for EPS/PS output
            python-dbus
            python-h5py ;optional, for HDF5 data
            python-pyqt
@@ -4248,7 +4232,7 @@ language understood by many solvers.")
      `(#:modules ((ice-9 match)
                   (ice-9 popen)
                   (srfi srfi-1)
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:phases
        (modify-phases %standard-phases
          (replace 'configure
@@ -7217,7 +7201,7 @@ set.")
      (list openblas))
     (arguments
      `(#:modules ((srfi srfi-1)
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:configure-flags '("--enable-shared"
                            "--disable-fortran"
                            "--without-MPI"
@@ -7724,7 +7708,7 @@ theories} (SMT) solver.  It provides a C/C++ API, as well as Python bindings.")
     (build-system gnu-build-system)
     (arguments
      `(#:imported-modules ((guix build python-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:modules (((guix build python-build-system) #:select (site-packages))
                   (guix build gnu-build-system)
                   (guix build utils))
@@ -8853,7 +8837,7 @@ management via the GIMPS project's Primenet server.")
 (define-public nauty
   (package
     (name "nauty")
-    (version "2.8.9")
+    (version "2.8.8")
     (source
      (origin
        (method url-fetch)
@@ -8861,7 +8845,7 @@ management via the GIMPS project's Primenet server.")
              "https://pallini.di.uniroma1.it/"
              "nauty" (string-join (string-split version #\.) "_") ".tar.gz"))
        (sha256
-        (base32 "1vn4abz498h8fbh27z0l5jrs4z04d693xklbb5mai5l7yhmv8yn9"))))
+        (base32 "1ki9z60qcyx3va68hp7iv6451n5d86v1xmhc850b4sqah5b2378m"))))
     (build-system gnu-build-system)
     (outputs '("out" "lib"))
     (arguments
@@ -8874,12 +8858,9 @@ management via the GIMPS project's Primenet server.")
             (lambda _
               (substitute* "makefile.in"
                 (("^(pkgconfigexecdir=).*" _ prefix)
-                 (string-append prefix "${libdir}/pkgconfig\n")))))
-          (add-after 'unpack 'fix-failing-test
-            (lambda _
-              (substitute* "runalltests.in"
-                ((" uniqg") " ./uniqg")))))))
-    (inputs (list gmp))                 ;for sumlines
+                 (string-append prefix "${libdir}/pkgconfig\n"))))))))
+    (inputs
+     (list gmp))                        ;for sumlines
     (home-page "https://pallini.di.uniroma1.it/")
     (synopsis "Library for graph automorphisms")
     (description "@code{nauty} (No AUTomorphisms, Yes?) is a set of
@@ -9214,7 +9195,7 @@ symbolic reasoning engines that need to reason about polynomial constraints.")
      (arguments
       (list #:test-target "test"
             #:modules `((ice-9 match)
-                        ,@%default-gnu-modules)
+                        ,@%gnu-build-system-modules)
             #:configure-flags #~(list "--aiger=.")
             #:phases
             #~(modify-phases %standard-phases
@@ -9268,7 +9249,7 @@ symbolic reasoning engines that need to reason about polynomial constraints.")
                        ;; values to construct commands (yes, eww), so we
                        ;; can't easily substitute* them.
                        '("lglddtrace" "lgluntrace" "lingeling" "plingeling"))))))))
-     (inputs (list `(,aiger "static") bash-minimal gzip bzip2 xz p7zip))
+     (inputs (list `(,aiger "static") gzip bzip2 xz p7zip))
      (home-page "http://fmv.jku.at/lingeling")
      (synopsis "SAT solver")
      (description "This package provides a range of SAT solvers, including

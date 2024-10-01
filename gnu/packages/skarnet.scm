@@ -22,7 +22,6 @@
 
 (define-module (gnu packages skarnet)
   #:use-module (gnu packages)
-  #:use-module (gnu packages bash)
   #:use-module (guix licenses)
   #:use-module (guix packages)
   #:use-module (guix download)
@@ -75,7 +74,7 @@ and file system operations.  It is used by all skarnet.org software.")
       (sha256
        (base32 "1393xka069n3rvc3dlg6c3ckzl1qgqkhvhlcxv6igl9216kpy0n8"))))
     (build-system gnu-build-system)
-    (inputs (list bash-minimal skalibs))
+    (inputs (list skalibs))
     (arguments
      '(#:configure-flags (list
                           (string-append "--with-lib="

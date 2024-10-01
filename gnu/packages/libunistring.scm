@@ -35,7 +35,7 @@
 (define-public libunistring
   (package
    (name "libunistring")
-   (version "1.1")
+   (version "1.0")
    (source (origin
             (method url-fetch)
             (uri (string-append
@@ -43,7 +43,7 @@
                   version ".tar.xz"))
             (sha256
              (base32
-              "164vfbh3sf0qjcimjbnz4icqr9cai30dli8p2y5p6z3frfwiwz42"))))
+              "0h97qx3c4970wvh25g51sjgz54xn37lrfy95dg97xmvmkys5basv"))))
    (propagated-inputs (libiconv-if-needed))
    (outputs '("out" "static"))
    (build-system gnu-build-system)

@@ -39,7 +39,7 @@
 (define %scons-build-system-modules
   ;; Build-side modules imported by default.
   `((guix build scons-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-scons)
   "Return the default SCons package."

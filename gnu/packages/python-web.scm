@@ -45,7 +45,7 @@
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 Pradana Aumars <paumars@courrier.dev>
 ;;; Copyright © 2021, 2022, 2024 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2021, 2022, 2024 jgart <jgart@dismail.de>
+;;; Copyright © 2021, 2022 jgart <jgart@dismail.de>
 ;;; Copyright © 2021 Alice Brenon <alice.brenon@ens-lyon.fr>
 ;;; Copyright © 2022 John Kehayias <john.kehayias@protonmail.com>
 ;;; Copyright © 2022 Denis 'GNUtoo' Carikli <GNUtoo@cyberdimension.org>
@@ -66,7 +66,6 @@
 ;;; Copyright © 2024 normally_js <normally_js@posteo.net>
 ;;; Copyright © 2024 Markku Korkeala <markku.korkeala@iki.fi>
 ;;; Copyright © 2024 Nguyễn Gia Phong <mcsinyx@disroot.org>
-;;; Copyright © 2024 Zheng Junjie <873216071@qq.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -97,7 +96,6 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
-  #:use-module (gnu packages certs)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crates-io)
@@ -832,24 +830,6 @@ ASGI server.")
      "This program converts a WSGI program to an ASGI program or the other
 way around.  It depends only on the Python standard library.")
     (license license:asl2.0)))
-
-(define-public python-httpauth
-  (package
-    (name "python-httpauth")
-    (version "0.4.1")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "httpauth" version))
-              (sha256
-               (base32
-                "1m6rwvivg61l3h34hf6p6gkqmr69sb1c4k5ha379nxq0p8bfgahb"))))
-    (build-system pyproject-build-system)
-    (native-inputs (list python-pytest))
-    (home-page "https://github.com/jonashaag/httpauth")
-    (synopsis "WSGI HTTP Digest Authentication middleware")
-    (description "@code{python-httpauth} is WSGI middleware that secures some/all
-routes using HTTP Digest Authentication.")
-    (license license:bsd-2)))
 
 (define-public python-css-html-js-minify
   (package
@@ -3679,8 +3659,6 @@ than Python’s urllib2 library.")
               (base32
                "0q5742pnibwy74169kacin3dmqg9jzmzk7qab5aq5caffcbm8djm"))))
     (build-system python-build-system)
-    (native-inputs
-     (list nss-certs-for-test))
     (propagated-inputs
      (list python-certifi
            python-charset-normalizer

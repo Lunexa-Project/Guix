@@ -52,7 +52,7 @@
       (build-system gnu-build-system)
       (arguments
        (list
-        #:imported-modules `(,@%default-gnu-imported-modules
+        #:imported-modules `(,@%gnu-build-system-modules
                              (guix build ant-build-system))
         #:modules `((guix build gnu-build-system)
                     ((guix build ant-build-system)

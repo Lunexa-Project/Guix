@@ -39,7 +39,7 @@ NAME and VERSION."
 (define %ruby-build-system-modules
   ;; Build-side modules imported by default.
   `((guix build ruby-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-ruby)
   "Return the default Ruby package."

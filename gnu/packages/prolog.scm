@@ -33,7 +33,6 @@
   #:use-module (gnu packages backup)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages image)
   #:use-module (gnu packages libffi)
@@ -167,7 +166,6 @@ the same word size"))
        ("libarchive" ,libarchive)
        ("libunwind" ,libunwind)
        ("libjpeg" ,libjpeg-turbo)
-       ("libxcrypt" ,libxcrypt)
        ("libxft" ,libxft)
        ("fontconfig" ,fontconfig)
        ("openssl" ,openssl)))
@@ -182,7 +180,7 @@ it.")
 (define-public trealla
   (package
     (name "trealla")
-    (version "2.55.26")
+    (version "2.55.15")
     (source
      (origin
        (method git-fetch)
@@ -191,7 +189,7 @@ it.")
          (url "https://github.com/trealla-prolog/trealla")
          (commit (string-append "v" version))))
        (sha256
-        (base32 "0nq9qhvyx6d7b4q0lq9j4w5ihpjpk3nyz22hcgzy0cqrzq8j1rgf"))
+        (base32 "1n8dbr7d5xw2nq8pjvnp3hk1rdycn633qiib35ccirxppq635mcx"))
        (file-name (git-file-name name version))))
     (build-system gnu-build-system)
     (native-inputs

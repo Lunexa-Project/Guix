@@ -37,7 +37,7 @@
   ;; Build-side modules imported by default.
   `((guix build node-build-system)
     (guix build json)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-node)
   "Return the default Node package."

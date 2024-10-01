@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2017, 2018, 2021 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2015, 2016, 2017, 2018, 2020, 2024 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016, 2017, 2021 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2016 Raimon Grau <raimonster@gmail.com>
@@ -161,7 +161,6 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages polkit)
   #:use-module (gnu packages pretty-print)
-  #:use-module (gnu packages prometheus)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
@@ -371,10 +370,12 @@ local filesystem.  It splits the file into blocks, hashes them, and compares
 them in order to efficiently transfer a minimal amount of data.")
     (license (list license:gpl2 license:gpl3))))
 
+;; This package does not have a release yet.
+;; But this is required to provide a feature in PipeWire.
 (define-public libcamera
   (package
     (name "libcamera")
-    (version "0.3.1")
+    (version "0.1.0")
     (source
      (origin
        (method git-fetch)
@@ -385,7 +386,7 @@ them in order to efficiently transfer a minimal amount of data.")
        (file-name
         (git-file-name name version))
        (sha256
-        (base32 "15wgy6dc56dwjyasw6w6x6d4j8475clbrxkgphc2zly6232ds7mw"))))
+        (base32 "06dj3dpfbayj61015n5kffin2g3hyys11ra0px2g4hmrznvdkhc9"))))
     (build-system meson-build-system)
     (outputs '("out" "doc" "gst" "tools"))
     (arguments
@@ -393,31 +394,19 @@ them in order to efficiently transfer a minimal amount of data.")
            #:configure-flags
            #~(list (string-append "-Dbindir="
                                   (assoc-ref %outputs "tools") "/bin")
-
-                   ;; In 0.3.1 release simple pipeline wasn't enabled for
-                   ;; x86_64 by mistake, it's enabled a couple commits later.
-                   ;; Remove this expression on the next release.
-                   #$@(if (target-x86-64?)
-                          '("-Dpipelines=ipu3,vimc,uvcvideo,simple")
-                          '())
-                   "-Dudev=enabled"
                    "-Dtest=true" "-Dv4l2=true"
                    ;; XXX: Requires bundled pybind11.
                    "-Dpycamera=disabled")
            #:phases
            #~(modify-phases %standard-phases
                #$@(if (target-aarch64?)
+                      ;; The 'log_process' test fails on aarch64-linux with a
+                      ;; SIGinvalid error (see:
+                      ;; https://bugs.libcamera.org/show_bug.cgi?id=173).
                       #~((add-after 'unpack 'disable-problematic-tests
                            (lambda _
-                             ;; The 'log_process' test fails on aarch64-linux with a
-                             ;; SIGinvalid error (see:
-                             ;; https://bugs.libcamera.org/show_bug.cgi?id=173).
                              (substitute* "test/log/meson.build"
                                ((".*'name': 'log_process'.*")
-                                ""))
-                             ;; The 'file' test fails on aarch64-linux with SIGinvalid.
-                             (substitute* "test/meson.build"
-                               ((".*'name': 'file'.*")
                                 "")))))
                       #~())
                (add-after 'install 'move-doc-and-gst
@@ -431,21 +420,7 @@ them in order to efficiently transfer a minimal amount of data.")
                      (mkdir-p (string-append gst "/lib"))
                      (rename-file
                       (string-append out "/lib/gstreamer-1.0")
-                      (string-append gst "/lib/gstreamer-1.0")))))
-               (add-after 'shrink-runpath 're-sign-binaries
-                 (lambda* (#:key outputs #:allow-other-keys)
-                   "Update signatures of all ipa libraries.
-
-After stipping phases signatures are not valid anymore, so it's necessary to
-re-sign."
-                   (let* ((out (assoc-ref outputs "out")))
-                     (for-each
-                      (lambda (file)
-                        (invoke
-                         "source/src/ipa/ipa-sign.sh" "src/ipa-priv-key.pem"
-                         file (string-append file ".sign")))
-                      (find-files
-                       (string-append out "/lib/libcamera") "\\.so$"))))))))
+                      (string-append gst "/lib/gstreamer-1.0"))))))))
     (native-inputs
      (list googletest
            graphviz                     ;for 'dot'
@@ -460,13 +435,12 @@ re-sign."
            glib
            gst-plugins-base
            gnutls
-           libevent
            libtiff
            libyaml
            openssl
            python-jinja2
            python-ply
-           qtbase))
+           qtbase-5))
     (synopsis "Camera stack and framework")
     (description "LibCamera is a complex camera support library for GNU+Linux,
 Android, and ChromeOS.")
@@ -987,8 +961,7 @@ systems with no further dependencies.")
            intltool
            pkg-config))
     (inputs
-     (list bash-minimal
-           bluez
+     (list bluez
            dbus
            (librsvg-for-system)
            glib
@@ -1226,7 +1199,7 @@ and SSH, and it can use both TCP and UDP as transport mechanisms.")
 (define-public socat
   (package
     (name "socat")
-    (version "1.7.4.4")
+    (version "1.7.4.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1234,10 +1207,10 @@ and SSH, and it can use both TCP and UDP as transport mechanisms.")
                     version ".tar.bz2"))
               (sha256
                (base32
-                "1b40ccdvxq5kaghsbwg4q3dq5aw4acw1bpqvs3v3ljp5y392pm7v"))))
+                "01w0hpqf5xmgn40s1ablfd4y67dlrx5y9zlx24spc1qm8h81hwyl"))))
     (build-system gnu-build-system)
     (arguments '(#:tests? #f))          ; no test suite
-    (inputs (list openssl readline))
+    (inputs (list openssl))
     (home-page "http://www.dest-unreach.org/socat/")
     (synopsis
      "Open bidirectional communication channels from the command line")
@@ -1658,34 +1631,28 @@ intended as a substitute for the PPPStatus and EthStatus projects.")
                 (("if build_ping == true")
                  "if false")))))))
     (native-inputs
-     (list docbook-xsl docbook-xml-5.0.1
-           gettext-minimal libxslt pkg-config))
+     (list gettext-minimal
+           pkg-config
+           docbook-xsl
+           docbook-xml
+           libxml2                      ;for XML_CATALOG_FILES
+           libxslt))
     (inputs
      (list libcap libidn2 openssl))
     (synopsis "Collection of network utilities")
     (description
      "This package contains a variety of tools for dealing with network
 configuration, troubleshooting, or servers.  Utilities included are:
-@table @command
-@item arping
-Ping hosts using @acronym{ARP, Address Resolution Protocol}.
-@item clockdiff
-Compute time difference between network hosts using ICMP TSTAMP messages.
-@item ninfod
-Daemon that responds to IPv6 Node Information Queries.
-@item ping
-Use ICMP ECHO messages to measure round-trip delays and packet loss across
-network paths.
-@item rarpd
-Answer RARP requests from clients.
-@item rdisc
-Populate network routing tables with information from the ICMP router
-discovery protocol.
-@item tftpd
-Trivial file transfer protocol server.
-@item tracepath
-Trace network path to an IPv4 or IPv6 address and discover MTU along the way.
-@end table")
+
+@itemize @bullet
+@item @command{arping}: Ping hosts using the @dfn{Address Resolution Protocol}.
+@item @command{clockdiff}: Compute time difference between network hosts
+using ICMP TSTAMP messages.
+@item @command{ping}: Use ICMP ECHO messages to measure round-trip delays
+and packet loss across network paths.
+@item @command{tracepath}: Trace network path to an IPv4 or IPv6 address and
+discover MTU along the way.
+@end itemize")
     ;; The various utilities are covered by different licenses, see LICENSE
     ;; for details.
     (license (list license:gpl2+        ;arping, tracepath
@@ -1788,7 +1755,7 @@ and up to 1 Mbit/s downstream.")
             (lambda _
               (setenv "HAVE_ICONV" "1"))))))
     (inputs
-     (list libidn2 libxcrypt))
+     (list libidn2))
     (native-inputs
      (list gettext-minimal
            perl
@@ -1880,14 +1847,14 @@ network frames.")
 (define-public fping
   (package
     (name "fping")
-    (version "5.2")
+    (version "5.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://fping.org/dist/fping-"
                            version ".tar.gz"))
        (sha256
-        (base32 "0bz4n0c4p5v8yh1fzvfvbbydpg4vy6krligpw5vbpc1zsw82ssd7"))))
+        (base32 "1zh9fkyn0bixgn77v9z6ayv446nqwx960hmly9m68xix0s62dr8y"))))
     (build-system gnu-build-system)
     (arguments '(#:configure-flags '("--enable-ipv6")))
     (home-page "https://fping.org/")
@@ -1949,40 +1916,30 @@ manage, and delete Internet resources from Gandi.net such as domain names,
 virtual machines, and certificates.")
     (license license:gpl3+)))
 
-(define-public go-github-com-vishvananda-netns
-  (package
-    (name "go-github-com-vishvananda-netns")
-    (version "0.0.4")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/vishvananda/netns")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "0rci8c211m57nya9il81fz6459pia3dj5i4b16fp34vjrkcxliml"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:import-path "github.com/vishvananda/netns"
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'disable-failing-tests
-            (lambda* (#:key tests? unpack-path #:allow-other-keys)
-              (with-directory-excursion (string-append "src/" unpack-path)
-                (substitute* (find-files "." "\\_test.go$")
-                  ;; Disable tests requiring root access.
-                  (("TestGetNewSetDelete") "OffTestGetNewSetDelete")
-                  (("TestThreaded") "OffTestThreaded"))))))))
-    (propagated-inputs
-     (list go-golang-org-x-sys))
-    (home-page "https://github.com/vishvananda/netns")
-    (synopsis "Simple network namespace handling for Go")
-    (description
-     "The netns package provides a simple interface for handling network
-namespaces in Go.")
-    (license license:asl2.0)))
+(define-public go-netns
+  (let ((commit "13995c7128ccc8e51e9a6bd2b551020a27180abd")
+        (revision "1"))
+    (package
+      (name "go-netns")
+      (version (git-version "0.0.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/vishvananda/netns")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1zk6w8158qi4niva5rijchbv9ixgmijsgqshh54wdaav4xrhjshn"))))
+      (build-system go-build-system)
+      (arguments
+       `(#:import-path "github.com/vishvananda/netns"
+         #:tests? #f))                  ;tests require root privileges
+      (home-page "https://github.com/vishvananda/netns")
+      (synopsis "Simple network namespace handling for Go")
+      (description "The netns package provides a simple interface for
+handling network namespaces in Go.")
+      (license license:asl2.0))))
 
 (define-public go-sctp
   ;; docker-libnetwork-cmd-proxy requires this exact commit.
@@ -2111,7 +2068,6 @@ TCP connection, TLS handshake and so on) in the terminal.")
            openldap
            linux-pam
            libcap
-           libxcrypt
            cyrus-sasl
            expat
            libxml2
@@ -3753,7 +3709,6 @@ and check if the WLAN key or the master key was transmitted unencrypted.")
        (patches (search-patches "dante-non-darwin.patch"))))
     (build-system gnu-build-system)
     (arguments '(#:configure-flags '("--with-libc=libc.so.6")))
-    (inputs (list libxcrypt))
     (home-page "https://www.inet.no/dante/")
     (synopsis "SOCKS server and client")
     (description "Dante is a SOCKS client and server implementation.  It can
@@ -3914,7 +3869,7 @@ and targeted primarily for asynchronous processing of HTTP-requests.")
       (arguments
        (list
         #:imported-modules `((guix build python-build-system) ;for site-packages
-                             ,@%default-gnu-imported-modules)
+                             ,@%gnu-build-system-modules)
         #:modules '(((guix build python-build-system) #:prefix python:)
                     (guix build gnu-build-system)
                     (guix build utils))
@@ -3936,7 +3891,7 @@ and targeted primarily for asynchronous processing of HTTP-requests.")
                 (substitute* "tests/Makefile.am"
                   (("\\bdhtrunnertester\\.(h|cpp)\\b")
                    ""))))
-            (add-after 'unpack 'relax-test-timeouts
+            (add-after 'unupack 'relax-test-timeouts
               (lambda _
                 ;; At least the 'test_send_json' has been seen to fail
                 ;; non-deterministically, but it seems hard to reproducible that
@@ -4104,7 +4059,7 @@ for interacting with an OpenDHT distributed network.")
                 "1r7gh5h27ii7d1d0z0x48wx7hs8vvympv3gqvy3cwzg05q5vk9xs"))))
     (build-system gnu-build-system)
     (inputs
-     (list c-ares json-c libcap libxcrypt libyang readline))
+     (list c-ares json-c libcap libyang readline))
     (native-inputs
      (list perl pkg-config python-wrapper python-pytest))
     (home-page "https://frrouting.org/")
@@ -4398,8 +4353,7 @@ easy-to-understand binary values.")
            (lambda _
              (setenv "CC" "gcc")
              (invoke "make" "tunctl")))
-         ;; TODO: Requires docbook-to-man (unrelated to docbook2x and
-         ;; docbook-utils) to generate man page from SGML.
+         ;; TODO: Requires docbook2x to generate man page from SGML.
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -4627,15 +4581,15 @@ network.")
 (define-public ngtcp2
   (package
     (name "ngtcp2")
-    (version "1.7.0")
+    (version "1.6.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://github.com/ngtcp2/ngtcp2/"
                            "releases/download/v" version "/"
-                           "ngtcp2-" version ".tar.gz"))
+                           "ngtcp2-" version ".tar.xz"))
        (sha256
-        (base32 "0r06ib077n4i7s5bfrdq2f2sh8jc2fck5k73wffsypk1k9fcpp2r"))))
+        (base32 "0fh2c0iafjihvg7cb2kkhxzs0gvlz4phczqil61ckhk9sd15lmrf"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -4654,7 +4608,7 @@ QUIC protocol.")
 (define-public yggdrasil
   (package
     (name "yggdrasil")
-    (version "0.5.8")
+    (version "0.5.6")
     (source
      (origin
        (method git-fetch)
@@ -4665,11 +4619,13 @@ QUIC protocol.")
          (recursive? #t)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0qcly06bljlilihrqrylhq53w3l4bfzmqqjq4cbn55nvsz2gbify"))
+        (base32 "1wcvqk45p1k165bd32dc3hl73r0i6g14rxxkjxfr9x2d8410l91f"))
       (patches (search-patches "yggdrasil-extra-config.patch"))))
     (build-system go-build-system)
     (arguments
      (list #:import-path "github.com/yggdrasil-network/yggdrasil-go"
+           ;; TODO: figure out how tests are run
+           #:tests? #f
            #:install-source? #f
            #:phases
            #~(modify-phases %standard-phases
@@ -4688,31 +4644,34 @@ QUIC protocol.")
                          #:import-path directory))
                       (list "github.com/yggdrasil-network/yggdrasil-go/cmd/yggdrasil"
                             "github.com/yggdrasil-network/yggdrasil-go/cmd/yggdrasilctl"
-                            "github.com/yggdrasil-network/yggdrasil-go/cmd/genkeys")))))
-               (replace 'check
-                 (lambda* (#:key tests? import-path #:allow-other-keys)
-                   (when tests?
-                     (with-directory-excursion (string-append "src/" import-path)
-                       (invoke "go" "test" "-v" "./cmd/..." "./src/..."))))))))
+                            "github.com/yggdrasil-network/yggdrasil-go/cmd/genkeys"))))))))
     (propagated-inputs
-     (list ;; go-golang-org-x-mobile ; Not packed yet, for contrib.
-           ;; go-golang-zx2c4-com-wireguard-windows ; Not packed yet, for tun.
-           go-github-com-arceliar-ironwood
-           go-github-com-arceliar-phony
-           go-github-com-cheggaaa-pb-v3
-           go-github-com-gologme-log
-           go-github-com-hashicorp-go-syslog
-           go-github-com-hjson-hjson-go-v4
-           go-github-com-kardianos-minwinsvc
-           go-github-com-olekukonko-tablewriter
-           go-github-com-quic-go-quic-go
-           go-github-com-vishvananda-netlink
-           go-golang-org-x-crypto
-           go-golang-org-x-net
-           go-golang-org-x-sys
+     (list go-golang-zx2c4-com-wireguard
            go-golang-org-x-text
-           go-golang-zx2c4-com-wireguard
-           go-nhooyr-io-websocket))
+           go-golang-org-x-net
+           go-golang-org-x-crypto
+           go-golang-org-x-tools
+           go-golang-org-x-sys
+           go-netns
+           go-netlink
+           go-github-com-bits-and-blooms-bitset
+           go-github-com-bits-and-blooms-bloom
+           go-github-com-quic-go-quic-go
+           go-github-com-hjson-hjson-go
+           go-github-com-olekukonko-tablewriter
+           go-github-com-mitchellh-mapstructure
+           go-github-com-mattn-go-runewidth
+           go-github-com-mattn-go-isatty
+           go-github-com-mattn-go-colorable
+           go-github-com-kardianos-minwinsvc
+           go-github-com-hjson-hjson-go
+           go-github-com-hashicorp-go-syslog
+           go-github-com-gologme-log
+           go-github-com-fatih-color
+           go-github-com-cheggaaa-pb-v3
+           go-github-com-vividcortex-ewma
+           go-github-com-arceliar-phony
+           go-github-com-arceliar-ironwood))
     (home-page "https://yggdrasil-network.github.io/blog.html")
     (synopsis
      "Experiment in scalable routing as an encrypted IPv6 overlay network")
@@ -4743,7 +4702,7 @@ IPv6 Internet connectivity - it also works over IPv4.")
 (define-public nebula
   (package
     (name "nebula")
-    (version "1.9.3")
+    (version "1.8.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -4752,7 +4711,7 @@ IPv6 Internet connectivity - it also works over IPv4.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "08zzbx2v713zd9p7i4kd1bvcw47xb0092p5apba1x5wg6fpxw5zr"))
+                "0ly1axgmskrkmxhzymqis6gxf2wd7rvhycm94wfb8k0hirndvg5m"))
               ;; Remove windows-related binary blobs and files
               (snippet
                #~(begin
@@ -4790,7 +4749,7 @@ IPv6 Internet connectivity - it also works over IPv4.")
      (list go-dario-cat-mergo
            go-github-com-anmitsu-go-shlex
            go-github-com-armon-go-radix
-           go-github-com-cespare-xxhash-v2
+           go-github-com-cespare-xxhash
            go-github-com-cyberdelia-go-metrics-graphite
            go-github-com-flynn-noise
            go-github-com-gogo-protobuf
@@ -4811,8 +4770,8 @@ IPv6 Internet connectivity - it also works over IPv4.")
            go-golang-org-x-term
            go-google-golang-org-protobuf
            go-gopkg-in-yaml-v2
-           go-github-com-vishvananda-netlink
-           go-github-com-vishvananda-netns))
+           go-netlink
+           go-netns))
     (home-page "https://github.com/slackhq/nebula")
     (synopsis "Scalable, peer-to-peer overlay networking tool")
     (description

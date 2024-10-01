@@ -23,7 +23,6 @@
 ;;; Copyright © 2023 Tomas Volf <wolf@wolfsden.cz>
 ;;; Copyright © 2023 Ian Eure <ian@retrospec.tv>
 ;;; Copyright © 2024 Remco van 't Veer <remco@remworks.net>
-;;; Copyright © 2024 Ashvith Shetty <ashvithshetty10@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -117,9 +116,9 @@
 (define computed-origin-method (@@ (guix packages) computed-origin-method))
 
 (define librewolf-source
-  (let* ((ff-src (firefox-source-origin "129.0.1" "0wy0fn0pavlhlkdybr59hhbn5ng0zn56mxa7gsknf8f2whiyipwx"))
-         (version "129.0.1-1")
-         (lw-src (librewolf-source-origin version "0pvv3v23q31hdjvqi1f3cqfyjrb8dbrrbfwxj2wacak1g0mzbxf4")))
+  (let* ((ff-src (firefox-source-origin "126.0.1" "0fr679rcwshwpfxidc55b2xsn4pmrr7p9ix4rr2mv2k7kwsjcc7n"))
+         (version "126.0.1-1")
+         (lw-src (librewolf-source-origin version "0cac80073vkzd85ai9rbnwixs1h9bpy4dj2ri6jxdlqsy5d663km")))
 
     (origin
       (method computed-origin-method)
@@ -215,12 +214,12 @@
 ;; Update this id with every update to its release date.
 ;; It's used for cache validation and therefore can lead to strange bugs.
 ;; ex: date '+%Y%m%d%H%M%S'
-(define %librewolf-build-id "20240817075827")
+(define %librewolf-build-id "20240607212143")
 
 (define-public librewolf
   (package
     (name "librewolf")
-    (version "129.0.1-1")
+    (version "126.0.1-1")
     (source librewolf-source)
     (build-system gnu-build-system)
     (arguments
@@ -286,7 +285,7 @@
                   (rnrs io ports)
                   (guix elf)
                   (guix build gremlin)
-                  ,@%default-gnu-imported-modules)
+                  ,@%gnu-build-system-modules)
       #:phases #~(modify-phases %standard-phases
                    (add-after 'unpack 'fix-preferences
                      (lambda* (#:key inputs #:allow-other-keys)
@@ -414,7 +413,6 @@
                        (setenv "CC" "clang")
                        (setenv "CXX" "clang++")
                        (setenv "MOZ_NOSPAM" "1")
-                       (setenv "MOZ_APP_REMOTINGNAME" "LibreWolf")
                        (setenv "MOZ_APP_NAME" "librewolf")
 
                        (setenv "MOZBUILD_STATE_PATH"
@@ -628,7 +626,8 @@
                            (("-NewPrivateWindow")
                             "-new-private-window")
                            (("StartupNotify=true")
-                            "StartupNotify=true\nStartupWMClass=LibreWolf"))
+                            "StartupNotify=true
+StartupWMClass=Navigator"))
                          (copy-file desktop-file "librewolf.desktop")
                          (install-file "librewolf.desktop" applications))))
                    (add-after 'install-desktop-entry 'install-icons
@@ -691,7 +690,7 @@
                   mesa
                   mit-krb5
                   nspr
-                  nss-rapid
+                  nss/fixed
                   pango
                   pciutils
                   pipewire

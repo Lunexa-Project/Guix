@@ -338,7 +338,7 @@ buffers.")
 (define-public gimp
   (package
     (name "gimp")
-    (version "2.10.38")
+    (version "2.10.36")
     (source
      (origin
        (method url-fetch)
@@ -346,7 +346,7 @@ buffers.")
                            (version-major+minor version)
                            "/gimp-" version ".tar.bz2"))
        (sha256
-        (base32 "0vl57w9w31cgz6nbkpqfycsnwi5qym87jw31hvz3320wq7p4ba2h"))))
+        (base32 "1cnvgkni2q4psv8syyl5yd9kk84fv5g3imd2kgm3mnsbkb3c6frx"))))
     (build-system gnu-build-system)
     (outputs '("out"
                "doc"))                  ; 9 MiB of gtk-doc HTML
@@ -354,7 +354,7 @@ buffers.")
      (list
       #:modules `((ice-9 popen)
                   (ice-9 rdelim)
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
       #:phases
       #~(modify-phases %standard-phases
           (add-after 'unpack 'remove-gcc-reference

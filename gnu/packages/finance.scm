@@ -9,7 +9,7 @@
 ;;; Copyright © 2017–2021 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2018 Adriano Peluso <catonano@gmail.com>
-;;; Copyright © 2018-2022, 2024 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2018-2022 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2018 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2019-2024 Guillaume Le Vaillant <glv@posteo.net>
 ;;; Copyright © 2019 Tanguy Le Carrour <tanguy@bioneland.org>
@@ -77,7 +77,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages aidc)
   #:use-module (gnu packages autotools)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages base)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
@@ -648,8 +647,7 @@ other machines/servers.  Electrum does not download the Bitcoin blockchain.")
                 (wrap-qt-program "electron-cash"
                                  #:output out #:inputs inputs)))))))
     (inputs
-     (list bash-minimal
-           libevent
+     (list libevent
            libsecp256k1-bitcoin-cash
            openssl
            python-cython
@@ -681,24 +679,24 @@ other machines/servers.  Electroncash does not download the Bitcoin Cash
 blockchain.")
     (license license:expat)))
 
-(define-public lunexa
+(define-public monero
   ;; This package bundles easylogging++ and lmdb.
   ;; The bundled easylogging++ is modified, and the changes will not be
   ;; upstreamed.
   ;; The devs deem the lmdb driver too critical a consenus component, to use
   ;; the system's dynamically linked library.
   (package
-    (name "lunexa")
-    (version "Alpha-v0.1.6")
+    (name "monero")
+    (version "0.18.3.3")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/lunexa-project/lunexa")
+             (url "https://github.com/monero-project/monero")
              (commit (string-append "v" version))
              (recursive? #t)))
        (file-name (git-file-name name version))
-       (patches (search-patches "lunexa-use-system-miniupnpc.patch"))
+       (patches (search-patches "monero-use-system-miniupnpc.patch"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -707,7 +705,7 @@ blockchain.")
             delete-file-recursively
             '("external/miniupnp" "external/rapidjson"))))
        (sha256
-        (base32 "Q7DTQMHW6S5CELV7NLW26KHTEPQSKCP3"))))
+        (base32 "1d3dnkz18v0mlspafnzm301lmdiz6pwjzdbsdq23mn7cyynzgnc9"))))
     (build-system cmake-build-system)
     (native-inputs
      (list doxygen
@@ -749,74 +747,76 @@ blockchain.")
                  (lambda _
                    (substitute* "contrib/epee/src/mlog.cpp"
                      (("epee::string_tools::get_current_module_folder\\(\\)")
-                      "\".lunexa\"")
+                      "\".bitmonero\"")
                      (("return \\(")
                       "return ((std::string(getenv(\"HOME\"))) / "))))
                (add-after 'change-log-path 'fix-file-permissions-for-tests
                  (lambda _
                    (for-each make-file-writable
                              (find-files "tests/data/" "wallet_9svHk1.*"))))
+               ;; Only try tests that don't need access to network or system
                (replace 'check
-                 ;; Only try tests that don't need access to network or system
                  (lambda* (#:key tests? #:allow-other-keys)
                    ;; Core tests sometimes fail, at least on i686-linux.
                    ;; Let's disable them for now and just try hash tests
                    ;; and unit tests.
                    ;; (invoke "make" "ARGS=-R 'hash|core_tests' --verbose" "test")))
                    (when tests?
-                     (invoke "make" "ARGS=-R 'hash' --verbose" "test")
-                     (let ((excluded-unit-tests
-                            (string-join
-                             '("AddressFromURL.Success"
-                               "AddressFromURL.Failure"
-                               "DNSResolver.IPv4Success"
-                               "DNSResolver.DNSSECSuccess"
-                               "DNSResolver.DNSSECFailure"
-                               "DNSResolver.GetTXTRecord"
-                               "is_hdd.linux_os_root")
-                             ":")))
-                       (invoke "tests/unit_tests/unit_tests"
-                               (string-append "--gtest_filter=-"
-                                              excluded-unit-tests))))))
+                     (invoke "make" "ARGS=-R 'hash' --verbose" "test"))))
+               (add-after 'check 'unit-tests
+                 (lambda _
+                   (let ((excluded-unit-tests
+                          (string-join
+                           '("AddressFromURL.Success"
+                             "AddressFromURL.Failure"
+                             "DNSResolver.IPv4Success"
+                             "DNSResolver.DNSSECSuccess"
+                             "DNSResolver.DNSSECFailure"
+                             "DNSResolver.GetTXTRecord"
+                             "is_hdd.linux_os_root")
+                           ":")))
+                     (invoke "tests/unit_tests/unit_tests"
+                             (string-append "--gtest_filter=-"
+                                            excluded-unit-tests)))))
                (add-after 'install 'delete-unused-files
                  (lambda* (#:key outputs #:allow-other-keys)
                    (delete-file-recursively
                     (string-append #$output "/include")))))))
-    (home-page "https://lunexa.co/")
-    (synopsis "Command-line interface to the Lunexa currency")
+    (home-page "https://web.getmonero.org/")
+    (synopsis "Command-line interface to the Monero currency")
     (description
-     "Lunexa is a secure, private, untraceable currency.  This package provides
-the Lunexa command line client and daemon.")
+     "Monero is a secure, private, untraceable currency.  This package provides
+the Monero command line client and daemon.")
     (license license:bsd-3)))
 
-(define-public lunexa-gui
+(define-public monero-gui
   (package
-    (name "lunexa-gui")
-    (version "Alpha-v0.1.6")
+    (name "monero-gui")
+    (version "0.18.3.3")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/lunexa-project/lxagui")
+             (url "https://github.com/monero-project/monero-gui")
              (commit (string-append "v" version))
              (recursive? #t)))
        (file-name (git-file-name name version))
        (modules '((guix build utils)))
        (snippet
         '(begin
-           ;; Delete bundled lunexa sources, we already have them.
-           ;; See the 'extract-lunexa-sources' phase.
-           (delete-file-recursively "lunexa")))
+           ;; Delete bundled monero sources, we already have them.
+           ;; See the 'extract-monero-sources' phase.
+           (delete-file-recursively "monero")))
        (sha256
-        (base32 "09x8184kbpw74qlak2x9amz7j3qkacnk9l0c1cws1d0fghlm6n9m"))))
+        (base32 "1yy98y37l5nfxj921h6rbhni6fk0fic9bs4gqbnq2n4397h7jamj"))))
     (build-system qt-build-system)
     (native-inputs
-     `(,@(package-native-inputs lunexa)
-       ("lunexa-source" ,(package-source lunexa))))
+     `(,@(package-native-inputs monero)
+       ("monero-source" ,(package-source monero))))
     (inputs
-     (modify-inputs (package-inputs lunexa)
+     (modify-inputs (package-inputs monero)
        (append libgcrypt
-               lunexa
+               monero
                p2pool
                qtbase-5
                qtdeclarative-5
@@ -834,14 +834,14 @@ the Lunexa command line client and daemon.")
                                   #$(this-package-input "readline")))
            #:phases
            #~(modify-phases %standard-phases
-               (add-after 'unpack 'extract-lunexa-sources
-                 ;; Some of the lunexa package source code is required
+               (add-after 'unpack 'extract-monero-sources
+                 ;; Some of the monero package source code is required
                  ;; to build the GUI.
                  (lambda* (#:key inputs #:allow-other-keys)
-                   (mkdir-p "lunexa")
-                   (copy-recursively (assoc-ref inputs "lunexa-source")
-                                     "lunexa")))
-               (add-after 'extract-lunexa-sources 'fix-build
+                   (mkdir-p "monero")
+                   (copy-recursively (assoc-ref inputs "monero-source")
+                                     "monero")))
+               (add-after 'extract-monero-sources 'fix-build
                  (lambda _
                    (substitute* "src/version.js.in"
                      (("@VERSION_TAG_GUI@")
@@ -867,7 +867,7 @@ the Lunexa command line client and daemon.")
                    ;; Binary
                    (let ((dir (string-append #$output "/bin")))
                      (mkdir-p dir)
-                     (install-file "../build/bin/lunexa-wallet-gui" dir))
+                     (install-file "../build/bin/monero-wallet-gui" dir))
                    ;; Icons
                    (for-each
                     (lambda (size)
@@ -879,34 +879,34 @@ the Lunexa command line client and daemon.")
                         (copy-file (string-append "../source/images/appicons/"
                                                   size ".png")
                                    (string-append dir
-                                                  "/lunexa-gui.png"))))
+                                                  "/monero-gui.png"))))
                     '("16x16" "24x24" "32x32" "48x48"
                       "64x64" "96x96" "128x128" "256x256"))
                    ;; Menu entry file
                    (let ((dir (string-append #$output "/share/applications")))
                      (mkdir-p dir)
                      (call-with-output-file
-                         (string-append dir "/lunexa-gui.desktop")
+                         (string-append dir "/monero-gui.desktop")
                        (lambda (port)
                          (format port
                                  "[Desktop Entry]~@
                                   Type=Application~@
-                                  Name=Lunexa wallet~@
-                                  Exec=~a/bin/lunexa-wallet-gui~@
-                                  Icon=lunexa-gui~@
+                                  Name=Monero wallet~@
+                                  Exec=~a/bin/monero-wallet-gui~@
+                                  Icon=monero-gui~@
                                   Categories=Office;Finance;~%"
                                  #$output))))))
-               (add-after 'qt-wrap 'install-lunexad-link
-                 ;; The lunexad program must be available so that
-                 ;; lunexa-wallet-gui can start a Lunexa daemon if necessary.
+               (add-after 'qt-wrap 'install-monerod-link
+                 ;; The monerod program must be available so that
+                 ;; monero-wallet-gui can start a Monero daemon if necessary.
                  (lambda* (#:key inputs #:allow-other-keys)
-                   (symlink (search-input-file inputs "/bin/lunexad")
-                            (string-append #$output "/bin/lunexad")))))))
-    (home-page "https://lunexa.co/downloads")
-    (synopsis "Graphical user interface for the Lunexa currency")
+                   (symlink (search-input-file inputs "/bin/monerod")
+                            (string-append #$output "/bin/monerod")))))))
+    (home-page "https://web.getmonero.org/")
+    (synopsis "Graphical user interface for the Monero currency")
     (description
-     "Lunexa is a secure, private, untraceable currency.  This package provides
-the Lunexa GUI client.")
+     "Monero is a secure, private, untraceable currency.  This package provides
+the Monero GUI client.")
     (license license:bsd-3)))
 
 (define-public python-bech32
@@ -2077,25 +2077,29 @@ software Beancount with a focus on features and usability.")
     (license license:expat)))
 
 (define-public emacs-beancount
-  (package
-    (name "emacs-beancount")
-    (version "0.9.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/beancount/beancount-mode")
-             (commit version)))
-       (sha256
-        (base32
-         "01ivxgv1g0pkr0xi43366pghc3j3mmhk5bshis6kkn04bq04cx7f"))
-       (file-name (git-file-name name version))))
-    (build-system emacs-build-system)
-    (home-page "https://github.com/beancount/beancount-mode")
-    (synopsis "Emacs mode for Beancount")
-    (description
-     "Emacs-beancount is an Emacs mode for the Beancount accounting tool.")
-    (license license:gpl3+)))
+  ;; Note that upstream has not made any release since this project moved
+  ;; into its own repository (it was originally part of beancount itself)
+  (let ((commit "687775da63784d153a3c1cfee9801090c6b51842")
+        (revision "1"))
+    (package
+      (name "emacs-beancount")
+      (version (git-version "0.0.0" revision commit))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/beancount/beancount-mode")
+               (commit commit)))
+         (sha256
+          (base32
+           "08383yqqanx29al1hg1r6ndx3gwjg6fj7kl340f1zz9m9cfiyvg3"))
+         (file-name (git-file-name name version))))
+      (build-system emacs-build-system)
+      (home-page "https://github.com/beancount/beancount-mode")
+      (synopsis "Emacs mode for Beancount")
+      (description
+       "Emacs-beancount is an Emacs mode for the Beancount accounting tool.")
+      (license license:gpl3+))))
 
 (define-public hledger-web
   (package
@@ -2317,7 +2321,7 @@ and manipulation.")
 (define-public xmrig
   (package
     (name "xmrig")
-    (version "6.22.0")
+    (version "6.21.3")
     (source
      (origin
        (method git-fetch)
@@ -2325,7 +2329,7 @@ and manipulation.")
              (url "https://github.com/xmrig/xmrig")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
-       (sha256 (base32 "1h3qcs176xbfs1k2silr5rf13y0nag6qgsaz14qi3nrxxc0d8n4h"))
+       (sha256 (base32 "0nykvw45s9c5rpf01mmvam4na7ka5jryyrxnbml89raqkp22nlnn"))
        (modules '((guix build utils)))
        (snippet
         ;; TODO: Try to use system libraries instead of bundled ones in
@@ -2357,7 +2361,7 @@ and manipulation.")
              (install-file "xmrig"
                            (string-append #$output "/bin")))))))
     (home-page "https://xmrig.com/")
-    (synopsis "Lunexa miner")
+    (synopsis "Monero miner")
     (description
      "XMRig is a high-performance, cross-platform RandomX, KawPow,
 CryptoNight and GhostRider unified CPU/GPU miner and RandomX benchmark.
@@ -2374,7 +2378,7 @@ mining.")
 (define-public p2pool
   (package
     (name "p2pool")
-    (version "4.1")
+    (version "4.0")
     (source
      (origin
        (method git-fetch)
@@ -2383,7 +2387,7 @@ mining.")
              (commit (string-append "v" version))
              (recursive? #t)))
        (file-name (git-file-name name version))
-       (sha256 (base32 "1ijj3ci0kx87yjv29c6p9wqj15aij7r87sdbjwhzcmbdf46krj3q"))
+       (sha256 (base32 "0x6s7fm5gn0q2274b2nja8hj84cvmxp4rr9x4xw050sxj74880jh"))
        (modules '((guix build utils)))
        (snippet
         #~(for-each delete-file-recursively
@@ -2416,11 +2420,11 @@ mining.")
                (replace 'install
                  (lambda _
                    (install-file "p2pool" (string-append #$output "/bin")))))))
-    (home-page "https://lunexa.co/download")
-    (synopsis "Decentralized Lunexa mining pool")
-    (description "Lunexa P2Pool is a peer-to-peer Lunexa mining pool.  P2Pool
+    (home-page "https://p2pool.io/")
+    (synopsis "Decentralized Monero mining pool")
+    (description "Monero P2Pool is a peer-to-peer Monero mining pool.  P2Pool
 combines the advantages of pool and solo mining; you still fully control your
-Lunexa node and what it mines, but you get frequent payouts like on a regular
+Monero node and what it mines, but you get frequent payouts like on a regular
 pool.")
     (license license:gpl3)))
 

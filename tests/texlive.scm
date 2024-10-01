@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2022 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2023, 2024 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2023 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,8 +32,7 @@
 (test-begin "texlive")
 
 (define %fake-tlpdb
-  '((database-revision . 12345)
-    ("12many"
+  '(("12many"
      . ((name
          . "12many")
         (catalogue
@@ -163,16 +162,6 @@
       "texmf-dist/tex/lollipop/lollipop.ini"
       "texmf-dist/tex/lollipop/lollipop.tex")
      (catalogue-license . "gpl3"))
-    ("m-tx"
-     (name . "m-tx")
-     (shortdesc . "A preprocessor for pmx")
-     (longdesc . "M-Tx is a preprocessor to pmx")
-     (depend "m-tx.ARCH")
-     (runfiles "texmf-dist/scripts/m-tx/m-tx.lua"))
-    ("m-tx.x86_64-linux"
-     (name . "m-tx.x86_64-linux")
-     (binfiles "bin/x86_64-linux/m-tx"
-               "bin/x86_64-linux/prepmx"))
     ("pax"
      (name . "pax")
      (shortdesc . "Extract and reinsert PDF...")
@@ -191,9 +180,6 @@
      (shortdesc . "x86_64-linux files of pax")
      (binfiles
       "bin/x86_64-linux/pdfannotextractor"))
-    ("r_und_s"
-     (name . "r_und_s")
-     (runfiles "texmf-dist/tex/latex/r_und_s/r_und_s.sty"))
     ("stricttex"
      . ((name
          . "stricttex")
@@ -343,22 +329,7 @@ completely compatible with Plain TeX.")
                "texmf-dist/fonts/tfm/public/trsym/trsy12.tfm"
                "texmf-dist/tex/latex/trsym/trsym.sty"
                "texmf-dist/tex/latex/trsym/utrsy.fd")
-     (catalogue-license . "lppl"))
-    ("vlna"
-     (name . "vlna")
-     (shortdesc . "Add ~ after non-syllabic preposition")
-     (longdesc . "Preprocessor for TeX source")
-     (depend "vlna.ARCH")
-     (docfiles "texmf-dist/doc/man/man1/vlna.1"))
-    ("vlna.x86_64-linux"
-     (shortdesc "x86_64-linux files of vlna")
-     (binfiles "bin/x86_64-linux/vlna"))
-    ("web"
-     (depend "web.ARCH")
-     (docfiles "texmf-dist/doc/man/man1/tangle.1"))
-    ("web.x86_64-linux"
-     (name . "web.x86_64-linux")
-     (binfiles "bin/x86_64-linux/tangle"))))
+     (catalogue-license . "lppl"))))
 
 (test-assert "texlive->guix-package, no docfiles"
   ;; Replace network resources with sample data.
@@ -373,21 +344,16 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "example"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-example")
                ('version _)
-               ('source ('origin
-                          ('method 'svn-multi-fetch)
-                          ('uri ('svn-multi-reference
-                                 ('url ('texlive-packages-repository 'version))
-                                 ('revision 12345)
-                                 ('locations ('list "tex/latex/example/"))))
-                          ('file-name ('git-file-name 'name 'version))
-                          ('sha256
-                           ('base32 (? string? hash)))))
+               ('source ('texlive-origin
+                         'name 'version
+                         ('list "tex/latex/example/")
+                         ('base32 (? string? hash))))
                ('build-system 'texlive-build-system)
                ('home-page (? string?))
                ('synopsis (? string?))
@@ -412,27 +378,21 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "texsis"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-texsis")
                ('version _)
-               ('source ('origin
-                          ('method 'svn-multi-fetch)
-                          ('uri ('svn-multi-reference
-                                 ('url ('texlive-packages-repository 'version))
-                                 ('revision 12345)
-                                 ('locations
-                                  ('list "bibtex/bst/texsis/"
-                                         "doc/man/man1/texsis.1"
-                                         "doc/man/man1/texsis.man1.pdf"
-                                         "doc/otherformats/texsis/base/"
-                                         "tex/texsis/base/"
-                                         "tex/texsis/config/"))))
-                          ('file-name ('git-file-name 'name 'version))
-                          ('sha256
-                           ('base32 (? string? hash)))))
+               ('source ('texlive-origin
+                         'name 'version
+                         ('list "bibtex/bst/texsis/"
+                                "doc/man/man1/texsis.1"
+                                "doc/man/man1/texsis.man1.pdf"
+                                "doc/otherformats/texsis/base/"
+                                "tex/texsis/base/"
+                                "tex/texsis/config/")
+                         ('base32 (? string? hash))))
                ('outputs ''("out" "doc"))
                ('build-system 'texlive-build-system)
                ('propagated-inputs
@@ -464,8 +424,8 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "trsym"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name _)
@@ -498,23 +458,18 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "12many"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-12many")
                ('version _)
-               ('source ('origin
-                          ('method 'svn-multi-fetch)
-                          ('uri ('svn-multi-reference
-                                 ('url ('texlive-packages-repository 'version))
-                                 ('revision 12345)
-                                 ('locations ('list "doc/latex/12many/"
-                                                    "source/latex/12many/"
-                                                    "tex/latex/12many/"))))
-                          ('file-name ('git-file-name 'name 'version))
-                          ('sha256
-                           ('base32 (? string? hash)))))
+               ('source ('texlive-origin
+                         'name 'version
+                         ('list "doc/latex/12many/"
+                                "source/latex/12many/"
+                                "tex/latex/12many/")
+                         ('base32 (? string? hash))))
                ('outputs ''("out" "doc"))
                ('build-system 'texlive-build-system)
                ('home-page "https://ctan.org/pkg/one2many")
@@ -540,23 +495,17 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "chs-physics-report"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-chs-physics-report")
                ('version _)
-               ('source ('origin
-                          ('method 'svn-multi-fetch)
-                          ('uri ('svn-multi-reference
-                                 ('url ('texlive-packages-repository 'version))
-                                 ('revision 12345)
-                                 ('locations
-                                  ('list "doc/latex/chs-physics-report/"
-                                         "tex/latex/chs-physics-report/"))))
-                          ('file-name ('git-file-name 'name 'version))
-                          ('sha256
-                           ('base32 (? string? hash)))))
+               ('source ('texlive-origin
+                         'name 'version
+                         ('list "doc/latex/chs-physics-report/"
+                                "tex/latex/chs-physics-report/")
+                         ('base32 (? string? hash))))
                ('outputs ''("out" "doc"))
                ('build-system 'texlive-build-system)
                ('home-page (? string?))
@@ -582,12 +531,12 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "collection-texworks"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-collection-texworks")
-               ('version '%texlive-version)
+               ('version _)
                ('source #f)
                ('build-system 'trivial-build-system)
                ('arguments
@@ -618,22 +567,17 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "lollipop"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-lollipop")
                ('version _)
-               ('source ('origin
-                          ('method 'svn-multi-fetch)
-                          ('uri ('svn-multi-reference
-                                 ('url ('texlive-packages-repository 'version))
-                                 ('revision 12345)
-                                 ('locations ('list "doc/otherformats/lollipop/"
-                                                    "tex/lollipop/"))))
-                          ('file-name ('git-file-name 'name 'version))
-                          ('sha256
-                           ('base32 (? string? hash)))))
+               ('source ('texlive-origin
+                         'name 'version
+                         ('list "doc/otherformats/lollipop/"
+                                "tex/lollipop/")
+                         ('base32 (? string? hash))))
                ('outputs ''("out" "doc"))
                ('build-system 'texlive-build-system)
                ('arguments ('list '#:create-formats ('gexp ('list "lollipop"))))
@@ -660,8 +604,8 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "adforn"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-adforn")
@@ -692,8 +636,8 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "collection-basic"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-collection-basic")
@@ -727,8 +671,8 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "tex"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-tex")
@@ -762,8 +706,8 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "authorindex"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-authorindex")
@@ -796,8 +740,8 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "cyrillic-bin"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-cyrillic-bin")
@@ -831,8 +775,8 @@ completely compatible with Plain TeX.")
              (lambda ()
                (display "source")))))
         (let ((result (texlive->guix-package "pax"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
+                                             #:package-database
+                                             (lambda _ %fake-tlpdb))))
           (match result
             (('package
                ('name "texlive-pax")
@@ -844,139 +788,6 @@ completely compatible with Plain TeX.")
                 ('list '#:link-scripts ('gexp ('list "pdfannotextractor.pl"))))
                ('inputs
                 ('list 'perl))
-               ('home-page _)
-               ('synopsis _)
-               ('description _)
-               ('license _))
-             #true)
-            (_
-             (begin
-               (format #t "~s~%" result)
-               (pk 'fail result #f)))))))
-
-(test-assert "texlive->guix-package, propagated binaries, no script"
-  ;; Replace network resources with sample data.
-  (mock ((guix build svn) svn-fetch
-         (lambda* (url revision directory
-                       #:key (svn-command "svn")
-                       (user-name #f)
-                       (password #f)
-                       (recursive? #t))
-           (mkdir-p directory)
-           (with-output-to-file (string-append directory "/foo")
-             (lambda ()
-               (display "source")))))
-        (let ((result (texlive->guix-package "vlna"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
-          (match result
-            (('package
-               ('name "texlive-vlna")
-               ('version _)
-               ('source _)
-               ('outputs _)
-               ('build-system 'texlive-build-system)
-               ('propagated-inputs
-                ('list 'texlive-vlna-bin))
-               ('home-page _)
-               ('synopsis _)
-               ('description _)
-               ('license _))
-             #true)
-            (_
-             (begin
-               (format #t "~s~%" result)
-               (pk 'fail result #f)))))))
-
-(test-assert "texlive->guix-package, propagated binaries and scripts"
-  ;; Replace network resources with sample data.
-  (mock ((guix build svn) svn-fetch
-         (lambda* (url revision directory
-                       #:key (svn-command "svn")
-                       (user-name #f)
-                       (password #f)
-                       (recursive? #t))
-           (mkdir-p directory)
-           (with-output-to-file (string-append directory "/foo")
-             (lambda ()
-               (display "source")))))
-        (let ((result (texlive->guix-package "m-tx"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
-          (match result
-            (('package
-               ('name "texlive-m-tx")
-               ('version _)
-               ('source _)
-               ('build-system 'texlive-build-system)
-               ('arguments
-                ('list '#:link-scripts ('gexp ('list "m-tx.lua"))))
-               ('propagated-inputs
-                ('list 'texlive-m-tx-bin))
-               ('home-page _)
-               ('synopsis _)
-               ('description _)
-               ('license _))
-             #true)
-            (_
-             (begin
-               (format #t "~s~%" result)
-               (pk 'fail result #f)))))))
-
-(test-assert "texlive->guix-package, with skipped propagated binaries"
-  ;; Replace network resources with sample data.
-  (mock ((guix build svn) svn-fetch
-         (lambda* (url revision directory
-                       #:key (svn-command "svn")
-                       (user-name #f)
-                       (password #f)
-                       (recursive? #t))
-           (mkdir-p directory)
-           (with-output-to-file (string-append directory "/foo")
-             (lambda ()
-               (display "source")))))
-        (let ((result (texlive->guix-package "web"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
-          (match result
-            (('package
-               ('name "texlive-web")
-               ('version _)
-               ('source _)
-               ('outputs _)
-               ('build-system 'texlive-build-system)
-               ('home-page _)
-               ('synopsis _)
-               ('description _)
-               ('license _))
-             #true)
-            (_
-             (begin
-               (format #t "~s~%" result)
-               (pk 'fail result #f)))))))
-
-(test-assert "texlive->guix-package, with upstream-name property"
-  ;; Replace network resources with sample data.
-  (mock ((guix build svn) svn-fetch
-         (lambda* (url revision directory
-                       #:key (svn-command "svn")
-                       (user-name #f)
-                       (password #f)
-                       (recursive? #t))
-           (mkdir-p directory)
-           (with-output-to-file (string-append directory "/foo")
-             (lambda ()
-               (display "source")))))
-        (let ((result (texlive->guix-package "r_und_s"
-                                             #:version "0"
-                                             #:database %fake-tlpdb)))
-          (match result
-            (('package
-               ('name "texlive-r-und-s")
-               ('version _)
-               ('source _)
-               ('properties _)
-               ('build-system 'texlive-build-system)
                ('home-page _)
                ('synopsis _)
                ('description _)

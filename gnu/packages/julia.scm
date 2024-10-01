@@ -35,7 +35,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages elf)
@@ -502,8 +501,7 @@ using Dates: @dateformat_str, Date, DateTime, DateFormat, Time"))
                         (assoc-ref %build-inputs "libuv")
                         "/include"))))
     (inputs
-     `(("bash-minimal" ,bash-minimal)
-       ("coreutils" ,coreutils) ; for bindings to "mkdir" and the like
+     `(("coreutils" ,coreutils) ; for bindings to "mkdir" and the like
        ("curl" ,curl-ssh)
        ("gfortran" ,gfortran)
        ;; required for libgcc_s.so

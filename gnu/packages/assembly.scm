@@ -14,8 +14,6 @@
 ;;; Copyright © 2022 Felix Gruber <felgru@posteo.net>
 ;;; Copyright © 2023 Simon South <simon@simonsouth.net>
 ;;; Copyright © 2023 B. Wilson <elaexuotee@wilsonb.com>
-;;; Copyright © 2024 Zheng Junjie <873216071@qq.com>
-;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -459,25 +457,23 @@ Supported architectures are:
 (define-public xa
   (package
     (name "xa")
-    (version "2.4.1")
+    (version "2.3.14")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.floodgap.com/retrotech/xa"
                                   "/dists/xa-" version ".tar.gz"))
               (sha256
                (base32
-                "1hrspv9hxgk2nkbbh24g84hn0rglfwj8p7849zrn9qx869m2mhb3"))))
+                "0bph41aglxl07rnggrir2dl1x97f52hm0bl51d0vklyqvfyvm6qv"))))
     (build-system gnu-build-system)
     (arguments
      (list
-      #:test-target "test"
+      #:tests? #f           ; TODO: custom test harness, not sure how it works
       #:phases
       #~(modify-phases %standard-phases
           (delete 'configure))          ; no "configure" script
       #:make-flags
-      #~(list (string-append "CC=" #$(cc-for-target))
-              (string-append "LD=" #$(cc-for-target))
-              (string-append "DESTDIR=" #$output)))) ; no $prefix support
+      #~(list (string-append "DESTDIR=" #$output)))) ; no $prefix support
     (native-inputs (list perl))
     (home-page "https://www.floodgap.com/retrotech/xa/")
     (synopsis "Two-pass portable cross-assembler")
@@ -668,24 +664,7 @@ files.")
       #:tests? #f
       #:configure-flags
       #~(list "-DBUILD_TESTING=off" ;; XXX: insists on using bundled googletest
-              "-DBUILD_SHARED_LIBS=ON"
-              #$@(let ((target (%current-target-system)))
-                   (if target
-                       (cond ((string-prefix? "arm" target)
-                              '("-DCMAKE_SYSTEM_PROCESSOR=arm"))
-                             ((string-prefix? "aarch64" target)
-                              '("-DCMAKE_SYSTEM_PROCESSOR=aarch64"))
-                             ((string-prefix? "i686" target)
-                              '("-DCMAKE_SYSTEM_PROCESSOR=x86"))
-                             ((string-prefix? "x86_64" target)
-                              '("-DCMAKE_SYSTEM_PROCESSOR=x86_64"))
-                             ;; 32-bit and 64-bit
-                             ((string-prefix? "powerpc" target)
-                              '("-DCMAKE_SYSTEM_PROCESSOR=powerpc"))
-                             ((string-prefix? "riscv64" target)
-                              '("-DCMAKE_SYSTEM_PROCESSOR=riscv64"))
-                             (else '()))
-                       '())))))
+              "-DBUILD_SHARED_LIBS=ON")))
     (home-page "https://github.com/google/cpu_features")
     (synopsis "Cross platform C99 library to get cpu features at runtime")
     (description

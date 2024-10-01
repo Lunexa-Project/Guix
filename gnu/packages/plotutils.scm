@@ -67,14 +67,14 @@
 (define-public asymptote
   (package
     (name "asymptote")
-    (version "2.91")
+    (version "2.90")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/asymptote/"
                            version "/asymptote-" version ".src.tgz"))
        (sha256
-        (base32 "0562lfkh9i9zkqyizl6qzggrxhylnihi30lwadkbggplrdgb48za"))
+        (base32 "0h3kf0jajn67izpg6h1bi50qrsdslr7mnacp4j7lmx4bh3xmcscc"))
        (modules '((guix build utils)))
        (snippet
         ;; Remove bundled RapidJSON.
@@ -132,7 +132,7 @@
                   (guix build gnu-build-system)
                   (guix build utils)
                   (srfi srfi-26))
-      #:imported-modules `(,@%default-gnu-imported-modules
+      #:imported-modules `(,@%gnu-build-system-modules
                            (guix build emacs-utils))
       #:configure-flags
       #~(list (string-append "--enable-gc=" #$(this-package-input "libgc"))
@@ -263,7 +263,7 @@ using the Cairo drawing library.")
     (build-system gnu-build-system)
     (arguments
      `(#:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:modules (((guix build guile-build-system)
                    #:select (target-guile-effective-version))
                   (guix build gnu-build-system)
@@ -343,7 +343,8 @@ went to university in the 1990s, this is the library for you.")
                 ;; Allow them to be found.
                 (wrap-program (string-append bin "/pl")
                   `("PLOTICUS_PREFABS" ":" = (,dir)))))))))
-    (inputs (list bash-minimal libpng libx11 zlib))
+    (inputs
+     (list libpng libx11 zlib))
     (home-page "https://ploticus.sourceforge.net/")
     (synopsis "Command-line tool for producing plots and charts")
     (description

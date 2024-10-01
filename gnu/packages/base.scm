@@ -1,12 +1,12 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012-2024 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012-2023 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2019 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2012 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2014, 2015, 2016, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2014, 2015 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2016, 2017, 2019-2023 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2020, 2023, 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2016, 2020, 2023 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016, 2018 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2017, 2020 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -23,7 +23,6 @@
 ;;; Copyright © 2022 zamfofex <zamfofex@twdb.moe>
 ;;; Copyright © 2022 John Kehayias <john.kehayias@protonmail.com>
 ;;; Copyright © 2023 Josselin Poiret <dev@jpoiret.xyz>
-;;; Copyright © 2024 Zheng Junjie <873216071@qq.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -72,7 +71,6 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system trivial)
-  #:use-module (guix search-paths)
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
   #:use-module (ice-9 optargs)
@@ -84,10 +82,6 @@
             libc-utf8-locales-for-target
             make-ld-wrapper
             libiconv-if-needed
-
-            ;; Beware: the following should not be used the top level to avoid
-            ;; introducing circular module dependencies.
-            canonical-package
             %final-inputs))
 
 ;;; Commentary:
@@ -119,51 +113,42 @@ command-line arguments, multiple languages, and so on.")
 (define-public grep
   (package
    (name "grep")
-   (version "3.11")
+   (version "3.8")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/grep/grep-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "1avf4x8skxbqrjp5j2qr9sp5vlf8jkw2i5bdn51fl3cxx3fsxchx"))
+              "10n3mc9n1xmg85hpxyr4wiqzfp27ffxzwhvkv021j27vnk0pr3a9"))
             (patches (search-patches "grep-timing-sensitive-test.patch"))))
    (build-system gnu-build-system)
    (native-inputs (list perl))                   ;some of the tests require it
-   (inputs (list pcre2))
+   (inputs (list pcre))
    (arguments
-    (list #:configure-flags #~(list "--enable-perl-regexp")
-
-          ;; XXX: On 32-bit Hurd platforms, 'time_t' is defined as a 32-bit
-          ;; integer in 'hurd_types.defs', so this Gnulib test always fails.
-          #:make-flags
-          #~#$(if (and (not (%current-target-system))
-                       (string=? (%current-system) "i586-gnu"))
-                  #~'("XFAIL_TESTS=test-year2038")
-                  #~'())
-
-          #:phases
-          #~(modify-phases %standard-phases
-              (add-after 'install 'fix-egrep-and-fgrep
-                ;; Patch 'egrep' and 'fgrep' to execute 'grep' via its
-                ;; absolute file name instead of searching for it in $PATH.
-                (lambda* (#:key outputs #:allow-other-keys)
-                  (let* ((out (assoc-ref outputs "out"))
-                         (bin (string-append out "/bin")))
-                    (substitute* (list (string-append bin "/egrep")
-                                       (string-append bin "/fgrep"))
-                      (("^exec grep")
-                       (string-append "exec " bin "/grep"))))))
-              #$@(if (system-hurd?)
-                     #~((add-before 'check 'skip-test
-                          (lambda _
-                            (substitute* ;; This test hangs
-                                '("tests/hash-collision-perf"
-                                  ;; This test fails
-                                  "tests/file")
-                              (("^#!.*" all)
-                               (string-append all "exit 77;\n"))))))
-                     #~()))))
+    `(#:phases
+      (modify-phases %standard-phases
+        (add-after 'install 'fix-egrep-and-fgrep
+          ;; Patch 'egrep' and 'fgrep' to execute 'grep' via its
+          ;; absolute file name instead of searching for it in $PATH.
+          (lambda* (#:key outputs #:allow-other-keys)
+            (let* ((out (assoc-ref outputs "out"))
+                   (bin (string-append out "/bin")))
+              (substitute* (list (string-append bin "/egrep")
+                                 (string-append bin "/fgrep"))
+                (("^exec grep")
+                 (string-append "exec " bin "/grep"))))))
+        ,@(if (system-hurd?)
+              '((add-before 'check 'skip-test
+                  (lambda _
+                    (substitute*
+                        ;; This test hangs
+                        '("tests/hash-collision-perf"
+                          ;; This test fails
+                          "tests/file")
+                      (("^#!.*" all)
+                       (string-append all "exit 77;\n"))))))
+              '()))))
    (synopsis "Print lines matching a pattern")
    (description
      "grep is a tool for finding text inside files.  Text is found by
@@ -359,14 +344,15 @@ differences.")
 (define-public diffutils
   (package
    (name "diffutils")
-   (version "3.10")
+   (version "3.8")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/diffutils/diffutils-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "17nhkdn5a2z6pwcmjs4jas2plg066hbdz06y5vhypr14qwyfkrch"))))
+              "1v4g8gi0lgakqa7iix8s4fq7lq6l92vw3rjd9wfd2rhjng8xggd6"))
+            (patches (search-patches "diffutils-fix-signal-processing.patch"))))
    (build-system gnu-build-system)
    (arguments
     (list
@@ -478,6 +464,10 @@ used to apply commands with arbitrarily long arguments.")
                                    " test-renameatu"
                                    " test-utimensat")))
             '())
+      ,@(if (not (target-64bit?))
+          ;; Not all software is ready for 64bit time_t.
+          '(#:configure-flags (list "--disable-year2038"))
+          '())
       #:phases (modify-phases %standard-phases
                  (add-before 'build 'patch-shell-references
                    (lambda _
@@ -580,14 +570,14 @@ standard.")
 (define-public gnu-make
   (package
    (name "make")
-   (version "4.4.1")
+   (version "4.3")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/make/make-" version
                                 ".tar.gz"))
             (sha256
              (base32
-              "1cwgcmwdn7gqn5da2ia91gkyiqs9birr10sy5ykpkaxzcwfzn5nx"))
+              "06cfqzpqsvdnsxbysl5p2fgdgxgl9y4p7scpnrfa8z2zgkjdspz0"))
             (patches (search-patches "make-impure-dirs.patch"))))
    (build-system gnu-build-system)
    (native-inputs (list pkg-config))              ;to detect Guile
@@ -646,49 +636,54 @@ change.  GNU make offers many powerful extensions over the standard utility.")
 (define-public binutils
   (package
    (name "binutils")
-   (version "2.41")
+   (version "2.38")
    (source
     (origin
       (method url-fetch)
       (uri (string-append "mirror://gnu/binutils/binutils-"
                           version ".tar.bz2"))
       (sha256
-       (base32 "02xkm9xgcrqhln742636nm43yzrpjkhqj0z64h03gf7pab0bxi54"))
+       (base32 "1y0fb4qgxaxfyf81x9fqq9w5609mkah0b7wm1f7ab9kpy0fcf3h7"))
       (patches (search-patches "binutils-loongson-workaround.patch"))))
    (build-system gnu-build-system)
    (arguments
-    (list #:out-of-source? #t ;recommended in the README
-          #:configure-flags #~'(;; Add `-static-libgcc' to not retain a dependency
-                                ;; on GCC when bootstrapping.
-                                "LDFLAGS=-static-libgcc"
+    `(#:out-of-source? #t   ;recommended in the README
+      #:configure-flags '(;; Add `-static-libgcc' to not retain a dependency
+                          ;; on GCC when bootstrapping.
+                          "LDFLAGS=-static-libgcc"
 
-                                ;; Turn on --enable-new-dtags by default to make the
-                                ;; linker set RUNPATH instead of RPATH on binaries.
-                                ;; This is important because RUNPATH can be overriden
-                                ;; using LD_LIBRARY_PATH at runtime.
-                                "--enable-new-dtags"
+                          ;; Turn on --enable-new-dtags by default to make the
+                          ;; linker set RUNPATH instead of RPATH on binaries.
+                          ;; This is important because RUNPATH can be overriden
+                          ;; using LD_LIBRARY_PATH at runtime.
+                          "--enable-new-dtags"
 
-                                ;; Don't search under /usr/lib & co.
-                                "--with-lib-path=/no-ld-lib-path"
+                          ;; Don't search under /usr/lib & co.
+                          "--with-lib-path=/no-ld-lib-path"
 
-                                ;; Install BFD.  It ends up in a hidden directory,
-                                ;; but it's here.
-                                "--enable-install-libbfd"
+                          ;; Install BFD.  It ends up in a hidden directory,
+                          ;; but it's here.
+                          "--enable-install-libbfd"
 
-                                ;; Make sure 'ar' and 'ranlib' produce archives in a
-                                ;; deterministic fashion.
-                                "--enable-deterministic-archives"
+                          ;; Make sure 'ar' and 'ranlib' produce archives in a
+                          ;; deterministic fashion.
+                          "--enable-deterministic-archives"
 
-                                "--enable-64-bit-bfd"
-                                "--enable-compressed-debug-sections=all"
-                                "--enable-lto"
-                                "--enable-separate-code"
-                                "--enable-threads")
+                          "--enable-64-bit-bfd"
+                          "--enable-compressed-debug-sections=all"
+                          "--enable-lto"
+                          "--enable-separate-code"
+                          "--enable-threads")
+      ;; XXX: binutils 2.38 was released without generated manuals:
+      ;; <https://sourceware.org/bugzilla/show_bug.cgi?id=28909>.  To avoid
+      ;; a circular dependency on texinfo, prevent the build system from
+      ;; creating the manuals by calling "true" instead of "makeinfo" ...
+      #:make-flags '("MAKEINFO=true")))
 
-          ;; For some reason, the build machinery insists on rebuilding .info
-          ;; files, even though they're already provided by the tarball.
-          #:make-flags #~'("MAKEINFO=true")))
-   (native-inputs (list bison))                   ;needed to build 'gprofng'
+   ;; ... and "hide" this package such that users who install binutils get
+   ;; the version with documentation defined below.
+   (properties '((hidden? . #t)))
+
    (synopsis "Binary utilities: bfd gas gprof ld")
    (description
     "GNU Binutils is a collection of tools for working with binary files.
@@ -699,6 +694,16 @@ the strings in a binary file, and utilities for working with archives.  The
 included.")
    (license gpl3+)
    (home-page "https://www.gnu.org/software/binutils/")))
+
+(define-public binutils+documentation
+  (package/inherit binutils
+    (native-inputs
+     (list texinfo))
+    (arguments
+     (substitute-keyword-arguments (package-arguments binutils)
+       ((#:make-flags flags ''())
+        ''())))
+    (properties '())))
 
 ;; FIXME: ath9k-firmware-htc-binutils.patch do not apply on 2.34 because of a
 ;; big refactoring of xtensa-modules.c (commit 567607c11fbf7105 upstream).
@@ -717,34 +722,32 @@ included.")
              (patches '())))
    (arguments
     (substitute-keyword-arguments (package-arguments binutils)
-      ((#:make-flags _ #~'()) #~'())))
-   (native-inputs '())
+      ((#:make-flags _ ''()) ''())))
    (properties '())))
 
 (define-public binutils-gold
-  (package/inherit binutils
+  (package/inherit binutils+documentation
     (name "binutils-gold")
     (arguments
      (substitute-keyword-arguments (package-arguments binutils)
        ((#:configure-flags flags)
-        #~(cons* "--enable-gold=default"
-                 (delete "LDFLAGS=-static-libgcc" #$flags)))
+        `(cons* "--enable-gold=default"
+                (delete "LDFLAGS=-static-libgcc" ,flags)))
        ((#:phases phases '%standard-phases)
-        #~(modify-phases #$phases
+        `(modify-phases ,phases
            (add-after 'patch-source-shebangs 'patch-more-shebangs
              (lambda _
                (substitute* "gold/Makefile.in"
                  (("/bin/sh") (which "sh")))))
            ;; Multiple failing tests on some architectures in the gold testsuite.
-           #$@(if (or (target-arm?)
-                      (target-ppc32?))
-                  #~((add-after 'unpack 'skip-gold-testsuite
-                       (lambda _
-                         (substitute* "gold/Makefile.in"
-                           ((" testsuite") " ")))))
-                  #~())))))
-    (native-inputs (modify-inputs (package-native-inputs binutils)
-                     (append bc)))))
+           ,@(if (or (target-arm?)
+                     (target-ppc32?))
+               '((add-after 'unpack 'skip-gold-testsuite
+                   (lambda _
+                     (substitute* "gold/Makefile.in"
+                       ((" testsuite") " ")))))
+               '())))))
+    (native-inputs (list bc))))
 
 (define* (make-ld-wrapper name #:key
                           (target (const #f))
@@ -825,33 +828,43 @@ the store.")
     (home-page "https://www.gnu.org/software/guix//")
     (license gpl3+)))
 
+(define-public %glibc/hurd-configure-flags
+  ;; 'configure' in glibc 2.35 omits to pass '-ffreestanding' when detecting
+  ;; Mach headers.  This is fixed in glibc commits
+  ;; 8b8c768e3c701ed1993789bb46acb8a12c7a93df and
+  ;; 7685630b98ca2a3f5de86eadf130993e6cf998a0; as a workaround, bypass those
+  ;; tests.
+  '("ac_cv_header_mach_mach_types_defs=yes"
+    "ac_cv_header_mach_mach_types_h=yes"
+    "ac_cv_header_mach_machine_ndr_def_h=no"
+    "libc_cv_mach_task_creation_time=yes"))
+
 (define-public glibc
   ;; This is the GNU C Library, used on GNU/Linux and GNU/Hurd.  Prior to
   ;; version 2.28, GNU/Hurd used a different glibc branch.
   (package
    (name "glibc")
-   (version "2.39")
+   (version "2.35")
+   (replacement glibc/fixed)
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/glibc/glibc-" version ".tar.xz"))
             (sha256
              (base32
-              "09nrwb0ksbah9k35jchd28xxp2hidilqdgz7b8v5f30pz1yd8yzp"))
-            (patches (search-patches "glibc-2.39-git-updates.patch"
-                                     "glibc-ldd-powerpc.patch"
-                                     "glibc-2.38-ldd-x86_64.patch"
+              "0bpm1kfi09dxl4c6aanc5c9951fmf6ckkzay60cx7k37dcpp68si"))
+            (patches (search-patches "glibc-ldd-powerpc.patch"
+                                     "glibc-ldd-x86_64.patch"
                                      "glibc-dl-cache.patch"
-                                     "glibc-2.37-versioned-locpath.patch"
-                                     ;; "glibc-allow-kernel-2.6.32.patch"
+                                     "glibc-versioned-locpath.patch"
+                                     "glibc-allow-kernel-2.6.32.patch"
                                      "glibc-reinstate-prlimit64-fallback.patch"
                                      "glibc-supported-locales.patch"
-                                     "glibc-2.37-hurd-clock_t_centiseconds.patch"
-                                     "glibc-2.37-hurd-local-clock_gettime_MONOTONIC.patch"
+                                     "glibc-cross-objdump.patch"
+                                     "glibc-cross-objcopy.patch" ;must come 2nd
+                                     "glibc-hurd-clock_t_centiseconds.patch"
+                                     "glibc-hurd-clock_gettime_monotonic.patch"
                                      "glibc-hurd-mach-print.patch"
-                                     "glibc-hurd-gettyent.patch"
-                                     "glibc-hurd-getauxval.patch"))))
-   (properties `((lint-hidden-cve . ("CVE-2024-33601" "CVE-2024-33602"
-                                     "CVE-2024-33600" "CVE-2024-33599"))))
+                                     "glibc-hurd-gettyent.patch"))))
    (build-system gnu-build-system)
 
    ;; Glibc's <limits.h> refers to <linux/limit.h>, for instance, so glibc
@@ -926,7 +939,8 @@ the store.")
             ;; On GNU/Hurd we get discarded-qualifiers warnings for
             ;; 'device_write_inband' among other things.  Ignore them.
             ,@(if (target-hurd?)
-                  `("--disable-werror")
+                  `("--disable-werror"
+                    ,@%glibc/hurd-configure-flags)
                   '()))
 
       #:tests? #f                                 ; XXX
@@ -1001,13 +1015,19 @@ the store.")
                      ;; and as such, it is useful to have these ".a" files in
                      ;; OUT in addition to STATIC.
 
+                     ;; XXX: It might be better to determine whether a static
+                     ;; library is empty by some criterion (such as their file
+                     ;; size equaling eight bytes) rather than hardcoding them
+                     ;; by name.
+
+                     ;; XXX: We forgot librt.a for the current version!  In
+                     ;; the meantime, gcc-toolchain provides it, but remove
+                     ;; that fix once librt.a is added here.
+                     (define empty-static-libraries
+                       '("libpthread.a" "libdl.a" "libutil.a" "libanl.a"))
                      (define (empty-static-library? file)
-                       ;; Return true if FILE is an 'ar' archive with nothing
-                       ;; beyond the header.
-                       (let ((file (string-append (assoc-ref outputs "out")
-                                                  "/lib/" file)))
-                         (and (ar-file? file)
-                              (= (stat:size (stat file)) 8))))
+                       (any (lambda (s)
+                              (string=? file s)) empty-static-libraries))
 
                      (define (static-library? file)
                        ;; Return true if FILE is a static library.  The
@@ -1050,41 +1070,14 @@ the store.")
                                          (map (cut string-append slib "/" <>)
                                               files))))))
 
-                 (add-after 'install 'install-utf8-c-locale
-                   (lambda* (#:key outputs #:allow-other-keys)
-                     ;; Install the C.UTF-8 locale so there's always a UTF-8
-                     ;; locale around.
-                     (let* ((out (assoc-ref outputs "out"))
-                            (bin (string-append out "/bin"))
-                            (locale (string-append out "/lib/locale/"
-                                                   ,(package-version
-                                                     this-package))))
-                       (mkdir-p locale)
-
-                       ;; FIXME: When cross-compiling, attempt to use
-                       ;; 'localedef' from the same libc version.
-                       (invoke ,(if (%current-target-system)
-                                    "true"
-                                    '(string-append bin "/localedef"))
-                               "--no-archive" "--prefix" locale
-                               "-i" "C" "-f" "UTF-8"
-                               (string-append locale "/C.UTF-8")))))
-
                  ,@(if (target-hurd?)
                        '((add-after 'install 'augment-libc.so
                            (lambda* (#:key outputs #:allow-other-keys)
-                             (let ((out (assoc-ref outputs "out")))
+                             (let* ((out (assoc-ref outputs "out")))
                                (substitute* (string-append out "/lib/libc.so")
                                  (("/[^ ]+/lib/libc.so.0.3")
                                   (string-append out "/lib/libc.so.0.3"
-                                                 " libmachuser.so libhurduser.so"))))))
-                         (add-after 'install 'create-machine-symlink
-                           (lambda* (#:key outputs #:allow-other-keys)
-                             (let ((out (assoc-ref outputs "out"))
-                                   (cpu "i386"))
-                               (symlink cpu
-                                        (string-append out
-                                                       "/include/mach/machine"))))))
+                                                 " libmachuser.so libhurduser.so")))))))
                        '()))))
 
    (inputs `(("static-bash" ,static-bash)))
@@ -1109,8 +1102,7 @@ the store.")
     ;; distros.
     (list (search-path-specification
            (variable "GUIX_LOCPATH")
-           (files '("lib/locale")))
-          $TZDIR))
+           (files '("lib/locale")))))
 
    (synopsis "The GNU C Library")
    (description
@@ -1122,6 +1114,15 @@ The GNU C library is used as the C library in the GNU system and most systems
 with the Linux kernel.")
    (license lgpl2.0+)
    (home-page "https://www.gnu.org/software/libc/")))
+
+(define glibc/fixed
+  (package
+    (inherit glibc)
+    (source
+     (origin (inherit (package-source glibc))
+             (patches
+              (append (search-patches "glibc-2.35-CVE-2023-4911.patch")
+                      (origin-patches (package-source glibc))))))))
 
 ;; Define a variation of glibc which uses the default /etc/ld.so.cache, useful
 ;; in FHS containers.
@@ -1140,51 +1141,9 @@ with the Linux kernel.")
 ;; Below are old libc versions, which we use mostly to build locale data in
 ;; the old format (which the new libc cannot cope with.)
 
-(define-public glibc-2.35
-  (package
-    (inherit glibc)
-    (version "2.35")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://gnu/glibc/glibc-" version ".tar.xz"))
-              (sha256
-               (base32
-                "0bpm1kfi09dxl4c6aanc5c9951fmf6ckkzay60cx7k37dcpp68si"))
-              (patches (search-patches "glibc-2.35-CVE-2023-4911.patch"
-                                       "glibc-ldd-powerpc.patch"
-                                       "glibc-ldd-x86_64.patch"
-                                       "glibc-dl-cache.patch"
-                                       "glibc-versioned-locpath.patch"
-                                       "glibc-allow-kernel-2.6.32.patch"
-                                       "glibc-reinstate-prlimit64-fallback.patch"
-                                       "glibc-supported-locales.patch"
-                                       "glibc-cross-objdump.patch"
-                                       "glibc-cross-objcopy.patch" ;must come 2nd
-                                       "glibc-hurd-clock_t_centiseconds.patch"
-                                       "glibc-hurd-clock_gettime_monotonic.patch"
-                                       "glibc-hurd-mach-print.patch"
-                                       "glibc-hurd-gettyent.patch"))))
-    (arguments
-     (substitute-keyword-arguments (package-arguments glibc)
-       ((#:configure-flags flags #~'())
-        #~(cons* "--enable-crypt"
-                 ;; We do not want to use the C++ compiler, because its
-                 ;; libstdc++ is linked against a newer glibc, and so relies
-                 ;; on those newer symbols.  Pretend it doesn't link (the test
-                 ;; doesn't actually check that the compiler works with new
-                 ;; libstdc++ and older glibc).
-                 "libc_cv_cxx_link_ok=no"
-                 #$flags))
-       ((#:phases phases)
-        ;; The C.UTF-8 fails to build in glibc 2.35:
-        ;; <https://sourceware.org/bugzilla/show_bug.cgi?id=28861>.
-        ;; It is missing altogether in versions earlier than 2.35.
-        `(modify-phases ,phases
-           (delete 'install-utf8-c-locale)))))))
-
 (define-public glibc-2.33
   (package
-    (inherit glibc-2.35)
+    (inherit glibc)
     (name "glibc")
     (version "2.33")
     (source (origin
@@ -1195,18 +1154,23 @@ with the Linux kernel.")
                 "1zvp0qdfbdyqrzydz18d9zg3n5ygy8ps7cmny1bvsp8h1q05c99f"))
               (patches
                (cons (search-patch "glibc-2.33-riscv64-miscompilation.patch")
-                     ;; Remove patches that are irrelevant or do not apply to
-                     ;; this version.
-                     (remove
-                      (lambda (patch)
-                        (member (basename patch)
-                                '("glibc-2.35-CVE-2023-4911.patch"
-                                  "glibc-hurd-clock_gettime_monotonic.patch")))
-                             (origin-patches (package-source glibc-2.35)))))))))
+                     ;; Remove a patch that's become irrelevant and that does not
+                     ;; apply to this version.
+                     (remove (lambda (patch)
+                               (string=? (basename patch)
+                                         "glibc-hurd-clock_gettime_monotonic.patch"))
+                             (origin-patches (package-source glibc)))))))
+    (arguments
+     (substitute-keyword-arguments (package-arguments glibc)
+       ((#:configure-flags flags ''())
+        ;; There are undefined references to pthread symbols while linking
+        ;; 'support/links-dso-program.cc'.  Since this isn't needed here, turn
+        ;; off C++ tests.
+        `(cons "libc_cv_cxx_link_ok=no" ,flags))))))
 
 (define-public glibc-2.32
   (package
-    (inherit glibc-2.35)
+    (inherit glibc)
     (version "2.32")
     (source (origin
               (inherit (package-source glibc))
@@ -1261,7 +1225,7 @@ with the Linux kernel.")
 
 (define-public glibc-2.31
   (package
-    (inherit glibc-2.35)
+    (inherit glibc)
     (version "2.31")
     (source (origin
               (inherit (package-source glibc))
@@ -1390,112 +1354,99 @@ to the @code{share/locale} sub-directory of this package.")
             ,@modules))
          ((#:imported-modules modules '())
           `((gnu build locale)
-            ,@%default-gnu-imported-modules))
+            ,@%gnu-build-system-modules))
          ((#:phases phases)
-          #~(modify-phases #$phases
-              (replace 'build
-                (lambda _
-                  (invoke "make" "localedata/install-locales"
-                          "-j" (number->string (parallel-job-count)))))
-              (add-after 'build 'symlink-normalized-codesets
-                (lambda* (#:key outputs #:allow-other-keys)
-                  ;; The above phase does not install locales with names using
-                  ;; the "normalized codeset."  Thus, create symlinks like:
-                  ;;   en_US.utf8 -> en_US.UTF-8
-                  (define (locale-directory? file stat)
-                    (and (file-is-directory? file)
-                         (string-index (basename file) #\_)
-                         (string-rindex (basename file) #\.)))
+          `(modify-phases ,phases
+             (replace 'build
+               (lambda _
+                 (invoke "make" "localedata/install-locales"
+                         "-j" (number->string (parallel-job-count)))))
+             (add-after 'build 'symlink-normalized-codesets
+               (lambda* (#:key outputs #:allow-other-keys)
+                 ;; The above phase does not install locales with names using
+                 ;; the "normalized codeset."  Thus, create symlinks like:
+                 ;;   en_US.utf8 -> en_US.UTF-8
+                 (define (locale-directory? file stat)
+                   (and (file-is-directory? file)
+                        (string-index (basename file) #\_)
+                        (string-rindex (basename file) #\.)))
 
-                  (let* ((locales (find-files #$output locale-directory?
-                                              #:directories? #t)))
-                    (for-each (lambda (directory)
-                                (let*-values (((base)
-                                               (basename directory))
-                                              ((name codeset)
-                                               (locale->name+codeset base))
-                                              ((normalized)
-                                               (normalize-codeset codeset)))
-                                  (unless (string=? codeset normalized)
-                                    (symlink base
-                                             (string-append (dirname directory)
-                                                            "/" name "."
-                                                            normalized)))))
-                              locales))))
-              (delete 'install)
-              (delete 'install-utf8-c-locale)
-              (delete 'move-static-libs)))
+                 (let* ((out (assoc-ref outputs "out"))
+                        (locales (find-files out locale-directory?
+                                             #:directories? #t)))
+                   (for-each (lambda (directory)
+                               (let*-values (((base)
+                                              (basename directory))
+                                             ((name codeset)
+                                              (locale->name+codeset base))
+                                             ((normalized)
+                                              (normalize-codeset codeset)))
+                                 (unless (string=? codeset normalized)
+                                   (symlink base
+                                            (string-append (dirname directory)
+                                                           "/" name "."
+                                                           normalized)))))
+                             locales))))
+             (delete 'install)
+             (delete 'move-static-libs)))
          ((#:configure-flags flags)
-          #~(append #$flags
-                    ;; Use $(libdir)/locale/X.Y as is the case by default.
-                    (list (string-append "libc_cv_complocaledir="
-                                         #$output
-                                         "/lib/locale/"
-                                         #$(version-major+minor
-                                            (package-version glibc)))))))))
+          `(append ,flags
+                   ;; Use $(libdir)/locale/X.Y as is the case by default.
+                   (list (string-append "libc_cv_complocaledir="
+                                        (assoc-ref %outputs "out")
+                                        "/lib/locale/"
+                                        ,(version-major+minor
+                                          (package-version glibc)))))))))
     (properties `((upstream-name . "glibc")))))
 
 (define %default-utf8-locales
   ;; These are the locales commonly used for tests---e.g., in Guile's i18n
   ;; tests.
-  '("C" "de_DE" "el_GR" "en_US" "fr_FR" "tr_TR"))
-
+  '("de_DE" "el_GR" "en_US" "fr_FR" "tr_TR"))
 (define*-public (make-glibc-utf8-locales glibc #:key
                                          (locales %default-utf8-locales)
                                          (name "glibc-utf8-locales"))
-  (define default-locales?
-    (equal? locales %default-utf8-locales))
-
+  (define default-locales? (equal? locales %default-utf8-locales))
   (package
     (name name)
     (version (package-version glibc))
     (source #f)
     (build-system trivial-build-system)
     (arguments
-     (list #:modules '((guix build utils))
-           #:builder
-           #~(begin
-               (use-modules (guix build utils))
+     `(#:modules ((guix build utils))
+       #:builder (begin
+                   (use-modules (guix build utils))
 
-               (let* ((libc      (dirname
-                                  (search-input-file %build-inputs
-                                                     "/bin/localedef")))
-                      (gzip      (dirname
-                                  (search-input-file %build-inputs
-                                                     "/bin/gzip")))
-                      (out       #$output)
-                      (localedir (string-append out "/lib/locale/"
-                                                #$(version-major+minor
-                                                   (package-version this-package)))))
-                 ;; 'localedef' needs 'gzip'.
-                 (setenv "PATH" (string-append libc ":" gzip ""))
+                   (let* ((libc      (assoc-ref %build-inputs "glibc"))
+                          (gzip      (assoc-ref %build-inputs "gzip"))
+                          (out       (assoc-ref %outputs "out"))
+                          (localedir (string-append out "/lib/locale/"
+                                                    ,(version-major+minor version))))
+                     ;; 'localedef' needs 'gzip'.
+                     (setenv "PATH" (string-append libc "/bin:" gzip "/bin"))
 
-                 (mkdir-p localedir)
-                 (for-each (lambda (locale)
-                             (define file
-                               ;; Use the "normalized codeset" by
-                               ;; default--e.g., "en_US.utf8".
-                               (string-append localedir "/" locale ".utf8"))
+                     (mkdir-p localedir)
+                     (for-each (lambda (locale)
+                                 (define file
+                                   ;; Use the "normalized codeset" by
+                                   ;; default--e.g., "en_US.utf8".
+                                   (string-append localedir "/" locale ".utf8"))
 
-                             (invoke "localedef" "--no-archive"
-                                     "--prefix" localedir
-                                     "-i" locale
-                                     "-f" "UTF-8" file)
+                                 (invoke "localedef" "--no-archive"
+                                         "--prefix" localedir
+                                         "-i" locale
+                                         "-f" "UTF-8" file)
 
-                             ;; For backward compatibility with Guix
-                             ;; <= 0.8.3, add "xx_YY.UTF-8".
-                             (symlink (string-append locale ".utf8")
-                                      (string-append localedir "/"
-                                                     locale ".UTF-8")))
-
-                           ;; The C.UTF-8 locale was introduced in 2.35 but it
-                           ;; fails to build there:
-                           ;; <https://sourceware.org/bugzilla/show_bug.cgi?id=28861>.
-                           '#$(if (version>? (package-version this-package)
-                                             "2.35")
-                                  locales
-                                  (delete "C" locales)))))))
-    (native-inputs (list glibc gzip))
+                                 ;; For backward compatibility with Guix
+                                 ;; <= 0.8.3, add "xx_YY.UTF-8".
+                                 (symlink (string-append locale ".utf8")
+                                          (string-append localedir "/"
+                                                         locale ".UTF-8")))
+                               ',locales)
+                     #t))))
+    (native-inputs
+     `(("glibc" ,glibc)
+       ("gzip" ,gzip)))
     (synopsis (if default-locales?
                   (P_ "Small sample of UTF-8 locales")
                   (P_ "Customized sample of UTF-8 locales")))
@@ -1518,9 +1469,6 @@ test environments.")
    (make-glibc-utf8-locales glibc)))
 
 ;; Packages provided to ease use of binaries linked against the previous libc.
-(define-public glibc-locales-2.35
-  (package (inherit (make-glibc-locales glibc-2.35))
-           (name "glibc-locales-2.35")))
 (define-public glibc-locales-2.33
   (package (inherit (make-glibc-locales glibc-2.33))
            (name "glibc-locales-2.33")))
@@ -1560,7 +1508,27 @@ variety of options.  It is an alternative to the shell \"type\" built-in
 command.")
     (license gpl3+))) ; some files are under GPLv2+
 
-(define-public glibc/hurd glibc)
+(define-public glibc/hurd
+  (package/inherit glibc
+    (name "glibc-hurd")
+    (version "2.37")
+    (source (origin
+            (method url-fetch)
+            (uri (string-append "mirror://gnu/glibc/glibc-" version ".tar.xz"))
+            (sha256
+             (base32
+              "0hqsp4dzrjx0iga6jv0magjw26dh82pxlmk8yis5v0d127qyymr2"))
+            (patches (search-patches "glibc-ldd-powerpc.patch"
+                                     "glibc-dl-cache.patch"
+                                     "glibc-2.37-versioned-locpath.patch"
+                                     "glibc-reinstate-prlimit64-fallback.patch"
+                                     "glibc-supported-locales.patch"
+                                     "glibc-2.37-hurd-clock_t_centiseconds.patch"
+                                     "glibc-2.37-hurd-local-clock_gettime_MONOTONIC.patch"
+                                     "glibc-hurd-mach-print.patch"
+                                     "glibc-hurd-gettyent.patch"
+                                     "glibc-hurd-getauxval.patch"))))
+    (supported-systems %hurd-systems)))
 
 (define-public glibc/hurd-headers
   (package/inherit glibc/hurd
@@ -1578,7 +1546,8 @@ command.")
      (substitute-keyword-arguments (package-arguments glibc/hurd)
        ;; We just pass the flags really needed to build the headers.
        ((#:configure-flags flags)
-        `(list "--enable-add-ons"))
+        `(list "--enable-add-ons"
+               ,@%glibc/hurd-configure-flags))
        ((#:phases _)
         '(modify-phases %standard-phases
            (replace 'install
@@ -1625,21 +1594,16 @@ command.")
 (define* (libc-utf8-locales-for-target #:optional
                                        (target (or (%current-target-system)
                                                    (%current-system))))
-  "Return the glibc UTF-8 locale package for TARGET."
-  ;; Note: To avoid circular dependencies (such as: texinfo ->
-  ;; glibc-utf8-locales -> glibc -> texinfo), refer to
-  ;; 'glibc-utf8-locales-final' via 'canonical-package'.
-  (canonical-package
-   (if (target-hurd? target)
-       glibc-utf8-locales/hurd
-       glibc-utf8-locales)))
+  (if (target-hurd? target)
+      glibc-utf8-locales/hurd
+      glibc-utf8-locales))
 
 (define-public tzdata
   (package
     (name "tzdata")
     ;; This package should be kept in sync with python-pytz and python-tzdata
     ;; in (gnu packages time).
-    (version "2023d")
+    (version "2022a")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -1647,7 +1611,7 @@ command.")
                    version ".tar.gz"))
              (sha256
               (base32
-               "1wq858ip55ijnlrffnnadq7vw0x93ywxghgfxh68r2qa1fbj3jnv"))))
+               "0r0nhwpk9nyxj5kkvjy58nr5d85568m04dcb69c4y3zmykczyzzg"))))
     (build-system gnu-build-system)
     (arguments
      (list #:tests? #f
@@ -1715,7 +1679,7 @@ command.")
                           version ".tar.gz"))
                     (sha256
                      (base32
-                      "07hn7hn2klw4dfyr673ril2nrk18198hbfv25gljsvc833hzk9g9")))))
+                      "1iysv8fdkm79k8wh8jizmjmq075q4qjhk090vxjy57my6dz5wmzq")))))
     (home-page "https://www.iana.org/time-zones")
     (synopsis "Database of current and historical time zones")
     (description "The Time Zone Database (often called tz or zoneinfo)
@@ -1772,18 +1736,12 @@ package needs iconv ,@(libiconv-if-needed) should be added."
       (list libiconv)
       '()))
 
-;;; Beware: canonical-package should not be used at the top level, to avoid
-;;; eagerly resolving (gnu packages commencement), which would introduce
-;;; circular module dependencies.
-(define (canonical-package package)
+(define-public (canonical-package package)
   ;; Avoid circular dependency by lazily resolving 'commencement'.
   (let* ((iface (resolve-interface '(gnu packages commencement)))
          (proc  (module-ref iface 'canonical-package)))
     (proc package)))
 
-;;; Beware: %final-inputs should not be used at the top level, to avoid
-;;; eagerly resolving (gnu packages commencement), which would introduce
-;;; circular module dependencies.
 (define* (%final-inputs #:optional (system (%current-system)))
   "Return the list of \"final inputs\"."
   ;; Avoid circular dependency by lazily resolving 'commencement'.

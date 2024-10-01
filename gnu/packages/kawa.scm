@@ -23,7 +23,6 @@
   #:use-module (guix download)
   #:use-module (guix build-system gnu)
   #:use-module ((guix licenses) #:prefix license:)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages java))
 
 (define-public kawa
@@ -46,9 +45,10 @@
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (wrap-program (string-append out "/share/kawa/bin/kawa")
-                 `("JAVA_HOME" ":" = (,(assoc-ref inputs "icedtea"))))))))))
+                 `("JAVA_HOME" ":" = (,(assoc-ref inputs "icedtea"))))
+               #t))))))
     (inputs
-     (list bash-minimal `(,icedtea-8 "jdk")))
+     (list `(,icedtea-8 "jdk")))
     (home-page "https://www.gnu.org/software/kawa/")
     (synopsis "Java framework and implementation of Scheme, Elisp, and more")
     (description

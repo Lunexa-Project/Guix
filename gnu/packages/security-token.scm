@@ -9,7 +9,6 @@
 ;;; Copyright © 2018, 2019 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2018 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2020 Raphaël Mélotte <raphael.melotte@mind.be>
-;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 Antero Mejr <antero@kodmin.com>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021 Sergey Trofimov <sarg@sarg.org.ru>
@@ -135,7 +134,7 @@ readers and is needed to communicate with such devices through the
 (define-public eid-mw
   (package
     (name "eid-mw")
-    (version "5.1.19")
+    (version "5.1.11")
     (source
      (origin
        (method git-fetch)
@@ -144,7 +143,7 @@ readers and is needed to communicate with such devices through the
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "12hhr5v4shsg47wg10p7l03xhzpc1yk46h4bfxq5c224cbf4qrs8"))))
+        (base32 "09mhpwvqsr3pd2by3jm5jzjhyfx0f80bii35zd81vbzy85z26igg"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      (list autoconf
@@ -241,14 +240,14 @@ with a PKCS #11 Cryptographic Token Interface.")
 (define-public pcsc-lite
   (package
     (name "pcsc-lite")
-    (version "2.0.0")
+    (version "1.9.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://pcsclite.apdu.fr/files/"
                                   "pcsc-lite-" version ".tar.bz2"))
               (sha256
                (base32
-                "0mlk32gpzmzjf5v8qn56lpyyba625jzzw8rkrmpyvr8h8nvf5hyn"))))
+                "12923c6l5qzga1xlcxvm0vzbqrxnxq1qgzlrxf2y5gpcaz2q0bah"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--enable-usbdropdir=/var/lib/pcsc/drivers"
@@ -623,9 +622,10 @@ Notable features:
      (list help2man
            gengetopt
            pkg-config
-           gtk-doc/stable
+           gtk-doc
            docbook-xml-4.3
-           eudev))
+           eudev
+           libxml2))                    ;for XML_CATALOG_FILES
     (home-page "https://developers.yubico.com/libu2f-host/")
     ;; TRANSLATORS: The U2F protocol has a "server side" and a "host side".
     (synopsis "U2F host-side C library and tool")
@@ -666,7 +666,7 @@ operations.")
            gengetopt
            help2man
            pkg-config
-           gtk-doc/stable
+           gtk-doc
            which))
     (home-page "https://developers.yubico.com/libu2f-server/")
     ;; TRANSLATORS: The U2F protocol has a "server side" and a "host side".

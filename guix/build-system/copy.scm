@@ -46,7 +46,7 @@
 (define %copy-build-system-modules
   ;; Build-side modules imported by default.
   `((guix build copy-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-glibc)
   "Return the default glibc package."

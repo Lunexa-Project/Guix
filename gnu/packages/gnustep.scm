@@ -30,7 +30,6 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages datastructures)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages libffcall)
@@ -153,7 +152,8 @@ GCC runtime.
                ;; The path to wmsetbg in Guix requires 67 extra characters.
                (substitute* "src/defaults.c"
                  (("len = strlen\\(text\\) \\+ 40;")
-                  (string-append "len = strlen(text) + 107;"))))))
+                  (string-append "len = strlen(text) + 107;")))
+               #t)))
          (add-after 'install 'install-xsession
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -171,7 +171,8 @@ GCC runtime.
                            (string-map (match-lambda
                                          (#\newline #\space)
                                          (chr chr))
-                                       ,synopsis) out))))))
+                                       ,synopsis) out))))
+             #t))
          (add-after 'install-xsession 'wrap
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -179,18 +180,18 @@ GCC runtime.
                ;; In turn, 'wmaker.inst' wants to invoke 'wmmenugen'
                ;; etc., so make sure everything is in $PATH.
                (wrap-program (string-append bin "/wmaker.inst")
-                 `("PATH" ":" prefix (,bin)))))))))
+                 `("PATH" ":" prefix (,bin)))
+               #t))))))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           fontconfig
-           giflib
-           libjpeg-turbo
-           libpng
-           libtiff
-           libx11
-           libxft
-           libxinerama
-           libxmu))
+     `(("libxmu" ,libxmu)
+       ("libxft" ,libxft)
+       ("libx11" ,libx11)
+       ("libxinerama" ,libxinerama)
+       ("fontconfig" ,fontconfig)
+       ("libjpeg" ,libjpeg-turbo)
+       ("giflib" ,giflib)
+       ("libpng" ,libpng)
+       ("libtiff" ,libtiff)))
     (native-inputs
      (list pkg-config))
     (home-page "https://windowmaker.org/")

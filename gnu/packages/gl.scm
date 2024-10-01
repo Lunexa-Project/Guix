@@ -20,7 +20,6 @@
 ;;; Copyright © 2023 Kaelyn Takata <kaelyn.alexi@protonmail.com>
 ;;; Copyright © 2023, 2024 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2024 Liliana Marie Prikler <liliana.prikler@gmail.com>
-;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -321,24 +320,19 @@ also known as DXTn or DXTC) for Mesa.")
            libxxf86vm
            xorgproto))
     (inputs
-     (append
-       (if (target-aarch64?)
-           (list clang-18
-                 llvm-18)
-           (list llvm-for-mesa))
-       (list elfutils                   ;libelf required for r600 when using llvm
-             expat
-             (force libva-without-mesa)
-             libxml2
-             libxrandr
-             libxvmc
-             vulkan-loader
-             wayland
-             wayland-protocols
-             `(,zstd "lib"))))
+     (list elfutils                  ;libelf required for r600 when using llvm
+           expat
+           (force libva-without-mesa)
+           libxml2
+           libxrandr
+           libxvmc
+           llvm-for-mesa
+           vulkan-loader
+           wayland
+           wayland-protocols
+           `(,zstd "lib")))
     (native-inputs
-     (append
-      (list bison
+     (cons* bison
             flex
             gettext-minimal
             glslang
@@ -346,26 +340,20 @@ also known as DXTn or DXTC) for Mesa.")
             python-libxml2              ;for OpenGL ES 1.1 and 2.0 support
             python-mako
             python-wrapper
-            (@ (gnu packages base) which))
-      (if (target-aarch64?)
-          (list libclc)
-          '())
-      (if (%current-target-system)
-          (list cmake-minimal-cross
-                pkg-config-for-build
-                wayland
-                wayland-protocols)
-          '())))
+            (@ (gnu packages base) which)
+            (if (%current-target-system)
+              (list cmake-minimal-cross
+                    pkg-config-for-build
+                    wayland
+                    wayland-protocols)
+              '())))
     (outputs '("out" "bin"))
     (arguments
      (list
       #:configure-flags
       #~(list
          #$@(cond
-             ((target-aarch64?)
-              '("-Dgallium-drivers=asahi,etnaviv,freedreno,kmsro,lima,\
-nouveau,panfrost,r300,r600,svga,swrast,tegra,v3d,vc4,virgl,zink"))
-             ((target-arm32?)
+             ((or (target-aarch64?) (target-arm32?))
               '("-Dgallium-drivers=etnaviv,freedreno,kmsro,lima,nouveau,\
 panfrost,r300,r600,svga,swrast,tegra,v3d,vc4,virgl,zink"))
              ((or (target-ppc64le?) (target-ppc32?) (target-riscv64?))
@@ -473,10 +461,6 @@ svga,swrast,virgl,zink")))
                   ;; https://gitlab.freedesktop.org/mesa/mesa/-/issues/4091).
                   `((substitute* "src/util/meson.build"
                       ((".*'tests/u_debug_stack_test.cpp',.*") ""))))
-                 ("aarch64-linux"
-                  ;; Disable some of the llvmpipe tests.
-                  `((substitute* "src/gallium/drivers/llvmpipe/meson.build"
-                      (("'lp_test_format', ") ""))))
                  ("armhf-linux"
                   ;; Disable some of the llvmpipe tests.
                   `((substitute* "src/gallium/drivers/llvmpipe/meson.build"
@@ -599,10 +583,8 @@ from software emulation to complete hardware acceleration for modern GPUs.")
      (modify-inputs (package-inputs mesa)
        (prepend libclc)))
     (native-inputs
-     (if (target-aarch64?)
-         (package-native-inputs mesa)
-         (modify-inputs (package-native-inputs mesa)
-           (prepend clang-15))))))
+     (modify-inputs (package-native-inputs mesa)
+       (prepend clang-15)))))
 
 (define-public mesa-opencl-icd
   (package/inherit mesa-opencl
@@ -942,7 +924,7 @@ OpenGL.")
 (define-public glfw
   (package
     (name "glfw")
-    (version "3.3.10")
+    (version "3.3.9")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/glfw/glfw"
@@ -950,7 +932,7 @@ OpenGL.")
                                   "/glfw-" version ".zip"))
               (sha256
                (base32
-                "1f5xs4cj1y5wk1jimv1mylk6n6vh7433js28mfd1kf7p2zw3whz8"))))
+                "023dn97n4h14n5lbjpzjv0y6a2plj254c0w3rr3wraf3z08189jm"))))
     (build-system cmake-build-system)
     (arguments
      (list
@@ -1011,21 +993,6 @@ OpenGL.")
 desktop computers.  It provides a simple API for creating windows, contexts
 and surfaces, receiving input and events.")
     (license license:zlib)))
-
-(define-public glfw-3.4
-  (package
-    (inherit glfw)
-    (version "3.4")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/glfw/glfw"
-                                  "/releases/download/" version
-                                  "/glfw-" version ".zip"))
-              (sha256
-               (base32
-                "1sd396kkn53myp61kxrd18h7b1q4ix173hhxhvl0iz8j4x5h1v5m"))))
-    (native-inputs (modify-inputs (package-native-inputs glfw)
-                     (prepend pkg-config)))))
 
 (define-public nanovg-for-extempore
   (let ((version "0.7.1")

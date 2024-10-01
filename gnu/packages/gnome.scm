@@ -288,6 +288,7 @@
            gobject-introspection
            gsettings-desktop-schemas
            gtk-doc/stable
+           libxml2                      ;for XML_CATALOG_FILES
            pkg-config))
     (propagated-inputs
      ;; These libraries are required by the .pc file.
@@ -686,6 +687,7 @@ of writing test cases for asynchronous interactions.")
            gtk-doc/stable
            ;; Would only be required by configure flag "--enable-extended-tests".
            ;;gtx
+           libxml2                      ;for XML_CATALOG_FILES
            pkg-config
            python-pygobject
            python-wrapper
@@ -747,6 +749,7 @@ of known objects without needing a central registrar.")
            gobject-introspection
            gtk-doc/stable
            libtool
+           libxml2                      ;for XML_CATALOG_FILES
            pkg-config
            vala
            xorg-server-for-tests))
@@ -1465,18 +1468,9 @@ for creating UPnP devices and control points, written in C using
               (sha256
                (base32
                 "0vz3ifs8mi3zaz8zj8v27zfkf6xg82y39mcgqspa38jdp01gn3sr"))))
-    (arguments
-     (substitute-keyword-arguments (package-arguments gupnp)
-       ((#:phases phases)
-        #~(modify-phases #$phases
-            (add-after 'unpack 'meson-compatibility
-            (lambda _
-              (substitute* "subprojects/gssdp-1.2.wrap"
-                (("provides") "provide"))))))))
-    (propagated-inputs
-     (modify-inputs (package-propagated-inputs gupnp)
-       (replace "libsoup" libsoup-minimal-2)
-       (replace "gssdp" gssdp-1.4)))))
+    (propagated-inputs (modify-inputs (package-propagated-inputs gupnp)
+              (replace "libsoup" libsoup-minimal-2)
+              (replace "gssdp" gssdp-1.4)))))
 
 (define-public gupnp-dlna
   (package
@@ -1820,6 +1814,7 @@ client devices can handle.")
            `(,glib "bin")
            gtk-doc/stable
            gobject-introspection
+           libxml2                      ;for XML_CATALOG_FILES
            pkg-config
            vala))
     (inputs
@@ -2676,6 +2671,7 @@ GNOME Desktop.")
            gettext-minimal
            `(,glib "bin")
            glib                         ;for m4 macros
+           libxml2                      ;for XML_CATALOG_FILES
            libxslt                      ;for documentation
            pkg-config
            python-wrapper))             ;for tests
@@ -3123,18 +3119,21 @@ configuring CUPS.")
        (sha256
         (base32
          "1h7nn9pz797bfmpz3d0s46yjv4ydppnzwifzdx0d6shm8vwkx3zf"))))
-    (outputs '("out" "doc"))
     (build-system meson-build-system)
     (arguments
      (list
       #:phases
       #~(modify-phases %standard-phases
-          (add-after 'install 'move-doc
-            (lambda _
-              (let* ((old (string-append #$output "/share/doc"))
-                     (new (string-append #$output:doc "/share/doc")))
-                (mkdir-p (dirname new))
-                (rename-file old new)))))))
+          (add-after 'unpack 'fix-docbook
+            (lambda* (#:key inputs #:allow-other-keys)
+              ;; Don't attempt to download XSL schema.
+              (substitute* "meson.build"
+                (("http://docbook.sourceforge.net/release/xsl-ns/current\
+/manpages/docbook.xsl")
+                 (string-append #$(this-package-native-input "docbook-xsl")
+                                "/xml/xsl/docbook-xsl-"
+                                #$(package-version docbook-xsl)
+                                "/manpages/docbook.xsl"))))))))
     (propagated-inputs (list gdk-pixbuf glib)) ;in Requires of libnotify.pc.
     (inputs (list gtk+ libpng))
     (native-inputs
@@ -3300,6 +3299,7 @@ API add-ons to make GTK+ widgets OpenGL-capable.")
            gobject-introspection
            hicolor-icon-theme
            itstool
+           libxml2                      ;for XML_CATALOG_FILES
            libxslt                      ;for xsltproc
            python
            python-pygobject
@@ -3344,7 +3344,7 @@ the GNOME desktop environment.")
         (guix build utils))
       #:phases
       #~(modify-phases %standard-phases
-          (add-after 'glib-or-gtk-wrap 'wrap-python
+          (add-after 'wrap 'wrap-python
             (assoc-ref python:%standard-phases 'wrap))
           (add-before 'check 'pre-check
             (lambda _
@@ -3757,47 +3757,47 @@ diagrams.")
                 "1fljkag2gr7c4k5mn798lgf9903xslz8h51bgvl89nnay42qjqpp"))))
     (build-system gnu-build-system)
     (arguments
-     (list
-      #:configure-flags '(list "--disable-static")
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-before 'configure 'pre-configure
-            (lambda* (#:key inputs #:allow-other-keys)
-              (substitute* "gdk-pixbuf-loader/Makefile.in"
-                ;; By default the gdk-pixbuf loader is installed under
-                ;; gdk-pixbuf's prefix.  Work around that.
-                (("gdk_pixbuf_moduledir = .*$")
-                 (string-append "gdk_pixbuf_moduledir = "
-                                "$(prefix)/lib/gdk-pixbuf-2.0/2.10.0/"
+     `(#:configure-flags (list "--disable-static")
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'pre-configure
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "gdk-pixbuf-loader/Makefile.in"
+               ;; By default the gdk-pixbuf loader is installed under
+               ;; gdk-pixbuf's prefix.  Work around that.
+               (("gdk_pixbuf_moduledir = .*$")
+                (string-append "gdk_pixbuf_moduledir = "
+                               "$(prefix)/lib/gdk-pixbuf-2.0/2.10.0/"
                                 "loaders\n"))
-                ;; Drop the 'loaders.cache' file, it's in gdk-pixbuf+svg.
-                (("gdk_pixbuf_cache_file = .*$")
-                 "gdk_pixbuf_cache_file = $(TMPDIR)/loaders.cache\n"))))
-          (add-before 'check 'fix-test-with-pango-1.50
-            (lambda _
-	      ;; Changes between pango 1.48 and 1.50 caused the text to be one
-	      ;; pixel lower in the output image compared to the reference.
-              (substitute* "tests/fixtures/reftests/bugs/587721-text-transform.svg"
-	        (("660\\.9") "659.9"))))
-          (add-before 'check 'remove-failing-tests
-            (lambda _
-              (with-directory-excursion "tests/fixtures/reftests"
-                (for-each delete-file
-                          '( ;; This test fails on i686:
-                            "svg1.1/masking-path-04-b.svg"
-                            ;; This test fails on armhf:
-                            "svg1.1/masking-mask-01-b.svg"
-                            ;; This test fails on aarch64:
-                            "bugs/777834-empty-text-children.svg"
-                            ;; These two tests fail due to slightly different
-                            ;; text rendering (different kerning or similar),
-                            ;; nothing alarming.
-                            "bugs/340047.svg"
-                            "bugs/749415.svg"
-                            ;; These two tests fail with the update to cairo
-                            ;; version 1.18.0.
-                            "bugs/587721-text-transform.svg"
-                            "svg1.1/masking-path-03-b.svg"))))))))
+               ;; Drop the 'loaders.cache' file, it's in gdk-pixbuf+svg.
+               (("gdk_pixbuf_cache_file = .*$")
+                "gdk_pixbuf_cache_file = $(TMPDIR)/loaders.cache\n"))
+             #t))
+         (add-before 'check 'fix-test-with-pango-1.50
+           (lambda _
+	     ;; Changes between pango 1.48 and 1.50 caused the text to be one
+	     ;; pixel lower in the output image compared to the reference.
+             (substitute* "tests/fixtures/reftests/bugs/587721-text-transform.svg"
+	       (("660\\.9") "659.9"))))
+         (add-before 'check 'remove-failing-tests
+           (lambda _
+             (with-directory-excursion "tests/fixtures/reftests"
+               (for-each delete-file
+                         '(;; This test fails on i686:
+                           "svg1.1/masking-path-04-b.svg"
+                           ;; This test fails on armhf:
+                           "svg1.1/masking-mask-01-b.svg"
+                           ;; This test fails on aarch64:
+                           "bugs/777834-empty-text-children.svg"
+                           ;; These two tests fail due to slightly different
+                           ;; text rendering (different kerning or similar),
+                           ;; nothing alarming.
+                           "bugs/340047.svg"
+                           "bugs/749415.svg"
+                           ;; These two tests fail with the update to cairo
+                           ;; version 1.18.0.
+                           "bugs/587721-text-transform.svg"
+                           "svg1.1/masking-path-03-b.svg"))))))))
     (native-inputs
      (list pkg-config
            `(,glib "bin") ; glib-mkenums, etc.
@@ -4779,6 +4779,7 @@ and RDP protocols.")
     (native-inputs
      (list bash-completion
            libxslt                      ;for xsltproc
+           libxml2                      ;for XML_CATALOG_FILES
            docbook-xml-4.2
            docbook-xsl
            `(,glib "bin")
@@ -5294,6 +5295,7 @@ and the GLib main loop, to integrate well with GNOME applications.")
            gettext-minimal
            `(,glib "bin")               ;for gdbus-codegen, etc.
            gobject-introspection
+           libxml2                      ;for XML_CATALOG_FILES
            libxslt
            pkg-config
            python
@@ -5750,8 +5752,9 @@ output devices.")
     (native-inputs
      (modify-inputs (package-native-inputs colord-minimal)
        (append bash-completion
-               docbook-xsl
+               docbook-xsl-1.79.1
                gtk-doc/stable
+               libxml2                  ;for XML_CATALOG_FILES
                libxslt
                sane-backends
                vala)))))                ;for VAPI, needed by simple-scan
@@ -5920,7 +5923,8 @@ faster results and to avoid unnecessary server load.")
            dbus
            ;; For man pages.
            docbook-xsl
-           libxslt))                    ; for 'xsltproc'
+           libxslt                      ; for 'xsltproc'
+           libxml2))                    ; for 'XML_CATALOG_FILES'
     (inputs
      (list libgudev libusb))
     (propagated-inputs
@@ -6093,6 +6097,7 @@ services for numerous locations.")
            docbook-xsl
            gettext-minimal
            `(,glib "bin")               ;for glib-mkenums
+           libxml2                      ;for XML_CATALOG_FILES
            libxslt
            perl
            pkg-config))
@@ -6763,8 +6768,7 @@ discovery protocols.")
     (propagated-inputs
      (list dconf))
     (inputs
-     (list bash-minimal
-           gtk+
+     (list gtk+
            gdk-pixbuf
            at-spi2-core
            cairo
@@ -7229,17 +7233,11 @@ almost all of them.")
                                   "epiphany-" version ".tar.xz"))
               (sha256
                (base32
-                "1n3df2skvgmjw9sybhn811l4b58ibwxc0dc208wpvxg060pyhpfk"))
-              (patches (search-patches "epiphany-fix-encoding-test.patch"))))
+                "1n3df2skvgmjw9sybhn811l4b58ibwxc0dc208wpvxg060pyhpfk"))))
     (build-system meson-build-system)
     (arguments
      (list
       #:glib-or-gtk? #t
-      #:modules '((guix build meson-build-system)
-                  (guix build utils)
-                  (guix build union))
-      #:imported-modules `((guix build union)
-                           ,@%meson-build-system-modules)
       #:phases
       #~(modify-phases %standard-phases
           (add-after 'unpack 'skip-gtk-update-icon-cache
@@ -7269,25 +7267,13 @@ almost all of them.")
                    ", ")
                   "],")))))
           (replace 'check
-            (lambda* (#:key inputs parallel-tests? tests? #:allow-other-keys)
+            (lambda* (#:key parallel-tests? tests? #:allow-other-keys)
               (when tests?
-                ;(setenv "GALLIUM_DRIVER" "llvmpipe")
-                (setenv "XDG_RUNTIME_DIR" (string-append (getcwd)
-                                                         "/runtime-dir"))
-                (mkdir (getenv "XDG_RUNTIME_DIR"))
-                (chmod (getenv "XDG_RUNTIME_DIR") #o700)
                 (setenv "MESON_TESTTHREADS"
                         (if parallel-tests?
                             (number->string (parallel-job-count))
                             "1"))
                 (setenv "XDG_CACHE_HOME" (getcwd))
-                ;; There are too many directories in XDG_DATA_DIRS, so
-                ;; dbus-daemon fails to start.  We work around this by
-                ;; creating a single union directory of all these directories.
-                (setenv "XDG_DATA_DIRS" "/tmp/share")
-                (union-build "/tmp/share"
-                             (search-path-as-list '("share") (map cdr inputs))
-                             #:create-all-directories? #t)
                 ;; Tests require a running X server.
                 (system "Xvfb :1 &")
                 (setenv "DISPLAY" ":1")
@@ -7384,8 +7370,7 @@ principles are simplicity and standards compliance.")
            python-pep8
            xorg-server-for-tests))
     (inputs
-     (list bash-minimal
-           gobject-introspection
+     (list gobject-introspection
            gtk+
            python-wrapper
            python-pygobject))
@@ -7772,22 +7757,24 @@ such as gzip tarballs.")
                  (,(dirname (search-input-file (or native-inputs inputs)
                                                "bin/gdbus"))))))))
        #:configure-flags
-       '("-Delogind=true"
+       '("-Ddocbook=false" ; FIXME: disabled because of docbook validation error
+         "-Dman=false"   ; FIXME: disabled because of docbook validation error
+         "-Delogind=true"
          "-Dsystemd=false"
          "-Dsystemd_session=disable"
          "-Dsystemd_journal=false")))
     (build-system meson-build-system)
     (native-inputs
-     (list docbook-xml-4.1.2
+     (list docbook-xml
            docbook-xsl
            `(,glib "bin")               ; for glib-compile-schemas, etc.
            intltool
+           libxml2                      ;for 'XML_CATALOG_FILES'
            libxslt
            pkg-config
            xmlto))
     (inputs
-     (list bash-minimal
-           elogind
+     (list elogind
            gnome-desktop
            gsettings-desktop-schemas
            gtk+
@@ -8002,8 +7989,7 @@ to display dialog boxes from the commandline and shell scripts.")
          (string-append "-Dgles2_libname="
                         (search-input-file %build-inputs "lib/libGLESv2.so"))
          "-Degl_device=true"            ;false by default
-         "-Dwayland_eglstream=true"     ;false by default
-         (string-append "-Dudev_dir=" #$output "/lib/udev"))
+         "-Dwayland_eglstream=true")    ;false by default
       #:test-options '(list "--verbose")
       #:phases
       #~(modify-phases %standard-phases
@@ -8296,10 +8282,6 @@ Microsoft Exchange, Last.fm, IMAP/SMTP, Jabber, SIP and Kerberos.")
               (delete-file-recursively "tests/book-migration")
               (substitute* "tests/CMakeLists.txt"
                 (("add_subdirectory\\(book-migration\\)") ""))))
-          (add-after 'unpack 'patch-locale-in-test
-            (lambda _
-              (substitute* "tests/libebook/client/test-book-client-custom-summary.c"
-                (("en_US\\.UTF-8") "C.UTF-8"))))
           (add-after 'unpack 'patch-paths
             (lambda _
               (substitute* '("tests/test-server-utils/e-test-server-utils.c"
@@ -8429,8 +8411,7 @@ Evolution (hence the name), but is now used by other packages as well.")
      ;; caribou-1.0.pc refers to all these.
      (list libgee libxklavier libxtst gtk+))
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("clutter" ,clutter)
+     `(("clutter" ,clutter)
        ("dconf" ,dconf)
        ("gtk+-2" ,gtk+-2)
        ("python-pygobject" ,python-pygobject)))
@@ -9003,7 +8984,7 @@ library.")
 
          "--localstatedir=/var"
          (string-append "-Ddefault-path="
-                        (string-join '("/run/privileged/bin"
+                        (string-join '("/run/setuid-programs"
                                        "/run/current-system/profile/bin"
                                        "/run/current-system/profile/sbin")
                                      ":"))
@@ -10517,8 +10498,7 @@ specified duration and save it as a GIF encoded animated image file.")
            `(,gtk+ "bin")
            pkg-config))
     (inputs
-     (list bash-minimal
-           gsettings-desktop-schemas
+     (list gsettings-desktop-schemas
            gtk+
            libhandy-0.0
            libsecret
@@ -11872,7 +11852,7 @@ mp3, Ogg Vorbis and FLAC")
     (arguments
      `(#:imported-modules ((guix build python-build-system)
                            (guix build glib-or-gtk-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
 
        #:modules ((guix build glib-or-gtk-build-system)
                   (guix build utils)
@@ -11897,12 +11877,7 @@ mp3, Ogg Vorbis and FLAC")
        ("pkg-config" ,pkg-config)
        ("glib:bin" ,glib "bin")))
     (inputs
-     (list bash-minimal
-           gtk+
-           python
-           python-pygobject
-           gstreamer
-           gst-plugins-base))
+     (list gtk+ python python-pygobject gstreamer gst-plugins-base))
     (home-page "https://soundconverter.org/")
     (synopsis "Convert between audio formats with a graphical interface")
     (description
@@ -12187,8 +12162,7 @@ advanced image management tool")
        ("python-pytest-runner" ,python-pytest-runner)
        ("python-pytest" ,python-pytest)))
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("cairo" ,cairo)
+     `(("cairo" ,cairo)
        ("dbus-glib" ,dbus-glib)
        ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("gtk+" ,gtk+)
@@ -12372,8 +12346,7 @@ higher level porcelain stuff.")
                 (wrap-program prog
                   `("GI_TYPELIB_PATH" = (,(getenv "GI_TYPELIB_PATH"))))))))))
     (inputs
-     (list bash-minimal
-           glib
+     (list glib
            gpgme
            gsettings-desktop-schemas
            gspell
@@ -13064,8 +13037,7 @@ It uses pandoc as back-end for parsing Markdown.")
          (list valgrind)
          '())))
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("glib" ,glib)
+     `(("glib" ,glib)
        ("json-glib" ,json-glib)
        ("libevdev" ,libevdev)
        ("libsystemd" ,elogind)
@@ -13136,8 +13108,7 @@ your operating-system definition:
            gobject-introspection
            pkg-config))
     (inputs
-     (list bash-minimal
-           adwaita-icon-theme
+     (list adwaita-icon-theme
            gtk+
            guile-3.0                    ;for wrap-script
            libratbag
@@ -13238,8 +13209,7 @@ provided there is a DBus service present:
            pkg-config
            yelp-tools))
     (inputs
-     (list bash-minimal
-           gst-plugins-base
+     (list gst-plugins-base
            gst-plugins-good
            gstreamer
            gtk+
@@ -13759,8 +13729,7 @@ world.")
        ("pkg-config" ,pkg-config)
        ("xmllint" ,libxml2)))
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("enchant" ,enchant)
+     `(("enchant" ,enchant)
        ("glib" ,glib)
        ("goocanvas" ,goocanvas)
        ("gtk" ,gtk+)

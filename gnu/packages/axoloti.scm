@@ -228,7 +228,7 @@ runtime.")
                   (sxml xpath)
                   (sxml transform))
       #:imported-modules `((guix build ant-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:phases
        #~(modify-phases %standard-phases
            (delete 'configure)
@@ -380,7 +380,7 @@ patcher application.")))
                   (sxml xpath)
                   (sxml transform))
        #:imported-modules ((guix build ant-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'make-git-checkout-writable
@@ -790,7 +790,7 @@ This package provides the runtime.")
                   (sxml xpath)
                   (sxml transform))
       #:imported-modules `((guix build ant-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
       #:phases
       #~(modify-phases %standard-phases
           (delete 'configure)

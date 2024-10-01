@@ -186,7 +186,7 @@ etc. via a Web interface.  Features include:
                         "src/zabbix_server/server.c")
            ;; 'fping' must be setuid, so look for it in the usual location.
            (("/usr/sbin/fping6?")
-            "/run/privileged/bin/fping")))))
+            "/run/setuid-programs/fping")))))
     (build-system gnu-build-system)
     (arguments
      (list #:configure-flags

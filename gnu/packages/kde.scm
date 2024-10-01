@@ -219,7 +219,6 @@ This package contains GUI widgets for baloo.")
      (list akonadi
            akonadi-contacts
            akonadi-mime
-           bash-minimal
            boost
            breeze-icons
            gpgme-1.23
@@ -394,7 +393,6 @@ annotating features.")
            ladspa
            mlt
            purpose
-           qqc2-desktop-style
            qtbase
            qtdeclarative
            qtmultimedia
@@ -832,8 +830,7 @@ set(CMAKE_C_FLAGS \"${CMAKE_C_FLAGS} -fPIC\" ) "))))
            qwt
            vc))
     (inputs
-     (list bash-minimal
-           boost
+     (list boost
            exiv2
            fontconfig
            fftw-cmake
@@ -1673,14 +1670,14 @@ creating routes by drag and drop and more.")
 (define-public okular
   (package
     (name "okular")
-    (version "24.08.0")
+    (version "24.05.2")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://kde/stable/release-service/" version
                            "/src/" name "-" version ".tar.xz"))
        (sha256
-        (base32 "12ri5j9jsmh5ib7fp2vk0ir3vfknlq1h8xpi1lkn6f2b54k6xq9x"))))
+        (base32 "0kh3a40887f7lajgvk3ndr3ns3mm1kld0biw0cqg9ys69f4d8677"))))
     (build-system qt-build-system)
     (arguments
      (list
@@ -1710,8 +1707,7 @@ chmgeneratortest)"))))
     (native-inputs
      (list extra-cmake-modules kdoctools pkg-config
            ;; for test
-           desktop-file-utils
-           python-wrapper))
+           desktop-file-utils))
     (inputs
      (list ebook-tools
            breeze-icons

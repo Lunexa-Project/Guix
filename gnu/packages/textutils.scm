@@ -25,14 +25,11 @@
 ;;; Copyright © 2021 Felix Gruber <felgru@posteo.net>
 ;;; Copyright © 2021 Bonface Munyoki Kilyungi <me@bonfacemunyoki.com>
 ;;; Copyright © 2022 Gabriel Wicki <gabriel@erlikon.ch>
-;;; Copyright © 2022 Paul A. Patience <paul@apatience.com>
 ;;; Copyright © 2023 Reza Housseini <reza@housseini.me>
 ;;; Copyright © 2023 Hilton Chain <hako@ultrarare.space>
 ;;; Copyright © 2023, 2024 Zheng Junjie <873216071@qq.com>
-;;; Copyright © 2024 Timotej Lazar <timotej.lazar@araneo.si>
+;;; Copyright © 2024 Timotej Lazar <timotej.lazar@araneo.si>;;
 ;;; Copyright © 2024 Sharlatan Hellseher <sharlatanus@gmail.com>
-;;; Copyright © 2024 Ashish SHUKLA <ashish.is@lostca.se>
-;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -442,18 +439,7 @@ input bits thoroughly but are not suitable for cryptography.")
         (base32 "0dc9fxcdmppbs9s06jvq61zbk552laxps0xyk098gj41697ihd96"))))
     (build-system gnu-build-system)
     (native-inputs
-     (list gettext-minimal autoconf automake))
-    (arguments (list #:phases
-                     #~(modify-phases %standard-phases
-                         ;; AC_FUNC_MALLOC and AC_FUNC_REALLOC usually unneeded
-                         ;; see https://lists.gnu.org/archive/html/autoconf/2003-02/msg00017.html
-                         (add-after 'unpack 'fix-rpl_malloc
-                           (lambda _
-                             (substitute* "configure.ac"
-                               (("AC_FUNC_MALLOC") "")
-                               (("AC_FUNC_REALLOC") ""))
-                             ;; let bootstrap phase run.
-                             (delete-file "./configure"))))))
+     (list gettext-minimal))
     (home-page "https://billposer.org/Software/a2b.html")
     (synopsis "Convert between ASCII, hexadecimal and binary representations")
     (description "The two programs are useful for generating test data, for
@@ -487,28 +473,29 @@ useful when it is desired to reformat numbers.
 (define-public uniutils
   (package
     (name "uniutils")
-    (version "2.28")
+    (version "2.27")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://billposer.org/Software/Downloads/"
+       (uri (string-append "http://billposer.org/Software/Downloads/"
                            "uniutils-" version ".tar.bz2"))
        (sha256
-        (base32 "0z4ibnd2zzya489vl84cfh82bmdwdhf0isf1myqwrs3s9s0vqyyn"))))
+        (base32 "19w1510w87gx7n4qy3zsb0m467a4rn5scvh4ajajg7jh6x5xri08"))))
     (build-system gnu-build-system)
     (arguments
-     (list #:configure-flags #~(list "--disable-dependency-tracking")
-           #:phases
-           #~(modify-phases %standard-phases
-               (add-after 'build 'fix-paths
-                 (lambda* (#:key outputs inputs #:allow-other-keys)
-                   (let ((out (assoc-ref outputs "out"))
-                         (a2b (assoc-ref inputs "ascii2binary"))
-                         (iconv (assoc-ref inputs "libiconv")))
-                     (substitute* "utf8lookup"
-                       (("^ascii2binary ") (string-append a2b "/bin/ascii2binary "))
-                       (("^uniname ") (string-append out "/bin/uniname "))
-                       (("^iconv ") (string-append iconv "/bin/iconv ")))))))))
+     '(#:configure-flags '("--disable-dependency-tracking")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'build 'fix-paths
+           (lambda* (#:key outputs inputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (a2b (assoc-ref inputs "ascii2binary"))
+                   (iconv (assoc-ref inputs "libiconv")))
+               (substitute* "utf8lookup"
+                 (("^ascii2binary ") (string-append a2b "/bin/ascii2binary "))
+                 (("^uniname ") (string-append out "/bin/uniname "))
+                 (("^iconv ") (string-append iconv "/bin/iconv ")))
+             #t))))))
     (inputs
      (list ascii2binary libiconv))
     (home-page "https://billposer.org/Software/unidesc.html")
@@ -1266,60 +1253,6 @@ OpenDocument presentations (*.odp).")
     (description "This package provides converters for various bibliography
 formats (e.g. Bibtex, RIS, ...) using a common XML intermediate.")
     (license license:gpl2)))
-
-(define-public goawk
-  (package
-    (name "goawk")
-    (version "1.27.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/benhoyt/goawk")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "003idgqj1g41y4sja9gzbds95fl3ba0l20wfgh7hp4kiivgls7r8"))))
-    (build-system go-build-system)
-    (arguments
-     (list
-      #:install-source? #f
-      #:import-path "github.com/benhoyt/goawk"
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'disable-failing-tests
-            (lambda* (#:key tests? import-path #:allow-other-keys)
-              (with-directory-excursion (string-append "src/" import-path)
-                ;; Disable tests trying to setup up locale and requiring gawk
-                ;; executable.
-                (substitute* (find-files "." "\\_test.go$")
-                  (("TestShellCommand") "OffTestShellCommand")
-                  (("TestInterp") "OffTestInterp")
-                  (("TestCommandLine") "OffTestCommandLine")))))
-          (add-before 'check 'patch-paths
-            (lambda* (#:key tests? import-path #:allow-other-keys)
-              (with-directory-excursion (string-append "src/" import-path)
-                (substitute* (list "interp/interp.go" "goawk_test.go")
-                  (("/bin/sh") (which "sh")))
-                (substitute* "goawk_test.go"
-                  ;; During tests goawk tries to write to existing files,
-                  ;; point to an empty directory instead.
-                  (("/testdata/output") "/testdata/output-tmp")))))
-          (replace 'check
-            (lambda* (#:key tests? import-path #:allow-other-keys)
-              (when tests?
-                (with-directory-excursion (string-append "src/" import-path)
-                  (mkdir "testdata/output-tmp")
-                  (invoke "go" "test" "./...")
-                  ;; Make sure we have not left any generated articfacts
-                  ;; during tests and moved them to the store.
-                  (delete-file-recursively "testdata/output-tmp"))))))))
-    (home-page "https://github.com/benhoyt/goawk")
-    (synopsis "AWK interpreter with CSV support")
-    (description
-     "GoAWK is a POSIX-compatible version of AWK that also has a CSV mode for
-reading and writing CSV and TSV files.")
-    (license license:expat)))
 
 (define-public opencc
   (package

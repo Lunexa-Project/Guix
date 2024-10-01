@@ -254,10 +254,11 @@ persistent, single-file databases with support for secondary indexes.")
                     ,(string-append (assoc-ref inputs "postgresql")
                                     "/bin")
                     ;; For getsocket.
-                    ,(string-append out "/bin"))))))))
+                    ,(string-append out "/bin")))))
+             #t)))
        #:test-target "test"))
     (inputs
-     (list bash-minimal postgresql util-linux))
+     (list postgresql util-linux))
     (native-inputs
      ;; For tests.
      (list ruby which))
@@ -972,12 +973,12 @@ auto-completion and syntax highlighting.")
                             ,(string-append coreutils "/bin")
                             ,(string-append grep "/bin")
                             ,(string-append ps "/bin")
-                            ,(string-append sed "/bin"))))))))))
+                            ,(string-append sed "/bin"))))
+                       #t))))))
     (native-inputs
      (list bison perl pkg-config))
     (inputs
-     (list bash-minimal
-           boost-for-mysql
+     (list boost-for-mysql
            coreutils
            gawk
            grep
@@ -1932,7 +1933,8 @@ for example from a shell script.")
          (add-before 'check 'set-check-environment
            (lambda _
              (setenv "TZ" "UTC")
-             (setenv "HOME" "/tmp")))
+             (setenv "HOME" "/tmp")
+             #t))
          (add-after 'install 'wrap-program
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -1941,7 +1943,8 @@ for example from a shell script.")
                  `("PERL5LIB" ":" prefix
                    (,(string-append out "/lib/perl5/site_perl"
                                     ":"
-                                    path))))))))))
+                                    path)))))
+             #t)))))
     (native-inputs
      (list perl-capture-tiny
            perl-io-pager
@@ -1958,39 +1961,38 @@ for example from a shell script.")
            perl-test-nowarnings
            perl-test-warn))
     (inputs
-     (list bash-minimal
-           perl-class-xsaccessor
-           perl-clone
-           perl-config-gitlike
-           perl-datetime
-           perl-datetime-timezone
-           perl-dbd-mysql
-           perl-dbd-pg
-           perl-dbd-sqlite
-           perl-dbi
-           perl-devel-stacktrace
-           perl-encode-locale
-           perl-hash-merge
-           perl-ipc-run3
-           perl-ipc-system-simple
-           perl-libintl-perl
-           perl-list-moreutils
-           perl-moo
-           perl-mysql-config
-           perl-namespace-autoclean
-           perl-path-class
-           perl-perlio-utf8_strict
-           perl-string-formatter
-           perl-string-shellquote
-           perl-sub-exporter
-           perl-template-tiny
-           perl-template-toolkit
-           perl-throwable
-           perl-try-tiny
-           perl-type-tiny
-           perl-type-tiny-xs
-           perl-uri
-           perl-uri-db))
+     `(("perl-class-xsaccessor" ,perl-class-xsaccessor)
+       ("perl-clone" ,perl-clone)
+       ("perl-config-gitlike" ,perl-config-gitlike)
+       ("perl-datetime" ,perl-datetime)
+       ("perl-datetime-timezone" ,perl-datetime-timezone)
+       ("perl-dbd-mysql" ,perl-dbd-mysql)
+       ("perl-dbd-pg" ,perl-dbd-pg)
+       ("perl-dbd-sqlite" ,perl-dbd-sqlite)
+       ("perl-dbi" ,perl-dbi)
+       ("perl-devel-stacktrace" ,perl-devel-stacktrace)
+       ("perl-encode-locale" ,perl-encode-locale)
+       ("perl-hash-merge" ,perl-hash-merge)
+       ("perl-ipc-run3" ,perl-ipc-run3)
+       ("perl-ipc-system-simple" ,perl-ipc-system-simple)
+       ("perl-libintl-perl" ,perl-libintl-perl)
+       ("perl-list-moreutils" ,perl-list-moreutils)
+       ("perl-moo" ,perl-moo)
+       ("perl-mysql-config" ,perl-mysql-config)
+       ("perl-namespace-autoclean" ,perl-namespace-autoclean)
+       ("perl-path-class" ,perl-path-class)
+       ("perl-perlio-utf8_strict" ,perl-perlio-utf8_strict)
+       ("perl-string-formatter" ,perl-string-formatter)
+       ("perl-string-shellquote" ,perl-string-shellquote)
+       ("perl-sub-exporter" ,perl-sub-exporter)
+       ("perl-template-tiny" ,perl-template-tiny)
+       ("perl-template-toolkit" ,perl-template-toolkit)
+       ("perl-throwable" ,perl-throwable)
+       ("perl-try-tiny" ,perl-try-tiny)
+       ("perl-type-tiny" ,perl-type-tiny)
+       ("perl-type-tiny-xs" ,perl-type-tiny-xs)
+       ("perl-uri" ,perl-uri)
+       ("perl-uri-db" ,perl-uri-db)))
     (home-page "https://sqitch.org/")
     (synopsis "Database change management tool")
     (description
@@ -2049,9 +2051,10 @@ changes.")
                (invoke "./configure"
                        (string-append "--prefix=" out))))))))
     (native-inputs
-     (list docbook-xsl
-           libxcrypt
-           libxslt
+     (list ;; TODO: Build the documentation.
+           ;; ("docbook-xsl" ,docbook-xsl)
+           ;; ("libxml2" ,libxml2)
+           ;; ("libxslt" ,libxslt)
            python ;for the Waf build system
            which))
     (home-page "https://tdb.samba.org/")
@@ -2606,11 +2609,6 @@ similar to BerkeleyDB, LevelDB, etc.")
                 ;; "background AOF rewrite to finish", perhaps because dead
                 ;; processes persist as zombies in the build environment.
                 (("unit/aofrw") "")
-                ;; The OOM score tests try to raise the current OOM score, but
-                ;; our build environment already sets it for all children to
-                ;; the highest possible one (1000).  We can't lower it because
-                ;; we don't have CAP_SYS_RESOURCE.
-                (("unit/oom-score-adj") "")
                 (("integration/aof(-multi-part)?") "")
                 (("integration/failover") "")
                 (("integration/replication-4") "")
@@ -2972,11 +2970,6 @@ database.")
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
-       ;; TODO: Make this unconditional on core-updates.
-       ,@(if (%current-target-system)
-             `(#:make-flags `(,(string-append "CC=" ,(cc-for-target))
-                              ,(string-append "AR=" ,(ar-for-target))))
-             '())
        #:phases
        (modify-phases %standard-phases
          (replace 'configure
@@ -4519,8 +4512,8 @@ is designed to have a low barrier to entry.")
                    ,(map (lambda (output)
                            (string-append output sitedir))
                          (list python out))))))))))
-    (native-inputs (list python-pytest))
-    (inputs (list bash-minimal))
+    (native-inputs
+     (list python-pytest))
     (home-page "https://github.com/andialbrecht/sqlparse")
     (synopsis "Non-validating SQL parser")
     (description "Sqlparse is a non-validating SQL parser for Python.  It
@@ -4657,7 +4650,7 @@ with integrated support for finding required rows quickly.")
 (define-public apache-arrow
   (package
     (name "apache-arrow")
-    (version "17.0.0")
+    (version "16.1.0")
     (source
      (origin
        (method git-fetch)
@@ -4667,7 +4660,7 @@ with integrated support for finding required rows quickly.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "11yzhqdvvcq8k4dhcfnwhc0hl0a2k09gyijln00zbglajk7ihfsk"))))
+         "1xl7apk7yaiv7cikpw5h846bsqb935cr3212b8bzhxqvkswxsm7f"))))
     (build-system cmake-build-system)
     (arguments
      (list
@@ -5040,45 +5033,18 @@ algorithm implementations.")
     (name "python-pyarrow")
     (build-system python-build-system)
     (arguments
-     (list
-      ;; XXX: Test data is distributed sepratly in
-      ;; <https://github.com/apache/arrow-testing> 39MiB and requires
-      ;; additional steps to be implemented, see
-      ;; <https://github.com/apache/arrow/blob/main/ci/scripts/python_build.sh>.
-      #:tests? #f
-      #:phases
-      #~(modify-phases %standard-phases
-          (delete 'build) ; XXX the build is performed again during the install phase
-          (add-after 'unpack 'enter-source-directory
-            (lambda _ (chdir "python")))
-          (add-after 'enter-source-directory 'set-version
-            (lambda _
-              ;; XXX: This python-setuptools-scm option is available in v8+:
-              ;; TypeError: Configuration.__init__() got an unexpected
-              ;; keyword argument 'version_file'
-              (substitute* "pyproject.toml"
-                (("version_file = .*") ""))
-
-              ;; Version file generation ad-hoc, remove when a newer version
-              ;; of python-setuptools-scm is packed.
-              (with-output-to-file "pyarrow/_generated_version.py"
-                (let* ((version #$(package-version this-package) )
-                       (version-tuple (string-join (string-split version #\.) ", ")))
-                  (lambda ()
-                    (format #t
-                            "__version__ = version = '~a'
-__version_tuple__ = version_tuple = (~a)~%" version version-tuple))))))
-          (add-before 'install 'set-pyarrow-build-options
-            (lambda _
-              (setenv "PYARROW_BUNDLE_ARROW_CPP_HEADERS" "0")
-              (setenv "PYARROW_CMAKE_OPTIONS"
-                      (string-append "-DCMAKE_INSTALL_RPATH=" #$output))
-              (setenv "PYARROW_PARALLEL"
-                      (number->string (parallel-job-count)))
-              (setenv "PYARROW_WITH_DATASET" "1")
-              (setenv "PYARROW_WITH_HDFS" "1")
-              (setenv "PYARROW_WITH_ORC" "1")
-              (setenv "PYARROW_WITH_PARQUET" "1"))))))
+     '(#:tests? #f          ; XXX There are no tests in the "python" directory
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'build) ; XXX the build is performed again during the install phase
+         (add-after 'unpack 'enter-source-directory
+           (lambda _ (chdir "python")))
+         (add-before 'install 'set-pyarrow-build-options
+           (lambda _
+             (setenv "PYARROW_BUNDLE_ARROW_CPP_HEADERS" "0")
+             (setenv "PYARROW_WITH_ORC" "1")
+             (setenv "PYARROW_WITH_PARQUET" "1")
+             (setenv "PYARROW_WITH_DATASET" "1"))))))
     (propagated-inputs
      (list (list apache-arrow "lib")
            (list apache-arrow "include")
@@ -5477,7 +5443,7 @@ a Gtk.Grid Widget.")
 (define-public sqlitebrowser
   (package
     (name "sqlitebrowser")
-    (version "3.13.0")
+    (version "3.12.2")
     (source
      (origin
        (method git-fetch)
@@ -5486,7 +5452,7 @@ a Gtk.Grid Widget.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0v4a59lgqng9hqvbc2k504aclinpwpk8hi6ckirbr6m1pnf26kfr"))
+        (base32 "1ljqzcx388mmni8lv9jz5r58alhsjrrqi4nzjnbfki94rn4ray6z"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -5540,7 +5506,7 @@ compatible with SQLite using a graphical user interface.")
       #:install-source? #f
       #:import-path "github.com/lighttiger2505/sqls"))
     (native-inputs
-     (list go-github-com-google-go-cmp
+     (list go-github-com-google-go-cmp-cmp
            go-github-com-go-sql-driver-mysql
            go-github-com-k0kubun-pp
            go-github-com-lib-pq

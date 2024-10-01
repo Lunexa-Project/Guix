@@ -28,7 +28,7 @@
 ;;; Copyright © 2020 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2020, 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 John D. Boy <jboy@bius.moe>
-;;; Copyright © 2020, 2023, 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2020, 2023 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020, 2021, 2022, 2023 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2020 Tanguy Le Carrour <tanguy@bioneland.org>
 ;;; Copyright © 2020, 2021, 2022 Michael Rohleder <mike@rohleder.de>
@@ -41,19 +41,17 @@
 ;;; Copyright © 2021 François J. <francois-oss@avalenn.eu>
 ;;; Copyright © 2021 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2021 Guillaume Le Vaillant <glv@posteo.net>
-;;; Copyright © 2021, 2024 jgart <jgart@dismail.de>
+;;; Copyright © 2021 jgart <jgart@dismail.de>
 ;;; Copyright © 2021 Foo Chuan Wei <chuanwei.foo@hotmail.com>
 ;;; Copyright © 2022 Jai Vetrivelan <jaivetrivelan@gmail.com>
 ;;; Copyright © 2022 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 Dhruvin Gandhi <contact@dhruvin.dev>
 ;;; Copyright © 2015, 2022 David Thompson <davet@gnu.org>
 ;;; Copyright © 2023 Nicolas Graves <ngraves@ngraves.fr>
-;;; Copyright © 2023 Bruno Victal <mirai@makinata.eu>
 ;;; Copyright © 2023 Kjartan Oli Agustsson <kjartanoli@disroot.org>
 ;;; Copyright © 2023 Steve George <steve@futurile.net>
 ;;; Copyright © 2023 Josselin Poiret <dev@jpoiret.xyz>
 ;;; Copyright © 2024 Hilton Chain <hako@ultrarare.space>
-;;; Copyright © 2023 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2024 Suhail Singh <suhail@bayesians.ca>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -238,247 +236,365 @@ Python 3.3 and later, rather than on Python 2.")
   (deprecated-package "bazaar" breezy))
 
 (define git-cross-configure-flags
-  #~(list "ac_cv_fread_reads_directories=yes"
-          "ac_cv_snprintf_returns_bogus=no"
-          "ac_cv_iconv_omits_bom=no"))
+  '("ac_cv_fread_reads_directories=yes"
+    "ac_cv_snprintf_returns_bogus=no"
+    "ac_cv_iconv_omits_bom=no"))
 
-;; The size of the closure of 'git-minimal' is two thirds that of 'git'.
-;; Its test suite runs slightly faster and most importantly it doesn't
-;; depend on packages that are expensive to build such as Subversion.
-(define-public git-minimal
+(define-public git
   (package
-    (name "git-minimal")
-    (version "2.45.2")
-    (source (origin
-             (method url-fetch)
-             (uri (string-append "mirror://kernel.org/software/scm/git/git-"
-                                 version ".tar.xz"))
-             (sha256
-              (base32
-               "1nws1vjgj54sv32wxl1h3n1jkcpabqv7a605hhafsby0n5zfigsi"))))
-    (build-system gnu-build-system)
+   (name "git")
+   (version "2.45.2")
+   (source (origin
+            (method url-fetch)
+            (uri (string-append "mirror://kernel.org/software/scm/git/git-"
+                                version ".tar.xz"))
+            (sha256
+             (base32
+              "1nws1vjgj54sv32wxl1h3n1jkcpabqv7a605hhafsby0n5zfigsi"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("native-perl" ,perl)
+      ;; Add bash-minimal explicitly to ensure it comes before bash-for-tests,
+      ;; see <https://bugs.gnu.org/39513>.
+      ("bash" ,bash-minimal)
+      ("bash-for-tests" ,bash)
+      ("gettext" ,gettext-minimal)
+      ;; To build the man pages from the git sources, we would need a dependency
+      ;; on a full XML tool chain, and building it actually takes ages.  So we
+      ;; use this lazy approach and use released tarball.
+      ("git-manpages"
+       ,(origin
+          (method url-fetch)
+          (uri (string-append
+                "mirror://kernel.org/software/scm/git/git-manpages-"
+                version ".tar.xz"))
+          (sha256
+           (base32
+            "1pqrp46kwbxycqld39027ph1cvkq9am156y3sswn6w2khsg30f09"))))
+      ;; For subtree documentation.
+      ("asciidoc" ,asciidoc)
+      ("docbook2x" ,docbook2x)
+      ("docbook-xsl" ,docbook-xsl)
+      ("libxslt" ,libxslt)
+      ("pkg-config" ,pkg-config)
+      ("texinfo" ,texinfo)
+      ("xmlto" ,xmlto)))
+   (inputs
+    `(("curl" ,curl)
+      ("expat" ,expat)
+      ("openssl" ,openssl)
+      ("perl" ,perl)
+      ("python" ,python) ; for git-p4
+      ("zlib" ,zlib)
+
+       ;; For PCRE support in git grep (USE_LIBPCRE2).
+       ("pcre" ,pcre2)
+
+       ;; For 'gitweb.cgi'.
+       ("perl-cgi" ,perl-cgi)
+
+       ;; For 'git-svn'.
+       ("subversion" ,subversion)
+       ("perl-term-readkey" ,perl-term-readkey)
+
+       ;; For 'git-send-email'.
+       ("perl-authen-sasl" ,perl-authen-sasl)
+       ("perl-net-smtp-ssl" ,perl-net-smtp-ssl)
+       ("perl-io-socket-ssl" ,perl-io-socket-ssl)
+
+       ;; For 'git gui', 'gitk', and 'git citool'.
+       ("tcl" ,tcl)
+       ("tk" ,tk)
+
+       ;; For 'git-credential-libsecret'
+       ("glib" ,glib)
+       ("libsecret" ,libsecret)))
+    (outputs '("out"                    ; the core
+               "send-email"             ; for git-send-email
+               "svn"                    ; git-svn
+               "credential-netrc"       ; git-credential-netrc
+               "credential-libsecret"   ; git-credential-libsecret
+               "subtree"                ; git-subtree
+               "gui"))                  ; gitk, git gui
     (arguments
-     (list
-      #:modules `((srfi srfi-1)
+     `(#:make-flags `("V=1"             ;more verbose compilation
+
+                      ,(string-append "SHELL_PATH="
+                                      (assoc-ref %build-inputs "bash")
+                                      "/bin/sh")
+
+                      ;; Tests require a bash with completion support.
+                      ,(string-append "TEST_SHELL_PATH="
+                                      (assoc-ref %build-inputs "bash-for-tests")
+                                      "/bin/bash")
+
+                      "USE_LIBPCRE2=yes"
+
+                      ;; By default 'make install' creates hard links for
+                      ;; things in 'libexec/git-core', which leads to huge
+                      ;; nars; see <https://bugs.gnu.org/21949>.
+                      "NO_INSTALL_HARDLINKS=indeed")
+
+       ;; Make sure the full bash does not end up in the final closure.
+       #:disallowed-references (,bash)
+
+       #:test-target "test"
+
+       ;; The explicit --with-tcltk forces the build system to hardcode the
+       ;; absolute file name to 'wish'.
+       #:configure-flags (list (string-append "--with-tcltk="
+                                              (assoc-ref %build-inputs "tk")
+                                              "/bin/wish8.6") ; XXX
+                               ,@(if (%current-target-system)
+                                     git-cross-configure-flags
+                                     '()))
+
+       #:modules ((srfi srfi-1)
                   (srfi srfi-26)
-                  (ice-9 format)
-                  (ice-9 textual-ports)
                   ((guix build gnu-build-system) #:prefix gnu:)
-                  ,@%default-gnu-modules)
-      ;; Make sure the full bash does not end up in the final closure.
-      #:disallowed-references (list bash perl)
-      #:test-target "test"
-      #:configure-flags
-      (if (%current-target-system)
-          git-cross-configure-flags
-          #~(list))
-      #:make-flags
-      #~(list "V=1"                     ;more verbose compilation
-              (string-append "SHELL_PATH="
-                             #+(this-package-native-input "bash-minimal")
-                             "/bin/sh")
+                  ,@%gnu-build-system-modules)
+       #:phases
+       (modify-phases %standard-phases
+         ,@(if (%current-target-system)
+               ;; The git build system assumes build == host
+               `((add-after 'unpack  'use-host-uname_S
+                   (lambda _
+                     (substitute* "config.mak.uname"
+                       (("uname_S := .*" all)
+                        (if (equal? ,(%current-target-system) "i586-pc-gnu")
+                            "uname_S := GNU\n"
+                            all))))))
+               ;; We do not have bash-for-tests when cross-compiling.
+               `((add-after 'unpack 'modify-PATH
+                   (lambda* (#:key inputs #:allow-other-keys)
+                     (let ((path (string-split (getenv "PATH") #\:))
+                           (bash-full (assoc-ref inputs "bash-for-tests")))
+                       ;; Drop the test bash from PATH so that (which "sh") and
+                       ;; similar does the right thing.
+                       (setenv "PATH" (string-join
+                                       (remove (cut string-prefix? bash-full <>) path)
+                                       ":")))))))
+         ;; Add cross curl-config script to PATH when cross-compiling.
+         ,@(if (%current-target-system)
+               '((add-before 'configure 'add-cross-curl-config
+                   (lambda* (#:key inputs #:allow-other-keys)
+                     (setenv "PATH"
+                             (string-append (assoc-ref inputs "curl") "/bin:"
+                                            (getenv "PATH"))))))
+               '())
+         (add-after 'configure 'patch-makefiles
+           (lambda _
+             (substitute* "Makefile"
+               (("/usr/bin/perl") (which "perl"))
+               (("/usr/bin/python") (which "python3")))))
+         (add-after 'configure 'add-PM.stamp
+           (lambda _
+             ;; Add the "PM.stamp" to avoid "no rule to make target".
+             (call-with-output-file "perl/PM.stamp" (const #t))))
+         (add-after 'build 'build-subtree
+           (lambda* (#:key inputs #:allow-other-keys)
+             (with-directory-excursion "contrib/subtree"
+               (substitute* "Makefile"
+                 ;; Apparently `xmlto' does not bother to looks up the stylesheets
+                 ;; specified in the XML, unlike the above substitution.  Instead it
+                 ;; uses a hard-coded URL.  Work around it here, but if this is
+                 ;; common perhaps we should hardcode this path in xmlto itself.
+                 (("\\$\\(XMLTO\\) -m \\$\\(MANPAGE_XSL\\)")
+                  (string-append "$(XMLTO) -x "
+                                 (string-append (assoc-ref inputs "docbook-xsl")
+                                                "/xml/xsl/docbook-xsl-"
+                                                ,(package-version docbook-xsl))
+                                 "/manpages/docbook.xsl -m $(MANPAGE_XSL)")))
+               (invoke "make")
+               (invoke "make" "install")
+               (invoke "make" "install-doc")
+               (substitute* "git-subtree"
+                 (("/bin/sh") (which "sh"))))))
+         (add-before 'check 'patch-tests
+           (lambda _
+             (let ((store-directory (%store-directory)))
+               ;; These files contain some funny bytes that Guile is unable
+               ;; to decode for shebang patching. Just delete them.
+               (for-each delete-file '("t/t4201-shortlog.sh"
+                                       "t/t7813-grep-icase-iso.sh"))
+               ;; Many tests contain inline shell scripts (hooks etc).
+               (substitute* (find-files "t" "\\.sh$")
+                 (("#!/bin/sh") (string-append "#!" (which "sh"))))
+               ;; Un-do shebang patching here to prevent checksum mismatch.
+               (substitute* '("t/t4034/perl/pre" "t/t4034/perl/post")
+                 (("^#!.*/bin/perl") "#!/usr/bin/perl"))
+               (substitute* "t/t5003-archive-zip.sh"
+                 (("cp /bin/sh") (string-append "cp " (which "sh"))))
+               (substitute* "t/t6030-bisect-porcelain.sh"
+                 (("\"/bin/sh\"") (string-append "\"" (which "sh") "\"")))
+               ;; FIXME: This test runs `git commit` with a bogus EDITOR
+               ;; and empty commit message, but does not fail the way it's
+               ;; expected to. The test passes when invoked interactively.
+               (substitute* "t/t7508-status.sh"
+                 (("\tcommit_template_commented") "\ttrue"))
+               ;; More checksum mismatches due to odd shebangs.
+               (substitute* "t/t9100-git-svn-basic.sh"
+                 (((string-append "\"#!" store-directory ".*/bin/sh")) "\"#!/bin/sh") )
+               (substitute* "t/t9300-fast-import.sh"
+                 (((string-append "\t#!" store-directory ".*/bin/sh")) "\t#!/bin/sh")
+                 (((string-append "'#!" store-directory ".*/bin/sh")) "'#!/bin/sh"))
+               ;; FIXME: Some hooks fail with "basename: command not found".
+               ;; See 't/trash directory.t9164.../svn-hook.log'.
+               (delete-file "t/t9164-git-svn-dcommit-concurrent.sh")
 
-              ;; Tests require a bash with completion support.
-              (string-append "TEST_SHELL_PATH="
-                             #+(this-package-native-input "bash")
-                             "/bin/bash")
+               ;; XXX: These tests fail intermittently for unknown reasons:
+               ;; <https://bugs.gnu.org/29546>.
+               (for-each delete-file
+                         '("t/t9128-git-svn-cmd-branch.sh"
+                           "t/t9167-git-svn-cmd-branch-subproject.sh"
+                           "t/t9141-git-svn-multiple-branches.sh")))))
+         (add-after 'install 'install-info-manual
+           (lambda* (#:key parallel-build? #:allow-other-keys)
+             (define job-count (if parallel-build?
+                                   (number->string (parallel-job-count))
+                                   "1"))
+             (invoke "make" "-C" "Documentation" "install-info"
+                     "-j" job-count
+                     ;; The Makefile refer to 'docbook2x-texi', but our binary
+                     ;; is named 'docbook2texi'.
+                     "DOCBOOK2X_TEXI=docbook2texi" "PERL_PATH=perl")))
+         (add-after 'install 'install-shell-completion
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out         (assoc-ref outputs "out"))
+                    (completions (string-append out "/etc/bash_completion.d")))
+               ;; TODO: Install the tcsh and zsh completions in the right place.
+               (mkdir-p completions)
+               (copy-file "contrib/completion/git-completion.bash"
+                          (string-append completions "/git")))))
+         (add-after 'install 'install-credential-netrc
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((netrc (assoc-ref outputs "credential-netrc")))
+               (install-file "contrib/credential/netrc/git-credential-netrc.perl"
+                             (string-append netrc "/bin"))
+               (rename-file (string-append netrc "/bin/git-credential-netrc.perl")
+                            (string-append netrc "/bin/git-credential-netrc"))
+               ;; Previously, Git.pm was automatically found by netrc.
+               ;; Perl 5.26 changed how it locates modules so that @INC no
+               ;; longer includes the current working directory (the Perl
+               ;; community calls this "dotless @INC").
+               (wrap-program (string-append netrc "/bin/git-credential-netrc")
+                 `("PERL5LIB" ":" prefix
+                   (,(string-append (assoc-ref outputs "out") "/share/perl5")))))))
+         (add-after 'install 'install-credential-libsecret
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((libsecret (assoc-ref outputs "credential-libsecret")))
+               (with-directory-excursion "contrib/credential/libsecret"
+                 ((assoc-ref gnu:%standard-phases 'build))
+                 (install-file "git-credential-libsecret"
+                               (string-append libsecret "/bin"))))))
+         (add-after 'install 'install-subtree
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((subtree (assoc-ref outputs "subtree")))
+               (install-file "contrib/subtree/git-subtree"
+                             (string-append subtree "/bin"))
+               (install-file "contrib/subtree/git-subtree.1"
+                             (string-append subtree "/share/man/man1")))))
+         (add-after 'install 'restore-sample-hooks-shebang
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (dir (string-append out "/share/git-core/templates/hooks")))
+               (for-each (lambda (file)
+                           (format #t "restoring shebang on `~a'~%" file)
+                           (substitute* file
+                             (("^#!.*/bin/sh") "#!/bin/sh")))
+                         (find-files dir ".*")))))
+         (add-after 'install 'split
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             ;; Split the binaries to the various outputs.
+             (let* ((out      (assoc-ref outputs "out"))
+                    (se       (assoc-ref outputs "send-email"))
+                    (svn      (assoc-ref outputs "svn"))
+                    (gui      (assoc-ref outputs "gui"))
+                    (gitk     (string-append out "/bin/gitk"))
+                    (gitk*    (string-append gui "/bin/gitk"))
+                    (git-gui  (string-append out "/libexec/git-core/git-gui"))
+                    (git-gui* (string-append gui "/libexec/git-core/git-gui"))
+                    (git-cit  (string-append out "/libexec/git-core/git-citool"))
+                    (git-cit* (string-append gui "/libexec/git-core/git-citool"))
+                    (git-se   (string-append out "/libexec/git-core/git-send-email"))
+                    (git-se*  (string-append se  "/libexec/git-core/git-send-email"))
+                    (git-svn  (string-append out "/libexec/git-core/git-svn"))
+                    (git-svn* (string-append svn "/libexec/git-core/git-svn"))
+                    (git-sm   (string-append out
+                                             "/libexec/git-core/git-submodule")))
+               (mkdir-p (string-append gui "/bin"))
+               (mkdir-p (string-append gui "/libexec/git-core"))
+               (mkdir-p (string-append se  "/libexec/git-core"))
+               (mkdir-p (string-append svn "/libexec/git-core"))
 
-              ;; By default 'make install' creates hard links for
-              ;; things in 'libexec/git-core', which leads to huge
-              ;; nars; see <https://bugs.gnu.org/21949>.
-              "NO_INSTALL_HARDLINKS=indeed")
-      #:phases
-      #~(modify-phases %standard-phases
-          #$@(if (%current-target-system)
-                 ;; The git build system assumes build == host
-                 #~((add-after 'unpack  'use-host-uname_S
-                      (lambda _
-                        (substitute* "config.mak.uname"
-                          (("uname_S := .*" all)
-                           (if (equal? #$(%current-target-system) "i586-pc-gnu")
-                               "uname_S := GNU\n"
-                               all))))))
-                 ;; We do not have a full bash when cross-compiling.
-                 #~((add-after 'unpack 'modify-PATH
-                      (lambda* (#:key inputs #:allow-other-keys)
-                        (let ((path (string-split (getenv "PATH") #\:))
-                              (bash-full #$(this-package-native-input "bash")))
-                          ;; Drop the test bash from PATH so that (which "sh")
-                          ;; and similar does the right thing.
-                          (setenv "PATH"
-                                  (string-join
-                                   (remove (cut string-prefix? bash-full <>)
-                                           path)
-                                   ":")))))))
-          #$@(if (system-hurd?)
-                 #~((add-after 'unpack 'delete-tests/hurd
-                      (lambda _
-                        (delete-file "t/t0052-simple-ipc.sh")
-                        (delete-file "t/t5562-http-backend-content-length.sh")
-                        (delete-file "t/t9902-completion.sh"))))
-                 #~())
-          ;; Add cross curl-config script to PATH when cross-compiling.
-          #$@(if (%current-target-system)
-                 #~((add-before 'configure 'add-cross-curl-config
-                      (lambda* (#:key inputs #:allow-other-keys)
-                        (setenv "PATH"
-                                (string-append
-                                 (dirname (search-input-file
-                                           inputs "bin/curl-config"))
-                                 ":" (getenv "PATH"))))))
-                 #~())
-          (add-after 'unpack 'patch-commands
-            (lambda* (#:key inputs #:allow-other-keys)
-              (define (prepend-string-to-file text file)
-                "Prepend TEXT to FILE."
-                (let ((content (call-with-input-file file
-                                 (cut get-string-all <>))))
-                  (call-with-output-file file
-                    (lambda (port)
-                      (display text port)
-                      (display content port)))))
+               (for-each (lambda (old new)
+                           (copy-file old new)
+                           (delete-file old)
+                           (chmod new #o555))
+                         (list gitk git-gui git-cit git-se git-svn)
+                         (list gitk* git-gui* git-cit* git-se* git-svn*))
 
-              (define PATH-variable-definition
-                (format #f "PATH=~{~a~^:~}${PATH:+:}$PATH~%~%"
-                        (map (compose dirname (cut search-input-file inputs <>))
-                             '("bin/basename"
-                               "bin/sed"))))
+               ;; Tell 'git-svn' where Subversion and perl-term-readkey are.
+               (wrap-program git-svn*
+                 `("PATH" ":" prefix
+                   (,(string-append (assoc-ref inputs "subversion")
+                                    "/bin")))
+                 `("PERL5LIB" ":" prefix
+                   ,(map (lambda (i) (string-append (assoc-ref inputs i)
+                                                    "/lib/perl5/site_perl"))
+                         '("subversion" "perl-term-readkey")))
 
-              ;; Ensure that coreutils (for basename) and sed are on PATH
-              ;; for any script that sources the 'git-sh-setup.sh' file.
-              (prepend-string-to-file PATH-variable-definition
-                                      "git-sh-setup.sh")
+                 ;; XXX: The .so for SVN/Core.pm lacks a RUNPATH, so
+                 ;; help it find 'libsvn_client-1.so'.
+                 `("LD_LIBRARY_PATH" ":" prefix
+                   (,(string-append (assoc-ref inputs "subversion")
+                                    "/lib"))))
 
-              ;; Avoid depending on util-linux; it's only used to detect
-              ;; whether the system is MinGW, which we can detect at build
-              ;; time.
-              (substitute* "git-sh-setup.sh"
-                (("\\$\\(uname -s)")
-                 (if #$(target-mingw?)
-                     "MINGW"
-                     "GNU")))           ;matched against '*'
+               ;; Tell 'git-send-email' where perl modules are.
+               (wrap-program git-se*
+                 `("PERL5LIB" ":" prefix
+                   ,(map (lambda (o) (string-append o "/lib/perl5/site_perl"))
+                         (list
+                          ,@(transitive-input-references
+                             'inputs
+                             (map (lambda (l)
+                                    (assoc l (package-inputs this-package)))
+                                  '("perl-authen-sasl"
+                                    "perl-net-smtp-ssl"
+                                    "perl-io-socket-ssl")))))))
 
-              ;; git-submodule sources 'git-sh-setup.sh', but not before
-              ;; invoking the basename and sed commands... patch them to their
-              ;; absolute location.
-              (substitute* "git-submodule.sh"
-                (("\\$\\(basename")
-                 (string-append "$(" (search-input-file inputs "bin/basename")))
-                (("sed -e")
-                 (string-append (search-input-file inputs "bin/sed") " -e")))))
-          (add-after 'configure 'patch-makefiles
-            (lambda _
-              (substitute* "Makefile"
-                (("/usr/bin/perl") (which "perl")))))
-          (add-after 'configure 'add-PM.stamp
-            (lambda _
-              ;; Add the "PM.stamp" to avoid "no rule to make target".
-              (call-with-output-file "perl/PM.stamp" (const #t))))
-          (add-before 'check 'patch-tests
-            (lambda _
-              (let ((store-directory (%store-directory)))
-                ;; These files contain some funny bytes that Guile is unable
-                ;; to decode for shebang patching. Just delete them.
-                (for-each delete-file '("t/t4201-shortlog.sh"
-                                        "t/t7813-grep-icase-iso.sh"))
-                ;; Many tests contain inline shell scripts (hooks etc).
-                (substitute* (find-files "t" "\\.sh$")
-                  (("#!/bin/sh") (string-append "#!" (which "sh"))))
-                ;; Un-do shebang patching here to prevent checksum mismatch.
-                (substitute* '("t/t4034/perl/pre" "t/t4034/perl/post")
-                  (("^#!.*/bin/perl") "#!/usr/bin/perl"))
-                (substitute* "t/t5003-archive-zip.sh"
-                  (("cp /bin/sh") (string-append "cp " (which "sh"))))
-                (substitute* "t/t6030-bisect-porcelain.sh"
-                  (("\"/bin/sh\"") (string-append "\"" (which "sh") "\"")))
-                ;; FIXME: This test runs `git commit` with a bogus EDITOR
-                ;; and empty commit message, but does not fail the way it's
-                ;; expected to. The test passes when invoked interactively.
-                (substitute* "t/t7508-status.sh"
-                  (("\tcommit_template_commented") "\ttrue"))
-                ;; More checksum mismatches due to odd shebangs.
-                (substitute* "t/t9100-git-svn-basic.sh"
-                  (((string-append "\"#!" store-directory ".*/bin/sh"))
-                   "\"#!/bin/sh") )
-                (substitute* "t/t9300-fast-import.sh"
-                  (((string-append "\t#!" store-directory ".*/bin/sh"))
-                   "\t#!/bin/sh")
-                  (((string-append "'#!" store-directory ".*/bin/sh"))
-                   "'#!/bin/sh"))
-                ;; FIXME: Some hooks fail with "basename: command not found".
-                ;; See 't/trash directory.t9164.../svn-hook.log'.
-                (delete-file "t/t9164-git-svn-dcommit-concurrent.sh")
+               ;; Tell 'gitweb.cgi' where perl modules are.
+               (wrap-program (string-append out "/share/gitweb/gitweb.cgi")
+                 `("PERL5LIB" ":" prefix
+                   ,(map (lambda (o) (string-append o "/lib/perl5/site_perl"))
+                         (list
+                          ,@(transitive-input-references
+                             'inputs
+                             (map (lambda (l)
+                                    (assoc l (package-inputs this-package)))
+                                  '("perl-cgi")))))))
 
-                ;; XXX: These tests fail intermittently for unknown reasons:
-                ;; <https://bugs.gnu.org/29546>.
-                (for-each delete-file
-                          '("t/t9128-git-svn-cmd-branch.sh"
-                            "t/t9167-git-svn-cmd-branch-subproject.sh"
-                            "t/t9141-git-svn-multiple-branches.sh")))))
-          (add-after 'install 'install-shell-completion
-            (lambda _
-              (let ((bash (string-append #$output "/etc/bash_completion.d"))
-                    (zsh  (string-append #$output "/share/zsh/site-functions")))
-                ;; TODO: Install the tcsh completions in the right place.
-                (for-each mkdir-p (list bash zsh))
-                (copy-file "contrib/completion/git-completion.bash"
-                           (string-append bash "/git"))
-                (copy-file "contrib/completion/git-prompt.sh"
-                           (string-append #$output "/bin/git-prompt"))
-                (copy-file "contrib/completion/git-completion.zsh"
-                           (string-append zsh "/_git")))))
-          (add-after 'install 'remove-unusable-perl-commands
-            (lambda _
-              (let ((bin     (string-append #$output "/bin"))
-                    (libexec (string-append #$output "/libexec")))
-                (for-each (lambda (file)
-                            (delete-file (string-append libexec
-                                                        "/git-core/" file)))
-                          '("git-svn" "git-cvsimport" "git-archimport"
-                            "git-cvsserver" "git-request-pull"
+               ;; Tell 'git-submodule' where Perl is.
+               (wrap-program git-sm
+                 `("PATH" ":" prefix
+                   (,(string-append (assoc-ref inputs "perl")
+                                    "/bin")))))))
+         (add-after 'split 'install-man-pages
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (man (string-append out "/share/man"))
+                    (manpages (assoc-ref inputs "git-manpages")))
+               (mkdir-p man)
+               (with-directory-excursion man
+                 (invoke "tar" "xvf" manpages)))))
+         ,@(if (system-hurd?)
+               '((add-after 'unpack 'delete-tests/hurd
+                   (lambda _
+                     (delete-file "t/t0052-simple-ipc.sh")
+                     (delete-file "t/t5562-http-backend-content-length.sh")
+                     (delete-file "t/t9902-completion.sh"))))
+               '()))))
 
-                            ;; git-add--interactive was removed in Git 2.40 but
-                            ;; this phase is inherited by older versions.
-                            #$@(if (version>=? (package-version this-package)
-                                               "2.40.1")
-                                   #~()
-                                   #~("git-add--interactive"))
-
-                            "git-cvsexportcommit"
-                            "git-instaweb" "git-send-email"))
-                (delete-file (string-append bin "/git-cvsserver"))
-
-                ;; These templates typically depend on Perl.  Remove them.
-                (delete-file-recursively
-                 (string-append #$output "/share/git-core/templates/hooks"))
-
-                ;; Gitweb depends on Perl as well.
-                (delete-file-recursively
-                 (string-append #$output "/share/gitweb")))))
-          (add-after 'install 'restore-sample-hooks-shebang
-            (lambda _
-              (let* ((dir (string-append #$output
-                                         "/share/git-core/templates/hooks")))
-                (for-each (lambda (file)
-                            (format #t "restoring shebang on `~a'~%" file)
-                            (substitute* file
-                              (("^#!.*/bin/sh") "#!/bin/sh")))
-                          (find-files dir ".*"))))))))
-    (native-inputs
-     ;; Add bash-minimal explicitly to ensure it comes before bash-for-tests,
-     ;; see <https://bugs.gnu.org/39513>.
-     (list bash-minimal
-           bash
-           gettext-minimal
-           perl))
-    (inputs
-     (list coreutils-minimal
-           curl                         ;for HTTP(S) access
-           expat                        ;for 'git push' over HTTP(S)
-           openssl
-           perl
-           sed
-           zlib))
     (native-search-paths
      ;; For HTTPS access, Git needs a single-file certificate bundle, specified
      ;; with $GIT_SSL_CAINFO.
@@ -491,6 +607,7 @@ Python 3.3 and later, rather than on Python 2.")
             (variable "GIT_EXEC_PATH")
             (separator #f)              ;single entry
             (files '("libexec/git-core")))))
+
     (synopsis "Distributed version control system")
     (description
      "Git is a free distributed version control system designed to handle
@@ -512,225 +629,77 @@ everything from small to very large projects with speed and efficiency.")
     (license license:gpl2)
     (home-page "https://git-scm.com/")))
 
-(define-public git
-  (package/inherit git-minimal
-    (name "git")
-    (outputs '("out"                    ;the core
-               "send-email"             ;for git-send-email
-               "svn"                    ;git-svn
-               "credential-netrc"       ;git-credential-netrc
-               "credential-libsecret"   ;git-credential-libsecret
-               "subtree"                ;git-subtree
-               "gui"))                  ;gitk, git gui
+(define-public git-minimal
+  ;; The size of the closure of 'git-minimal' is two thirds that of 'git'.
+  ;; Its test suite runs slightly faster and most importantly it doesn't
+  ;; depend on packages that are expensive to build such as Subversion.
+  (package
+    (inherit git)
+    (name "git-minimal")
     (arguments
-     (substitute-keyword-arguments (package-arguments git-minimal)
-       ((#:disallowed-references disallowed-refs ''())
-        (delete perl disallowed-refs))
-       ((#:make-flags flags #~'())
-        #~(cons "USE_LIBPCRE2=yes" #$flags))
-       ((#:configure-flags flags #~'())
-        ;; The explicit --with-tcltk forces the build system to hardcode the
-        ;; absolute file name to 'wish'.
-        #~(cons (string-append "--with-tcltk="
-                               (search-input-file %build-inputs
-                                                  "bin/wish8.6"))
-                #$flags))
-       ((#:phases phases '%standard-phases)
+     (substitute-keyword-arguments (package-arguments git)
+       ((#:phases phases)
         #~(modify-phases #$phases
-            (delete 'remove-unusable-perl-commands)
             (replace 'patch-makefiles
               (lambda _
                 (substitute* "Makefile"
-                  (("/usr/bin/perl") (which "perl"))
-                  (("/usr/bin/python") (which "python3")))))
-            (add-after 'build 'build-subtree
-              (lambda* (#:key native-inputs inputs #:allow-other-keys)
-                (with-directory-excursion "contrib/subtree"
-                  (invoke "make")
-                  (invoke "make" "install")
-                  (invoke "make" "install-doc")
-                  (substitute* "git-subtree"
-                    (("/bin/sh") (which "sh"))))))
-            (add-after 'install 'install-info-manual
-              (lambda* (#:key parallel-build? #:allow-other-keys)
-                (define job-count (if parallel-build?
-                                      (number->string (parallel-job-count))
-                                      "1"))
-                (invoke "make" "-C" "Documentation" "install-info"
-                        "-j" job-count
-                        ;; The Makefile refer to 'docbook2x-texi', but our
-                        ;; binary is named 'docbook2texi'.
-                        "DOCBOOK2X_TEXI=docbook2texi" "PERL_PATH=perl")))
-            (add-after 'install 'install-credential-netrc
-              (lambda _
-                (install-file
-                 "contrib/credential/netrc/git-credential-netrc.perl"
-                 (string-append #$output:credential-netrc "/bin"))
-                (rename-file (string-append #$output:credential-netrc
-                                            "/bin/git-credential-netrc.perl")
-                             (string-append #$output:credential-netrc
-                                            "/bin/git-credential-netrc"))
-                ;; Previously, Git.pm was automatically found by netrc.
-                ;; Perl 5.26 changed how it locates modules so that @INC no
-                ;; longer includes the current working directory (the Perl
-                ;; community calls this "dotless @INC").
-                (wrap-program (string-append #$output:credential-netrc
-                                             "/bin/git-credential-netrc")
-                  `("PERL5LIB" ":" prefix
-                    (,(string-append #$output "/share/perl5"))))))
-            (add-after 'install 'install-credential-libsecret
-              (lambda _
-                (with-directory-excursion "contrib/credential/libsecret"
-                  ((assoc-ref gnu:%standard-phases 'build))
-                  (install-file "git-credential-libsecret"
-                                (string-append #$output:credential-libsecret
-                                               "/bin")))))
-            (add-after 'install 'install-subtree
-              (lambda _
-                (install-file "contrib/subtree/git-subtree"
-                              (string-append #$output:subtree "/bin"))
-                (install-file "contrib/subtree/git-subtree.1"
-                              (string-append #$output:subtree
-                                             "/share/man/man1"))))
-            (add-after 'install 'split
-              (lambda* (#:key inputs #:allow-other-keys)
-                ;; Split the binaries to the various outputs.
-                (let* ((out      #$output)
-                       (se       #$output:send-email)
-                       (svn      #$output:svn)
-                       (gui      #$output:gui)
-                       (gitk     (string-append out "/bin/gitk"))
-                       (gitk*    (string-append gui "/bin/gitk"))
-                       (git-gui  (string-append
-                                  out "/libexec/git-core/git-gui"))
-                       (git-gui* (string-append
-                                  gui "/libexec/git-core/git-gui"))
-                       (git-cit  (string-append
-                                  out "/libexec/git-core/git-citool"))
-                       (git-cit* (string-append
-                                  gui "/libexec/git-core/git-citool"))
-                       (git-se   (string-append
-                                  out "/libexec/git-core/git-send-email"))
-                       (git-se*  (string-append
-                                  se  "/libexec/git-core/git-send-email"))
-                       (git-svn  (string-append
-                                  out "/libexec/git-core/git-svn"))
-                       (git-svn* (string-append
-                                  svn "/libexec/git-core/git-svn"))
-                       (git-sm   (string-append
-                                  out "/libexec/git-core/git-submodule")))
-                  (mkdir-p (string-append gui "/bin"))
-                  (mkdir-p (string-append gui "/libexec/git-core"))
-                  (mkdir-p (string-append se  "/libexec/git-core"))
-                  (mkdir-p (string-append svn "/libexec/git-core"))
+                  (("/usr/bin/perl") (which "perl")))))
+            (delete 'build-subtree)
+            (delete 'split)
+            (delete 'install-man-pages)
+            (delete 'install-info-manual)
+            (delete 'install-subtree)
+            (delete 'install-credential-netrc)
+            (delete 'install-credential-libsecret)
+            (add-after 'install 'remove-unusable-perl-commands
+              (lambda* (#:key outputs #:allow-other-keys)
+                (let* ((out     (assoc-ref outputs "out"))
+                       (bin     (string-append out "/bin"))
+                       (libexec (string-append out "/libexec")))
+                  (for-each (lambda (file)
+                              (delete-file (string-append libexec
+                                                          "/git-core/" file)))
+                            '("git-svn" "git-cvsimport" "git-archimport"
+                              "git-cvsserver" "git-request-pull"
 
-                  (for-each (lambda (old new)
-                              (copy-file old new)
-                              (delete-file old)
-                              (chmod new #o555))
-                            (list gitk git-gui git-cit git-se git-svn)
-                            (list gitk* git-gui* git-cit* git-se* git-svn*))
+                              ;; git-add--interactive was removed in Git 2.40 but
+                              ;; this phase is inherited by older versions.
+                              #$@(if (version>=? (package-version this-package)
+                                                 "2.40.1")
+                                     #~()
+                                     #~("git-add--interactive"))
 
-                  ;; Tell 'git-svn' where Subversion and perl-term-readkey are.
+                              "git-cvsexportcommit"
+                              "git-instaweb" "git-send-email"))
+                  (delete-file (string-append bin "/git-cvsserver"))
 
-                  ;; FIXME: Old school 'assoc-ref' is used to retrieve
-                  ;; subversion here, as #$(this-package-input "subversion")
-                  ;; causes a dependency cycle for unknown reasons.
-                  (wrap-program git-svn*
-                    `("PATH" ":" prefix
-                      (,(dirname (search-input-file inputs "bin/perl"))))
-                    `("PERL5LIB" ":" prefix
-                      ,(search-path-as-list
-                        '("lib/perl5/site_perl")
-                        (list (assoc-ref inputs "subversion")
-                              #$(this-package-input "perl-term-readkey"))))
+                  ;; These templates typically depend on Perl.  Remove them.
+                  (delete-file-recursively
+                   (string-append out "/share/git-core/templates/hooks"))
 
-                    ;; XXX: The .so for SVN/Core.pm lacks a RUNPATH, so
-                    ;; help it find 'libsvn_client-1.so'.
-                    `("LD_LIBRARY_PATH" ":" prefix
-                      (,(string-append (assoc-ref inputs "subversion")
-                                       "/lib"))))
-
-                  ;; Tell 'git-send-email' where perl modules are.
-                  (wrap-program git-se*
-                    `("PERL5LIB" ":" prefix
-                      ,(search-path-as-list
-                        '("lib/perl5/site_perl")
-                        '#$(delete-duplicates
-                            (append-map
-                             (compose last package-transitive-propagated-inputs)
-                             (list (this-package-input "perl-authen-sasl")
-                                   (this-package-input "perl-net-smtp-ssl")
-                                   (this-package-input
-                                    "perl-io-socket-ssl")))))))
-                  ;; Tell 'gitweb.cgi' where perl modules are.
-                  (wrap-program (string-append out "/share/gitweb/gitweb.cgi")
-                    `("PERL5LIB" ":" prefix
-                      ,(search-path-as-list
-                        '("lib/perl5/site_perl")
-                        '#$(delete-duplicates
-                            (append-map
-                             (compose last package-transitive-propagated-inputs)
-                             (list (this-package-input "perl-cgi")))))))
-
-                  ;; Tell 'git-submodule' where Perl is.
-                  (wrap-program git-sm
-                    `("PATH" ":" prefix
-                      (,(dirname (search-input-file inputs "bin/perl"))))))))
-            (add-after 'split 'install-man-pages
-              (lambda _
-                (let ((man (string-append #$output "/share/man")))
-                  (mkdir-p man)
-                  (with-directory-excursion man
-                    (invoke
-                     "tar" "xvf"
-                     #$(origin
-                         (method url-fetch)
-                         (uri (string-append
-                               "mirror://kernel.org/software/scm/git/"
-                               "git-manpages-" (package-version this-package)
-                               ".tar.xz"))
-                         (sha256
-                          (base32
-                           "1pqrp46kwbxycqld39027ph1cvkq9am156y3sswn6w2khsg30f09"))))))))))))
+                  ;; Gitweb depends on Perl as well.
+                  (delete-file-recursively
+                   (string-append out "/share/gitweb")))))))
+       ((#:make-flags flags)
+        #~(delete "USE_LIBPCRE2=yes" #$flags))
+       ((#:configure-flags flags)
+        #~(list #$@(if (%current-target-system)
+                       git-cross-configure-flags
+                       '())))
+       ((#:disallowed-references lst '())
+        `(,perl ,@lst))))
+    (outputs '("out"))
     (native-inputs
-     (modify-inputs (package-native-inputs git-minimal)
-       ;; For subtree documentation.
-       (append asciidoc
-               docbook2x
-               docbook-xml-4.5
-               docbook-xsl
-               libxslt
-               pkg-config
-               texinfo
-               xmlto)))
+     `(("bash" ,bash-minimal)
+       ("bash-for-tests" ,bash)
+       ("native-perl" ,perl)
+       ("gettext" ,gettext-minimal)))
     (inputs
-     (modify-inputs (package-inputs git-minimal)
-       (append bash-minimal             ;for wrap-program
-               python                   ;for git-p4
-
-               ;; For PCRE support in git grep (USE_LIBPCRE2).
-               pcre2
-
-               ;; For 'gitweb.cgi'.
-               perl-cgi
-
-               ;; For 'git-svn'.
-               subversion
-               perl-term-readkey
-
-               ;; For 'git-send-email'.
-               perl-authen-sasl
-               perl-net-smtp-ssl
-               perl-io-socket-ssl
-
-               ;; For 'git gui', 'gitk', and 'git citool'.
-               tcl
-               tk
-
-               ;; For 'git-credential-libsecret'
-               glib
-               libsecret)))))
+     (list curl ;for HTTP(S) access
+           expat ;for 'git push' over HTTP(S)
+           openssl
+           perl
+           zlib))))
 
 ;;; The symbol git-minimal/fixed should be used when git-minimal needs fixes
 ;;; (security or else) and this deprecation could be removed.
@@ -739,61 +708,14 @@ everything from small to very large projects with speed and efficiency.")
 (define-public git-minimal/pinned
   ;; Version that rarely changes, depended on by Graphene/GTK+.
   (package/inherit git-minimal
-    (version "2.41.0")
+    (version "2.33.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://kernel.org/software/scm/git/git-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0h40arw08xbpi2cbf7pvc947v963rjxz3inb2ar81zjc8byvlj77"))))))
-
-(define-public python-klaus
-  (package
-    (name "python-klaus")
-    (version "3.0.1")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "klaus" version))
-              (sha256
-               (base32
-                "1w6sl15llnkcg7kmnpn64awdiis061q2gijnhdx0ng7z4p1glapl"))))
-    (build-system pyproject-build-system)
-    (arguments
-     (list
-      #:tests? #f ; TODO: https://github.com/jonashaag/klaus/issues/322
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'configure-git
-            (lambda* (#:key inputs #:allow-other-keys)
-              (for-each (lambda (file)
-                          (substitute* file
-                            (("\"git\"")
-                             (string-append "\""
-                                            (search-input-file inputs "/bin/git") "\""))))
-                        (list "klaus/ctagsutils.py"
-                              "klaus/repo.py"
-                              "klaus/utils.py"
-                              "tests/test_contrib.py"
-                              "tests/test_make_app.py")))))))
-    (inputs (list git-minimal))
-    (native-inputs
-     (list python-pytest))
-    (propagated-inputs
-     (list python-dulwich python-flask python-httpauth
-           python-humanize python-pygments python-werkzeug))
-    (home-page "https://github.com/jonashaag/klaus")
-    (synopsis "Simple git web viewer")
-    (description
-"@code{klaus} is a simple, easy-to-set-up git web viewer.  It features
-@itemize
-@item Super easy to set up -- no configuration required
-@item Syntax highlighting
-@item Markdown + RestructuredText rendering support
-@item Pull + push support (Git Smart HTTP)
-@item Code navigation using Exuberant ctags
-@end itemize")
-    (license license:isc)))
+                "0bqz401dyp8wnjj3k5ahrniwk4dalndysqazzwdvv25hqbkacm70"))))))
 
 (define-public git2cl
   (let ((commit "1d74d4c0d933fc69ed5cec838c73502584dead05"))
@@ -836,43 +758,44 @@ logs to GNU ChangeLog format.")
        (file-name (git-file-name name version))))
     (build-system python-build-system)
     (arguments
-     (list
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-before 'build 'loosen-requirements
-            (lambda _
-              (substitute* "setup.py"
-                ;; Using Guix's python-pygit2 1.1.0 appears to work fine…
-                (("pygit2==") "pygit2>="))))
-          (add-before 'check 'prepare-for-tests
-            (lambda _
-              ;; Find the 'gl' command.
-              (rename-file "gl.py" "gl")
-              (setenv "PATH" (string-append (getcwd) ":" (getenv "PATH")))
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'loosen-requirements
+           (lambda _
+             (substitute* "setup.py"
+               ;; Using Guix's python-pygit2 1.1.0 appears to work fine…
+               (("pygit2==") "pygit2>="))
+             #t))
+         (add-before 'check 'prepare-for-tests
+           (lambda _
+             ;; Find the 'gl' command.
+             (rename-file "gl.py" "gl")
+             (setenv "PATH" (string-append (getcwd) ":" (getenv "PATH")))
 
-              ;; The tests try to run git as if it were already set up.
-              (setenv "HOME" (getcwd))
-              (invoke "git" "config" "--global" "user.email" "git@example.com")
-              (invoke "git" "config" "--global" "user.name" "Guix")))
-          (replace 'wrap
-            (lambda* (#:key inputs #:allow-other-keys)
-              (let ((out #$output)
-                    (git (search-input-file inputs "bin/git")))
-                (wrap-program (string-append out "/bin/gl")
-                  `("PATH" ":" prefix (,(dirname git)))
-                  `("GUIX_PYTHONPATH" ":" =
-                    (,(string-append out "/lib/python"
-                                     #$(version-major+minor
-                                        (package-version python))
-                                     "/site-packages:")
-                     ,(getenv "GUIX_PYTHONPATH"))))))))))
-    (native-inputs (list git-minimal))
+             ;; The tests try to run git as if it were already set up.
+             (setenv "HOME" (getcwd))
+             (invoke "git" "config" "--global" "user.email" "git@example.com")
+             (invoke "git" "config" "--global" "user.name" "Guix")))
+         (replace 'wrap
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (git (assoc-ref inputs "git")))
+               (wrap-program (string-append out "/bin/gl")
+                 `("PATH" ":" prefix (,(string-append git "/bin")))
+                 `("GUIX_PYTHONPATH" ":" =
+                   (,(string-append out "/lib/python"
+                                    ,(version-major+minor
+                                      (package-version python))
+                                    "/site-packages:")
+                    ,(getenv "GUIX_PYTHONPATH"))))
+               #t))))))
+    (native-inputs
+     `(("git-for-tests" ,git-minimal)))
     (inputs
-     (list bash-minimal
-           git-minimal
-           python-clint
-           python-pygit2
-           python-sh))
+     `(("git" ,git-minimal)
+       ("python-clint" ,python-clint)
+       ("python-pygit2" ,python-pygit2)
+       ("python-sh" ,python-sh)))
     (home-page "https://gitless.com")
     (synopsis "Simple version control system built on top of Git")
     (description
@@ -1102,7 +1025,7 @@ write native speed custom Git applications in any language with bindings.")
 (define-public libgit2-1.8
   (package
     (inherit libgit2-1.7)
-    (version "1.8.1")
+    (version "1.8.0")
     (source (origin
               (inherit (package-source libgit2-1.7))
               (uri (git-reference
@@ -1111,25 +1034,7 @@ write native speed custom Git applications in any language with bindings.")
               (file-name (git-file-name "libgit2" version))
               (sha256
                (base32
-                "1mh55804cvxl2cyl4clinajzgfn3zmlhacnv1pdvdj4w6z2w4si7"))
-              (patches
-               (search-patches "libgit2-uninitialized-proxy-settings.patch"))
-	      (snippet
-               '(begin
-                  (for-each delete-file-recursively
-                            '("deps/chromium-zlib"
-                              "deps/llhttp"
-                              "deps/ntlmclient"
-                              "deps/pcre"
-                              "deps/winhttp"
-                              "deps/zlib"))))))
-    (arguments (substitute-keyword-arguments (package-arguments libgit2-1.7)
-                 ((#:configure-flags flags #~(list))
-                  #~(map (lambda (arg)
-                           (if (string= "-DUSE_HTTP_PARSER=system" arg)
-                               "-DUSE_HTTP_PARSER=http-parser"
-                               arg))
-                         #$flags))))))
+                "0f0vqml6fp94z07xkpim2sdj2xvpxnsrwbm1q1dibx4vqjd7mh3q"))))))
 
 (define-public libgit2-1.6
   (package
@@ -1204,20 +1109,34 @@ write native speed custom Git applications in any language with bindings.")
     (inputs
      (list git openssl))
     (native-inputs
-     (list docbook-xml-4.2 docbook-xsl libxslt))
+     (list docbook-xsl libxslt))
     (arguments
-     (list
-      #:tests? #f ; No tests.
-      #:make-flags
-      #~(list
-         "ENABLE_MAN=yes"
-         ;; Add flag to work around OpenSSL 3 incompatibility.
-         ;; See <https://github.com/AGWA/git-crypt/issues/232>.
-         "CXXFLAGS+=-DOPENSSL_API_COMPAT=0x30000000L"
-         (string-append "PREFIX=" #$output))
-      #:phases
-      #~(modify-phases %standard-phases
-          (delete 'configure))))
+     `(#:tests? #f ; No tests.
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (add-after 'unpack 'patch-makefile
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "Makefile"
+               (("http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl")
+                (string-append (assoc-ref inputs "docbook-xsl")
+                               "/xml/xsl/docbook-xsl-"
+                               ,(package-version docbook-xsl)
+                               "/manpages/docbook.xsl")))
+             #t))
+         (replace 'build
+           (lambda _
+             ;; Add flag to work around OpenSSL 3 incompatibility.
+             ;; See <https://github.com/AGWA/git-crypt/issues/232>.
+             (setenv "CXXFLAGS" "-DOPENSSL_API_COMPAT=0x30000000L")
+
+             (invoke "make" "ENABLE_MAN=yes")))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (invoke "make" "install"
+                       "ENABLE_MAN=yes"
+                       (string-append "PREFIX=" out))))))))
     (home-page "https://www.agwa.name/projects/git-crypt/")
     (synopsis "Transparent encryption of files in a git repository")
     (description "git-crypt enables transparent encryption and decryption of
@@ -2103,7 +2022,7 @@ control to Git repositories.")
     (build-system gnu-build-system)
     (arguments
      `(#:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:make-flags (list "GUILE_AUTO_COMPILE=0")
        #:phases
        (modify-phases %standard-phases
@@ -2112,7 +2031,7 @@ control to Git repositories.")
              ;; The 'bootstrap' script lacks a shebang, leading to "Exec
              ;; format error" with glibc 2.35.
              (invoke "autoreconf" "-vfi")))
-         (add-after 'install 'wrap-program
+         (add-after 'install-bin 'wrap-program
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (use-modules (guix build guile-build-system))
              ;; Wrap the 'gitile' command to refer to the right modules.
@@ -2145,13 +2064,12 @@ control to Git repositories.")
     (native-inputs
      (list autoconf automake guile-3.0 pkg-config))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           guile-3.0
+     (list guile-3.0
            guile-commonmark
            guile-fibers
            guile-gcrypt
            guile-git
-           guile-syntax-highlight
+           guile-syntax-highlight-for-gitile
            guile-gnutls))
     (home-page "https://git.lepiller.eu/gitile")
     (synopsis "Simple Git forge written in Guile")
@@ -3040,10 +2958,10 @@ prepare atomic commits.")
                                                     "/lib/perl5/site_perl"))
                          '("perl-encode-locale" "perl-http-date"
                            "perl-http-message" "perl-html-parser" "perl-libwww"
-                           "perl-uri" "perl-try-tiny"))))))))))
+                           "perl-uri" "perl-try-tiny"))))
+               #t))))))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           perl
+     (list perl
            perl-encode-locale
            perl-html-parser
            perl-http-date
@@ -3273,25 +3191,24 @@ a built-in wiki, built-in file browsing, built-in tickets system, etc.")
 (define-public stagit
   (package
     (name "stagit")
-    (version "1.2")
+    (version "1.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
-                    ;; NOTE: It can only be cloned using the git protocol
-                    (url "git://git.codemadness.org/stagit")
-                    (commit version)))
+                     (url "git://git.codemadness.org/stagit")
+                     (commit version)))
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "17yggk3fbm731z98warvix332487s0k6knhxnf9zc6f667qi2mlr"))))
+                "0j2242vx5pbwdv79gcjxdbrwii48qphr8gk1lk7szj2irxdql171"))))
     (build-system gnu-build-system)
     (arguments
-     (list #:tests? #f ; No tests
-           #:make-flags #~(list (string-append "CC=" #$(cc-for-target))
-                                (string-append "PREFIX=" #$output))
-           #:phases
-           #~(modify-phases %standard-phases
-               (delete 'configure)))) ; No configure script
+     `(#:tests? #f ; No tests
+       #:make-flags (list (string-append "CC=" ,(cc-for-target))
+                          (string-append "PREFIX=" %output))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)))) ; No configure script
     (inputs
      (list libgit2))
     (home-page "https://git.codemadness.org/stagit/")
@@ -3364,32 +3281,32 @@ specific files and directories.")
                 "0r9i399kkagpwj08nwf1f7c6lr50xjzzgmzwyjjy6ppgcc53a809"))))
     (build-system gnu-build-system)
     (arguments
-     (list
-      #:make-flags
-      #~(list (string-append "prefix=" #$output))
-      #:phases
-      #~(modify-phases %standard-phases
-          (delete 'configure)           ; no 'configure' script
-          (add-after 'install 'wrap-program
-            (lambda* (#:key inputs #:allow-other-keys)
-              (let* ((prog (string-append #$output "/bin/src"))
-                     (rcs  (search-input-file inputs "bin/rcs")))
-                (wrap-program prog
-                  `("PATH" ":" prefix (,(dirname rcs)))))))
-          (replace 'check
-            (lambda _
-              (setenv "HOME" (getenv "TMPDIR"))
-              (invoke "git" "config" "--global" "user.name" "guix")
-              (invoke "git" "config" "--global" "user.email" "guix")
-              (invoke "./srctest"))))))
+     '(#:make-flags
+       (list (string-append "prefix=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)            ; no 'configure' script
+         (add-after 'install 'wrap-program
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out  (assoc-ref outputs "out"))
+                    (prog (string-append out "/bin/src"))
+                    (rcs  (assoc-ref inputs "rcs")))
+               (wrap-program prog
+                 `("PATH" ":" prefix (,(string-append rcs "/bin"))))
+               #t)))
+         (replace 'check
+           (lambda _
+             (setenv "HOME" (getenv "TMPDIR"))
+             (invoke "git" "config" "--global" "user.name" "guix")
+             (invoke "git" "config" "--global" "user.email" "guix")
+             (invoke "./srctest"))))))
     (native-inputs
      ;; For testing.
      (list git perl))
     (inputs
-     (list bash-minimal
-           cssc
-           python-wrapper
-           rcs))
+     `(("cssc" ,cssc)
+       ("python" ,python-wrapper)
+       ("rcs" ,rcs)))
     (synopsis "Simple revision control")
     (home-page "http://www.catb.org/~esr/src/")
     (description
@@ -3426,19 +3343,23 @@ directory full of HOWTOs.")
              (lambda* (#:key outputs #:allow-other-keys)
                (install-file "bin/git-when-merged"
                              (string-append (assoc-ref outputs "out")
-                                            "/bin"))))
+                                            "/bin"))
+               #t))
            (add-before 'install 'patch-git
              (lambda* (#:key inputs #:allow-other-keys)
                (let ((git (search-input-file inputs "/bin/git")))
                  (substitute* "bin/git-when-merged"
-                   (("'git'") (string-append "'" git "'"))))))
+                   (("'git'") (string-append "'" git "'")))
+                 #t)))
            (add-after 'install 'wrap-script
              (lambda* (#:key outputs #:allow-other-keys)
                (wrap-program (string-append (assoc-ref outputs "out")
                                             "/bin/git-when-merged")
-                 `("GUIX_PYTHONPATH" ":" prefix
-                   (,(getenv "GUIX_PYTHONPATH")))))))))
-      (inputs (list bash-minimal git python-wrapper))
+                 `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH"))))
+               #t)))))
+      (inputs
+       `(("git" ,git)
+         ("python" ,python-wrapper)))
       (home-page "https://github.com/mhagger/git-when-merged")
       (synopsis "Determine when a commit was merged into a Git branch")
       (description "This Git extension defines a subcommand,
@@ -3472,14 +3393,17 @@ how information about the merge is displayed.")
            (lambda* (#:key inputs #:allow-other-keys)
              (let ((git (search-input-file inputs "/bin/git")))
                (substitute* "git-imerge"
-                 (("'git'") (string-append "'" git "'"))))))
+                 (("'git'") (string-append "'" git "'")))
+               #t)))
          (add-after 'install 'wrap-script
            (lambda* (#:key outputs #:allow-other-keys)
              (wrap-program (string-append (assoc-ref outputs "out")
                                           "/bin/git-imerge")
-               `("GUIX_PYTHONPATH" ":" prefix
-                 (,(getenv "GUIX_PYTHONPATH")))))))))
-    (inputs (list bash-minimal git python-wrapper))
+               `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH"))))
+             #t)))))
+    (inputs
+     `(("git" ,git)
+       ("python" ,python-wrapper)))
     (home-page "https://github.com/mhagger/git-imerge")
     (synopsis "Incremental merge for Git")
     (description "This Git extension defines a subcommand, @code{imerge},
@@ -3701,7 +3625,7 @@ standalone agent instead of a server.")
         (base32 "11n46bngvca5wbdbfcxzjhjbfdbad7sgf7h9gf956cb1q8swsdm0"))))
     (build-system copy-build-system)
     (inputs
-     (list bash-minimal xdg-utils))
+     (list xdg-utils))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -3791,7 +3715,7 @@ for historians.")
                (base32
                 "11vkq5njjlvjipic7db44ga875n61drszw1qrdzwxmmfmnz425zz"))))
     (inputs
-     (list bash-minimal perl ncurses))
+     (list perl ncurses))
     (build-system copy-build-system)
     (arguments
      '(#:phases
@@ -4021,7 +3945,7 @@ using the remote repository URL's host and path.")
                  "tkrev")))))
        #:tests? #f))
     (inputs
-     (list bash-minimal tk))
+     (list tk))
     (home-page "https://tkcvs.sourceforge.io")
     (synopsis "Graphical interface to CVS, Subversion, Git, and RCS")
     (description
@@ -4088,7 +4012,7 @@ TkDiff is included for browsing and merging your changes.")
      (list
       #:tests? #f                       ;No tests.
       #:imported-modules
-      `(,@%default-gnu-imported-modules
+      `(,@%gnu-build-system-modules
         (guix build python-build-system))
       #:modules
       '((guix build gnu-build-system)

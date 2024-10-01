@@ -30,7 +30,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages compression)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages enlightenment)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages linux)
@@ -119,13 +118,13 @@ sharing) to clients via USB, ethernet, WiFi, cellular and Bluetooth.")
     (name "econnman")
     (version "1.1")
     (source
-     (origin
-       (method url-fetch)
-       (uri (string-append "https://download.enlightenment.org/rel/apps/"
-                           "econnman/econnman-" version ".tar.gz"))
-       (sha256
-        (base32
-         "057pwwavlvrrq26bncqnfrf449zzaim0zq717xv86av4n940gwv0"))))
+      (origin
+        (method url-fetch)
+        (uri (string-append "https://download.enlightenment.org/rel/apps/"
+                            "econnman/econnman-" version ".tar.gz"))
+        (sha256
+         (base32
+          "057pwwavlvrrq26bncqnfrf449zzaim0zq717xv86av4n940gwv0"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--localstatedir=/var")
@@ -139,15 +138,14 @@ sharing) to clients via USB, ethernet, WiFi, cellular and Bluetooth.")
              (let* ((out (assoc-ref outputs "out"))
                     (bin (string-append out "/bin/econnman-bin")))
                (wrap-program bin
-                 `("GUIX_PYTHONPATH" ":" prefix
-                   (,(getenv "GUIX_PYTHONPATH"))))))))))
+                 `("GUIX_PYTHONPATH" ":" prefix (,(getenv "GUIX_PYTHONPATH"))))
+               #t))))))
     (native-inputs (list pkg-config))
     (inputs
-     (list bash-minimal                 ;for wrap-program
-           efl
-           python-wrapper
-           python-dbus
-           python-efl))
+     `(("efl" ,efl)
+       ("python" ,python-wrapper)
+       ("python-dbus" ,python-dbus)
+       ("python-efl" ,python-efl)))
     (home-page "https://www.enlightenment.org")
     (synopsis "Connman User Interface written using the EFL")
     (description

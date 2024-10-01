@@ -38,6 +38,11 @@
   #:use-module (srfi srfi-26)
   #:export (mix-build-system hexpm-uri))
 
+;; Lazily resolve bindings to avoid circular dependencies.
+(define (default-glibc-utf8-locales)
+  (let* ((base (resolve-interface '(gnu packages base))))
+    (module-ref base 'glibc-utf8-locales)))
+
 (define (default-elixir-hex)
   (let ((elixir (resolve-interface '(gnu packages elixir))))
     (module-ref elixir 'elixir-hex)))
@@ -85,7 +90,7 @@ See: https://github.com/hexpm/specifications/blob/main/endpoints.md"
                     (system (%current-system))
                     (guile #f)
                     (imported-modules `((guix build mix-build-system)
-                                        ,@%default-gnu-imported-modules))
+                                        ,@%gnu-build-system-modules))
                     (modules '((guix build mix-build-system)
                                (guix build utils))))
   "Build SOURCE using Elixir, and with INPUTS."
@@ -139,6 +144,7 @@ See: https://github.com/hexpm/specifications/blob/main/endpoints.md"
                 #:key
                 (elixir (default-elixir))
                 (elixir-hex (default-elixir-hex))
+                (glibc-utf8-locales (default-glibc-utf8-locales))
                 (inputs '())
                 (native-inputs '())
                 (propagated-inputs '())
@@ -153,10 +159,11 @@ See: https://github.com/hexpm/specifications/blob/main/endpoints.md"
   (let ((private-keywords
          '(#:inputs #:native-inputs
            #:outputs #:system #:target
-           #:elixir #:elixir-hex
+           #:elixir #:elixir-hex #:glibc-utf8-locales
            #:rebar3 #:erlang))
         (build-inputs
          `(,@(standard-packages)
+           ("glibc-utf8-locales" ,glibc-utf8-locales)
            ("erlang" ,(lookup-package-input elixir "erlang"))
            ("rebar3" ,rebar3)
            ("elixir" ,elixir)

@@ -38,7 +38,7 @@
 
 (define %agda-build-system-modules
   `((guix build agda-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define %default-modules
   '((guix build agda-build-system)
@@ -69,6 +69,7 @@
                                 (list "ghc" (default-haskell))
                                 (standard-packages))
                                '())
+                         ,(assoc "locales" (standard-packages))
                          ,@native-inputs))
          (outputs outputs)
          (build agda-build)

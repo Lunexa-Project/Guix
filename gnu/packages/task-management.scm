@@ -6,7 +6,6 @@
 ;;; Copyright © 2021 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2021 LibreMiami <packaging-guix@libremiami.org>
 ;;; Copyright © 2021 Reza Alizadeh Majd <r.majd@pantherx.org>
-;;; Copyright © 2021 Sebastian Gibb <mail@sebastiangibb.de>
 ;;; Copyright © 2022 Foo Chuan Wei <chuanwei.foo@hotmail.com>
 ;;; Copyright © 2022 Pavel Shlyak <p.shlyak@pantherx.org>
 ;;; Copyright © 2022 Matthew James Kraai <kraai@ftbfs.org>
@@ -31,7 +30,6 @@
   #:use-module (guix gexp)
   #:use-module (guix packages)
   #:use-module (gnu packages)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages check)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gettext)
@@ -46,8 +44,6 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-build)
-  #:use-module (gnu packages python-check)
-  #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages readline)
@@ -62,7 +58,6 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system go)
   #:use-module (guix build-system meson)
-  #:use-module (guix build-system pyproject)
   #:use-module (guix build-system python)
   #:use-module (guix build-system qt))
 
@@ -335,7 +330,7 @@ a task.")
     (build-system meson-build-system)
     (arguments
      `(#:glib-or-gtk? #t
-       #:tests? #f                   ;the "Validate appstream file" test fails
+       #:tests? #f ;the "Validate appstream file" test fails
        #:phases
        (modify-phases %standard-phases
          (add-after 'wrap 'wrap-libs
@@ -347,20 +342,20 @@ a task.")
                (wrap-program (string-append out "/bin/blanket")
                  `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))
                  `("GST_PLUGIN_SYSTEM_PATH" ":" prefix (,gst-plugin-path))
-                 `("GUIX_PYTHONPATH" ":" prefix (,python-path)))))))))
+                 `("GUIX_PYTHONPATH" ":" prefix (,python-path))))
+             #t)))))
     (native-inputs
-     (list desktop-file-utils
-           gettext-minimal
-           `(,glib "bin")
-           gobject-introspection
-           `(,gtk+ "bin")
-           pkg-config))
+     `(("desktop-file-utils" ,desktop-file-utils)
+       ("gettext" ,gettext-minimal)
+       ("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("gtk+:bin" ,gtk+ "bin")
+       ("pkg-config" ,pkg-config)))
     (inputs
      (list appstream-glib
-           bash-minimal
            gsettings-desktop-schemas
            gst-plugins-bad
-           gst-plugins-good             ;for ScaleTempo plugin
+           gst-plugins-good ;for ScaleTempo plugin
            gtk+
            libhandy
            python
@@ -487,34 +482,3 @@ manager.  Todos are stored into icalendar files, which means you can sync
 them via CalDAV using, for example, @code{vdirsyncer}.")
     (license license:isc)))
 
-(define-public watson
-  (package
-    (name "watson")
-    (version "2.1.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/tailordev/watson")
-             (commit version)))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "0j0gqnxf0smjs0sy7ipryj1sk0s59wrh4qwr7h55zdr4wdhi407w"))))
-    (build-system pyproject-build-system)
-    (native-inputs
-     (list python-mock
-           python-pytest
-           python-pytest-datafiles
-           python-pytest-mock))
-    (propagated-inputs
-     (list python-arrow
-           python-click
-           python-click-didyoumean
-           python-colorama
-           python-requests))
-    (home-page "https://tailordev.github.io/Watson/")
-    (synopsis "Command-line time tracker")
-    (description
-     "Watson is command-line interface to manage your time.  It supports
-projects, tagging and reports.")
-    (license license:expat)))

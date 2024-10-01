@@ -11,7 +11,7 @@
 ;;; Copyright © 2017, 2019 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2019 Tim Gesthuizen <tim.gesthuizen@yahoo.de>
 ;;; Copyright © 2019 David Wilson <david@daviwil.com>
-;;; Copyright © 2020, 2024 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Reza Alizadeh Majd <r.majd@pantherx.org>
 ;;; Copyright © 2021 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2021, 2022 muradm <mail@muradm.net>
@@ -49,7 +49,7 @@
                           file-system))
   #:autoload   (gnu services sddm) (sddm-service-type)
   #:use-module (gnu system)
-  #:use-module (gnu system privilege)
+  #:use-module (gnu system setuid)
   #:use-module (gnu system shadow)
   #:use-module (gnu system uuid)
   #:use-module (gnu system pam)
@@ -1080,11 +1080,7 @@ and many other) available for GIO applications.")
                                     (default '("disk")))
   (hybrid-sleep-mode                elogind-hybrid-sleep-mode
                                     (default
-                                      '("suspend" "platform" "shutdown")))
-  (hibernate-delay-seconds          elogind-hibernate-delay-seconds
-                                    (default *unspecified*))
-  (suspend-estimation-seconds       elogind-suspend-estimation-seconds
-                                    (default *unspecified*)))
+                                      '("suspend" "platform" "shutdown"))))
 
 (define (elogind-configuration-file config)
   (define (yesno x)
@@ -1108,11 +1104,8 @@ and many other) available for GIO applications.")
     (unless (exact-integer? x) (error "not an integer" x))
     (when (negative? x) (error "negative number not allowed" x))
     (number->string x))
-  (define (maybe-non-negative-integer x)
-    (or (and (unspecified? x) x)
-        (non-negative-integer x)))
   (define handle-actions
-    '(ignore poweroff reboot halt kexec suspend hibernate hybrid-sleep suspend-then-hibernate lock))
+    '(ignore poweroff reboot halt kexec suspend hibernate hybrid-sleep lock))
   (define (handle-action x)
     (if (unspecified? x)
         x                               ;let the unspecified value go through
@@ -1170,9 +1163,7 @@ and many other) available for GIO applications.")
    ("HibernateState" (sleep-list elogind-hibernate-state))
    ("HibernateMode" (sleep-list elogind-hibernate-mode))
    ("HybridSleepState" (sleep-list elogind-hybrid-sleep-state))
-   ("HybridSleepMode" (sleep-list elogind-hybrid-sleep-mode))
-   ("HibernateDelaySec" (maybe-non-negative-integer elogind-hibernate-delay-seconds))
-   ("SuspendEstimationSec" (maybe-non-negative-integer elogind-suspend-estimation-seconds))))
+   ("HybridSleepMode" (sleep-list elogind-hybrid-sleep-mode))))
 
 (define (elogind-dbus-service config)
   "Return a @file{org.freedesktop.login1.service} file that tells D-Bus how to
@@ -1732,12 +1723,11 @@ need to create it beforehand."))))
   (enlightenment        enlightenment-package
                         (default enlightenment)))
 
-(define (enlightenment-privileged-programs enlightenment-desktop-configuration)
+(define (enlightenment-setuid-programs enlightenment-desktop-configuration)
   (match-record enlightenment-desktop-configuration
       <enlightenment-desktop-configuration>
     (enlightenment)
-    (map (lambda (program) (privileged-program (program program)
-                                               (setuid? #t)))
+    (map file-like->setuid-program
          (list (file-append enlightenment
                             "/lib/enlightenment/utils/enlightenment_sys")
                (file-append enlightenment
@@ -1759,8 +1749,8 @@ need to create it beforehand."))))
                                       (package-direct-input-selector
                                         "ddcutil")
                                       enlightenment-package))
-          (service-extension privileged-program-service-type
-                             enlightenment-privileged-programs)
+          (service-extension setuid-program-service-type
+                             enlightenment-setuid-programs)
           (service-extension profile-service-type
                              (compose list
                                       enlightenment-package))))
@@ -1768,7 +1758,7 @@ need to create it beforehand."))))
    (description
     "Return a service that adds the @code{enlightenment} package to the system
 profile, and extends dbus with the ability for @code{efl} to generate
-thumbnails and privileges the programs which enlightenment needs to function
+thumbnails and makes setuid the programs which enlightenment needs to function
 as expected.")))
 
 ;;;
@@ -2054,9 +2044,8 @@ applications needing access to be root.")
          ;; without root.
          (simple-service 'mount-setuid-helpers setuid-program-service-type
                          (map (lambda (program)
-                                (privileged-program
-                                 (program program)
-                                 (setuid? #t)))
+                                (setuid-program
+                                 (program program)))
                               (list (file-append nfs-utils "/sbin/mount.nfs")
                                (file-append ntfs-3g "/sbin/mount.ntfs-3g"))))
 

@@ -2,7 +2,7 @@
 ;;; Copyright © 2018–2022 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2020 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
-;;; Copyright © 2021, 2023, 2024 Evgeny Pisemsky <mail@pisemsky.site>
+;;; Copyright © 2021, 2023 Evgeny Pisemsky <mail@pisemsky.site>
 ;;; Copyright © 2021 Léo Le Bouter <lle-bout@zaclys.net>
 ;;; Copyright © 2021 Denis Carikli <GNUtoo@cyberdimension.org>
 ;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
@@ -1580,7 +1580,7 @@ modern instrumentation and data acquision systems using Ethernet.")
 (define-public usbrelay
   (package
     (name "usbrelay")
-    (version "1.2.1")
+    (version "1.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -1589,31 +1589,19 @@ modern instrumentation and data acquision systems using Ethernet.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1xw2fqx4drmkvv587vkz3aicp6pw1mzxr8bjz8wad9j4c0r24cgn"))))
+                "0fr3wglr2c6myg4k6ai2p5z38prclcnk2ngik15sq16fnp6qg750"))))
     (build-system gnu-build-system)
     (arguments
      (list
       #:phases #~(modify-phases %standard-phases
-                   ;; No configure script.
-                   (delete 'configure)
-                   (add-after 'install 'install-manpage
-                     (lambda _
-                       (install-file "usbrelay.1"
-                                     (string-append #$output "/share/man/man1"))))
-                   (add-after 'install-manpage 'install-udev-rules
-                     (lambda _
-                       (install-file "50-usbrelay.rules"
-                                     (string-append #$output "/lib/udev/rules.d")))))
+                   (delete 'configure)) ;no configure script
       #:make-flags #~(list (string-append "CC=" #$(cc-for-target))
                            (string-append "PREFIX=" #$output)
                            (string-append "LDFLAGS=-Wl,-rpath="
                                           (string-append #$output "/lib"))
                            "LDCONFIG=true"
-                           (string-append "USBMAJOR=" #$version)
-                           (string-append "USBLIBVER=" #$version)
-                           (string-append "VERSION=" #$version))
-      ;; No test suite.
-      #:tests? #f))
+                           "USBMAJOR=$(USBLIBVER)")
+      #:tests? #f))                     ;no test suite
     (inputs (list hidapi))
     (home-page "https://github.com/darrylb123/usbrelay")
     (synopsis "Control USB relay modules")

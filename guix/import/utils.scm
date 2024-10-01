@@ -418,10 +418,12 @@ LENGTH characters."
 optional OUTPUT, tries to generate a quoted list of inputs, as suitable to
 use in an 'inputs' field of a package definition."
   (define (make-input input version)
-    (let ((name (if version (string-append input "-" version) input)))
-      (if output
-          (list (string->symbol name) output)
-          (string->symbol name))))
+    (cons* input (list 'unquote (string->symbol
+                                 (if version
+                                     (string-append input "-" version)
+                                     input)))
+           (or (and output (list output))
+               '())))
 
   (map (match-lambda
          ((input version) (make-input input version))
@@ -442,7 +444,7 @@ snippet generated is for regular inputs."
       (()
        '())
       ((package-inputs ...)
-       `((,field-name (list ,@package-inputs)))))))
+       `((,field-name (,'quasiquote ,package-inputs)))))))
 
 (define* (maybe-native-inputs package-names #:optional (output #f))
   "Same as MAYBE-INPUTS, but for native inputs."

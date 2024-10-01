@@ -29,8 +29,7 @@
 
 (define* (set-locpath #:key inputs native-inputs #:allow-other-keys)
   (let ((locales (assoc-ref (or native-inputs inputs) "locales")))
-    (when locales
-      (setenv "GUIX_LOCPATH" (string-append locales "/lib/locale")))))
+    (setenv "GUIX_LOCPATH" (string-append locales "/lib/locale"))))
 
 (define %agda-possible-extensions
   (cons

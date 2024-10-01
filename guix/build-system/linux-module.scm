@@ -41,7 +41,7 @@
 (define %linux-module-build-system-modules
   ;; Build-side modules imported by default.
   `((guix build linux-module-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-linux)
   "Return the default Linux package."

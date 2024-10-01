@@ -34,7 +34,6 @@
   #:use-module (guix build-system ruby)
   #:use-module (guix gexp)
   #:use-module (gnu packages)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages ruby)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages flex)
@@ -200,15 +199,17 @@ is usually the formatter of \"man\" documentation pages.")
              (lambda* (#:key outputs #:allow-other-keys)
                (let ((out (assoc-ref outputs "out")))
                  (install-file "roffit" (string-append out "/bin"))
-                 (install-file "roffit.1"
-                               (string-append out "/share/man/man1")))))
+                 (install-file "roffit.1" (string-append out "/share/man/man1"))
+                 #t)))
            (add-after 'install 'wrap-program
              (lambda* (#:key outputs #:allow-other-keys)
                (let ((out (assoc-ref outputs "out")))
                  (wrap-program (string-append out "/bin/roffit")
-                   `("PERL5LIB" ":" prefix (,(getenv "PERL5LIB"))))))))))
-      (native-inputs (list perl-html-tree)) ; for test
-      (inputs (list bash-minimal perl))
+                   `("PERL5LIB" ":" prefix (,(getenv "PERL5LIB"))))
+                 #t))))))
+      (native-inputs `(("html-tree" ,perl-html-tree))) ; for test
+      (inputs
+       (list perl))
       (home-page "https://daniel.haxx.se/projects/roffit/")
       (synopsis "Convert nroff files to HTML")
       (description
@@ -257,7 +258,7 @@ It is typically used to display man pages on a web site.")
                                           "ruby-mustache"
                                           "ruby-nokogiri"))))))))))
     (inputs
-     (list bash-minimal ruby-kramdown ruby-mustache ruby-nokogiri))
+     (list ruby-kramdown ruby-mustache ruby-nokogiri))
     (synopsis
      "Build manuals in HTML and Unix man page format from Markdown")
     (description

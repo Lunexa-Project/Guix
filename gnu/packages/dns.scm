@@ -18,7 +18,7 @@
 ;;; Copyright © 2020 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2020 Brice Waegeneire <brice@waegenei.re>
 ;;; Copyright © 2020 Simon South <simon@simonsouth.net>
-;;; Copyright © 2021, 2024 Zheng Junjie <873216071@qq.com>
+;;; Copyright © 2021 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2023 Bruno Victal <mirai@makinata.eu>
 ;;; Copyright © 2023 Hilton Chain <hako@ultrarare.space>
 ;;; Copyright © 2024 John Kehayias <john.kehayias@protonmail.com>
@@ -636,18 +636,18 @@ BIND and djbdns---whilst using relatively little memory.")
 (define-public unbound
   (package
     (name "unbound")
-    (version "1.21.0")
+    (version "1.19.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://www.unbound.net/downloads/unbound-"
                            version ".tar.gz"))
        (sha256
-        (base32 "08a5l5z0c99433pqg2i7x5d9m6as7c2z3sv4zakdy6zqn3bagp77"))))
+        (base32 "1ad34jxprygjp7g84q1bgmvcc114f2mgyhfwk9rs0inq7mpmf7dw"))))
     (build-system gnu-build-system)
     (outputs '("out" "python"))
     (native-inputs
-     (list flex swig python-wrapper))
+     (list flex swig))
     (inputs
      (list expat
            libevent
@@ -845,7 +845,7 @@ Extensions} (DNSSEC).")
 (define-public knot
   (package
     (name "knot")
-    (version "3.3.8")
+    (version "3.3.4")
     (source
      (origin
        (method git-fetch)
@@ -854,7 +854,7 @@ Extensions} (DNSSEC).")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0iaardlmvcp6f0vccs81f202bb53y7fkcw5n12ahgqymqzhafpmq"))
+        (base32 "0w7drq0pj94d43qn9wmzxab34mjhxj9x84rixbswc270ywh6d9pr"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -984,14 +984,14 @@ synthesis, and on-the-fly re-configuration.")
 (define-public knot-resolver
   (package
     (name "knot-resolver")
-    (version "5.7.4")
+    (version "5.7.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://secure.nic.cz/files/knot-resolver/"
                                   "knot-resolver-" version ".tar.xz"))
               (sha256
                (base32
-                "1j6rig8mb4sh11q6cfhqmlsaxw41fwiglkflz8d08a38y3nacvbb"))))
+                "18n3jh17d22xmzpg8syw2dm85vv7jchdc4hzk5x78lqxqqav856s"))))
     (build-system meson-build-system)
     (outputs '("out" "doc"))
     (arguments
@@ -1045,8 +1045,7 @@ synthesis, and on-the-fly re-configuration.")
            python-sphinx-rtd-theme
            texinfo))
     (inputs
-     `(("bash" ,bash-minimal)           ;for wrap-program
-       ("fstrm" ,fstrm)
+     `(("fstrm" ,fstrm)
        ("gnutls" ,gnutls)
        ("knot:lib" ,knot "lib")
        ("libuv" ,libuv)

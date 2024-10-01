@@ -3116,9 +3116,6 @@ package.")
        (list sbcl-fiveam))
       (inputs
        (list sbcl-bordeaux-threads))
-      (arguments
-       ;; Disable flaky tests
-       (list #:tests? #f))
       (synopsis "Portable channel-based concurrency for Common Lisp")
       (description "Common Lisp library for channel-based concurrency.  In
 a nutshell, you create various threads sequentially executing tasks you need
@@ -4420,7 +4417,7 @@ This library is no longer supported by its author.")
 (define-public sbcl-cl-colors2
   (package
     (name "sbcl-cl-colors2")
-    (version "0.6.1")
+    (version "0.6.0")
     (source
      (origin
        (method git-fetch)
@@ -4429,7 +4426,7 @@ This library is no longer supported by its author.")
              (commit (string-append "v" version))))
        (file-name (git-file-name "cl-colors2" version))
        (sha256
-        (base32 "053bidgbqziv5visdq09gy8zf30cvqh1w06l23yygn1yrg7m7302"))))
+        (base32 "0vnvlq9xixs04768q7hapsi16cjp3ych6mypvs6chihd5dal4cnd"))))
     (build-system asdf-build-system/sbcl)
     (native-inputs
      (list sbcl-clunit2))
@@ -4799,8 +4796,8 @@ from/to strings, streams and files.")
   (sbcl-package->ecl-package sbcl-cl-csv))
 
 (define-public sbcl-cl-data-structures
-  (let ((commit "ffab56830f3ed777450a065890484ef22147cd44")
-        (revision "2"))
+  (let ((commit "25dd479377eb40ce54eed4ecc0d660aed32f3a78")
+        (revision "1"))
     (package
       (name "sbcl-cl-data-structures")
       (version (git-version "1.4.1" revision commit))
@@ -4812,7 +4809,7 @@ from/to strings, streams and files.")
                (commit commit)))
          (file-name (git-file-name "cl-data-structures" version))
          (sha256
-          (base32 "0h49h1x9dgr53imj0r4lgx0zvdsv3mnh7lyayzy9hlysy2ixp425"))))
+          (base32 "1yhfahnsx56s9jzdk7jnqic5a3fiq29i1a9d0ay6fd1rg2wfa3k3"))))
       (build-system asdf-build-system/sbcl)
       (native-inputs
        (list sbcl-prove))
@@ -8223,15 +8220,6 @@ compatible with ANSI-compliant Common Lisp implementations.")
        (list sbcl-moptilities sbcl-s-sysdeps sbcl-s-xml))
       (native-inputs
        (list sbcl-fiveam sbcl-find-port))
-      (arguments
-       (list #:phases
-             #~(modify-phases %standard-phases
-                 (add-after 'unpack 'fix-build-with-usocket-bt2
-                   (lambda _
-                     ;; See https://github.com/40ants/cl-prevalence/pull/27
-                     (substitute* "src/master-slave.lisp"
-                       (("stop-process \\(bt:thread-name server-thread\\)")
-                        "stop-process (bt2:thread-name server-thread)")))))))
       (synopsis "Implementation of object prevalence for Common Lisp")
       (description "This Common Lisp library implements object prevalence (see
 @url{https://en.wikipedia.org/wiki/System_prevalence}).  It allows
@@ -11258,7 +11246,7 @@ selectors.  It makes use of the Plump-DOM and is used by lQuery.")
       (arguments
        `(#:phases
          (modify-phases %standard-phases
-           (add-after 'strip 'unpatch-shebangs
+           (add-after 'install 'unpatch-shebangs
              (lambda* (#:key outputs #:allow-other-keys)
                ;; The documentation Makefile rely on shell scripts.
                ;; TODO: Build it!
@@ -11358,11 +11346,11 @@ as opposed to a character file or S-expressions.")
   (sbcl-package->ecl-package sbcl-cluster))
 
 (define-public sbcl-clx
-  (let ((commit "69f2ebb761d1ff3400deb10c3edce3725846d739")
+  (let ((commit "38400456d66823e417d1d27d339b09885e25eb59")
         (revision "1"))
     (package
       (name "sbcl-clx")
-      (version (git-version "0.7.6" revision commit))
+      (version (git-version "0.7.5" revision commit))
       (source
        (origin
          (method git-fetch)
@@ -11371,7 +11359,7 @@ as opposed to a character file or S-expressions.")
            (url "https://github.com/sharplispers/clx")
            (commit commit)))
          (sha256
-          (base32 "0hcyjj7z1xmjfh4f8zljyinnf2d4ap6gazfxkmiz7vvb8ks6i5y3"))
+          (base32 "1c05gjqh5lil2sgma0yap4mxd9y1cjkp933hyx1iaj14950nhfnl"))
          (file-name (git-file-name "cl-clx" version))))
       (build-system asdf-build-system/sbcl)
       (native-inputs
@@ -12285,11 +12273,11 @@ well as standard genetic algorithms.")
   (sbcl-package->ecl-package sbcl-core-gp))
 
 (define-public sbcl-croatoan
-  (let ((commit "0157da69edf1459db43fcd30bc6941ef0b26c02d")
+  (let ((commit "282145ff9e9005fddc4241bc6827b3ab09c5bd25")
         (revision "1"))
     (package
       (name "sbcl-croatoan")
-      (version (git-version "0.3" revision commit))
+      (version (git-version "2.0" revision commit))
       (source
        (origin
          (method git-fetch)
@@ -12298,7 +12286,7 @@ well as standard genetic algorithms.")
                (commit commit)))
          (file-name (git-file-name "cl-croatoan" version))
          (sha256
-          (base32 "1pd3ivh2hcrbj7xfrfma10chlpzcgh0g36sjy5b23pm2zga4dqvs"))))
+          (base32 "021h2f2yj4j9gynr3k7qi36x94jm5b95p3vaddbaih96wyzgbmq5"))))
       (build-system asdf-build-system/sbcl)
       (arguments
        '(#:phases
@@ -17693,7 +17681,7 @@ and @code{kqueue(2)}), a pathname library and file-system utilities.")
 (define-public sbcl-ironclad
   (package
     (name "sbcl-ironclad")
-    (version "0.61")
+    (version "0.60")
     (source
      (origin
        (method git-fetch)
@@ -17701,7 +17689,7 @@ and @code{kqueue(2)}), a pathname library and file-system utilities.")
              (url "https://github.com/sharplispers/ironclad/")
              (commit (string-append "v" version))))
        (sha256
-        (base32 "1yszjy6a0q1jvdgd7fpmnvi9851s8ivp4plscw27lbnl7jlj1pmk"))
+        (base32 "122ldxiddkscb3li5wjrppr7vyn77znyjfgs8pbflrskzyxlabdd"))
        (file-name (git-file-name "cl-ironclad" version))))
     (build-system asdf-build-system/sbcl)
     (native-inputs
@@ -20949,7 +20937,7 @@ library for Ruby, which is itself based on the Lucene library for Java.")
                  ((":relative-to lift-test")
                   ":relative-to moptilities-test"))
                #t))
-           (add-after 'check 'remove-test-results
+           (add-after 'install 'remove-test-results
              ;; Otherwise the drag the SBCL package into the closure of the CL
              ;; package.
              (lambda* (#:key outputs #:allow-other-keys)
@@ -21798,11 +21786,11 @@ instead of #'FOO.
   (sbcl-package->ecl-package sbcl-nkeymaps))
 
 (define-public sbcl-nodgui
-  (let ((commit "dc3efed8f93d4955e59347824f8f6d018e1a22e0")
+  (let ((commit "9d0c9731bc2f2b434f0ddabe4b3796432aad8cba")
         (revision "1"))
     (package
       (name "sbcl-nodgui")
-      (version (git-version "0.7.0.3" revision commit))
+      (version (git-version "0.6.2.0" revision commit))
       (source
        (origin
          (method git-fetch)
@@ -21811,7 +21799,7 @@ instead of #'FOO.
                (commit commit)))
          (file-name (git-file-name "cl-nodgui" version))
          (sha256
-          (base32 "1kjbimzl9q74dz1fhl03n49607li55q6h0kdygfyr0n8cnf5638j"))))
+          (base32 "0j98mcq0mn3wrlqm3j29pv530q0pkq00sk6liai97an51i1n08g6"))))
       (build-system asdf-build-system/sbcl)
       (native-inputs
        (list sbcl-clunit2))
@@ -21829,7 +21817,6 @@ instead of #'FOO.
              sbcl-parse-number
              sbcl-pngload
              sbcl-sdl2
-             sbcl-sdl2-ttf
              sbcl-static-vectors
              sbcl-trivial-garbage
              sbcl-zpng
@@ -25153,12 +25140,10 @@ Rucksack with some enhancements.")
          (uri (git-reference
                (url home-page)
                (commit commit)))
-         (file-name (git-file-name "cl-s-sysdeps" version))
+         (file-name (git-file-name name version))
          (sha256
           (base32
-           "0rp81iq0rgl48qdwbmfy89glga81hmry2lp8adjbr5h5ybr92b4n"))
-         (patches
-          (search-patches "sbcl-s-sysdeps-bt2.patch"))))
+           "0rp81iq0rgl48qdwbmfy89glga81hmry2lp8adjbr5h5ybr92b4n"))))
       (inputs
        (list sbcl-bordeaux-threads sbcl-usocket))
       (synopsis "Common Lisp abstraction layer over platform dependent functionality")
@@ -28019,8 +28004,8 @@ determine the cost of certain actions on a given platform and implementation.")
   (sbcl-package->ecl-package sbcl-the-cost-of-nothing))
 
 (define-public sbcl-tooter
-  (let ((commit "76fbb36552b036ee84ec7fe4773616470b1ce4c2")
-        (revision "5"))
+  (let ((commit "2dcc2facddcacd79d0cce545a8c4b73c35826fc1")
+        (revision "4"))
     (package
       (name "sbcl-tooter")
       (version (git-version "1.0.0" revision commit))
@@ -28032,7 +28017,7 @@ determine the cost of certain actions on a given platform and implementation.")
                (commit commit)))
          (file-name (git-file-name "cl-tooter" version))
          (sha256
-          (base32 "05icr9aflxvqbkjj0f6yh0g5cr77vf9qdvwvlicw2nvbw4jdnmm8"))))
+          (base32 "1zisrmslj4rnibm02vxh7hbas2cfsjh6iizs2nfdg3a3pn7bhf6h"))))
       (build-system asdf-build-system/sbcl)
       (inputs
        (list sbcl-alexandria
@@ -30009,7 +29994,7 @@ precisely controls the behavior of the parser via Common Lisp restarts.")
 (define-public sbcl-usocket
   (package
     (name "sbcl-usocket")
-    (version "0.8.8")
+    (version "0.8.6")
     (source
      (origin
        (method git-fetch)
@@ -30018,7 +30003,7 @@ precisely controls the behavior of the parser via Common Lisp restarts.")
              (commit (string-append "v" version))))
        (file-name (git-file-name "cl-usocket" version))
        (sha256
-        (base32 "13j2hyl7j06vl8hh3930wd3bi2p0pcg4dcd243al31fgw4m0bvag"))))
+        (base32 "0by8hhg6gijdbq5vjykd374rmvqyikp4synpyk0wjcl7rk3r0vgn"))))
     (build-system asdf-build-system/sbcl)
     (native-inputs
      (list sbcl-rt))

@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013 Nikita Karetnikov <nikita@karetnikov.org>
-;;; Copyright © 2013-2024 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013-2023 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2014, 2015, 2016, 2019, 2023 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2017, 2021, 2022 Eric Bavier <bavier@posteo.net>
@@ -144,7 +144,7 @@
 ;;; Copyright © 2023 Parnikkapore <poomklao@yahoo.com>
 ;;; Copyright © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 ;;; Copyright © c4droid <c4droid@foxmail.com>
-;;; Copyright © 2023, 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2023 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2023 Attila Lendvai <attila@lendvai.name>
 ;;; Copyright © 2023, 2024 Troy Figiel <troy@troyfigiel.com>
 ;;; Copyright © 2024 Timothee Mathieu <timothee.mathieu@inria.fr>
@@ -455,15 +455,15 @@ using NumPy-like idioms.")
 (define-public python-xmldiff
   (package
     (name "python-xmldiff")
-    (version "2.7.0")
+    (version "2.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "xmldiff" version))
        (sha256
-        (base32 "18k8kiml9wpl4wf9lmi0j6ys21lbdv8fa8r9qrzdsrh3h0ghp4f0"))))
+        (base32 "0qygxi3z1jwb0471k7bh5gcqf7wqm4xhrkmwhf36gjgjw46a5gh5"))))
     (build-system python-build-system)
-    (propagated-inputs (list python-lxml))
+    (propagated-inputs (list python-lxml python-six))
     (home-page "https://github.com/Shoobx/xmldiff")
     (synopsis "Creates diffs of XML files")
     (description "This Python tool figures out the differences between two
@@ -888,14 +888,14 @@ documentation of programming languages.")
 (define-public python-fire
   (package
     (name "python-fire")
-    (version "0.6.0")
+    (version "0.5.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "fire" version))
        (sha256
         (base32
-         "0rmaw26xjndr7makpiqv4h9aav9xf2h280w0khqc1lyddscmpv2l"))))
+         "1imc9ais15dz3gmphawql86l9av5dykbp4hz0883k5n8k2gd9c56"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -1296,7 +1296,7 @@ into dataclasses.")
      (list python-numpy))
     (native-inputs
      (list cmake
-           meson-python
+           meson-python/newer
            pkg-config
            pybind11
            python-pytest
@@ -2112,7 +2112,7 @@ task of adding retry behavior to just about anything.")
 (define-public python-pytelegrambotapi
   (package
     (name "python-pytelegrambotapi")
-    (version "4.22.0")
+    (version "4.21.0")
     (source
      (origin
        (method git-fetch)
@@ -2121,7 +2121,7 @@ task of adding retry behavior to just about anything.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0mic9wk6xg7p2ca7b03fc19l86yc9bkciq7kp8l9xvzzzmg4rzw4"))))
+        (base32 "14df0mll9q8x4fka4lihmz4vdlgrvc4i13bspxnig2qz1b3k4ivv"))))
     (build-system pyproject-build-system)
     (arguments
      (list
@@ -2219,7 +2219,7 @@ Python library and command line interface.")
 (define-public python-glymur
   (package
     (name "python-glymur")
-    (version "0.13.5")
+    (version "0.12.9")
     (source
      (origin
        (method git-fetch)   ; no tests data in PyPi package
@@ -2228,7 +2228,7 @@ Python library and command line interface.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1n2n7bj5w29w5y2gcl4hxhqf85n0j2crkln9i0mprq3xw8finxpx"))))
+        (base32 "0awyav7071nn9z2g4mmpg33y0y0nfandfr6nr3j5vyb8hnprcmns"))))
     (build-system pyproject-build-system)
     (arguments
      (list
@@ -2607,13 +2607,13 @@ with Numpy and SciPy.")
 (define-public python-shapely
   (package
     (name "python-shapely")
-    (version "2.0.5")
+    (version "2.0.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "shapely" version))
        (sha256
-        (base32 "0cpyziixzdj7xqkya4k6fwr0qmrw8k84fsrx6p5sdgw6qxmkdwmz"))))
+        (base32 "1rs90q4ys5cav0hz1dq72wq2mk4aqlqqbfjrnb2zzfkiq42cq4qp"))))
     (build-system pyproject-build-system)
     (arguments
      (list
@@ -2629,7 +2629,7 @@ with Numpy and SciPy.")
      (list geos))
     (propagated-inputs
      (list python-numpy))
-    (home-page "https://github.com/shapely/shapely")
+    (home-page "https://github.com/Toblerity/Shapely")
     (synopsis "Library for the manipulation and analysis of geometric objects")
     (description "Shapely is a Python package for manipulation and analysis of
 planar geometric objects.  It is based on the @code{GEOS} library.")
@@ -3811,7 +3811,7 @@ help formatter.")
                   (guix build utils))
       #:phases
       #~(modify-phases %standard-phases
-          (add-after 'build 'build-python-module
+          (add-after 'prepare-python-module 'build-python-module
             (assoc-ref py:%standard-phases 'build))
           (add-after 'build-python-module 'install-python-module
             (assoc-ref py:%standard-phases 'install)))
@@ -6134,14 +6134,14 @@ environments and back.")
 (define-public python-pyyaml
   (package
     (name "python-pyyaml")
-    (version "6.0.1")
+    (version "6.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "PyYAML" version))
        (sha256
         (base32
-         "0hsa7g6ddynifrwdgadqcx80khhblfy94slzpbr7birn2w5ldpxz"))))
+         "18imkjacvpxfgg1lbpraqywx3j7hr5dv99d242byqvrh2jf53yv8"))))
     (build-system python-build-system)
     (inputs
      (list libyaml python-cython))
@@ -6993,22 +6993,22 @@ via commands such as @command{rst2man}, as well as supporting Python code.")
 (define-public python-docx
   (package
     (name "python-docx")
-    (version "1.1.2")
+    (version "0.8.11")
     (source (origin
               (method url-fetch)
-              (uri (pypi-uri "python_docx" version))
+              (uri (pypi-uri "python-docx" version))
               (sha256
                (base32
-                "1z9ffsvksaaxr90ijzq4k3adzb6p5ipy2j3rrbfjl05rjlpg5w8c"))))
+                "1i7bxghb7knlyjain101qg1jmmz2b6qj03bi3vfxhvcml0rx418i"))))
     (build-system pyproject-build-system)
     (native-inputs
      (list behave
+           python-flake8
+           python-mock
            python-pyparsing
-           python-pytest
-           python-pytest-cov
-           python-pytest-xdist))
+           python-pytest))
     (propagated-inputs
-     (list python-lxml python-typing-extensions))
+     (list python-lxml))
     (home-page "https://github.com/python-openxml/python-docx/")
     (synopsis "Python library to create and modify Microsoft Word documents")
     (description "This Python library can be used to create and update
@@ -7988,7 +7988,7 @@ errors when data is invalid.")
                   (guix build utils))
       #:phases
       #~(modify-phases %standard-phases
-          (add-after 'build 'build-python-module
+          (add-after 'prepare-python-module 'build-python-module
             (assoc-ref py:%standard-phases 'build))
           (add-after 'build-python-module 'install-python-module
             (assoc-ref py:%standard-phases 'install)))
@@ -8411,9 +8411,6 @@ provides additional functionality on the produced Mallard documents.")
     ;; because we need libpython3.3m.so
     (inputs
      (list python))
-    (native-inputs
-     ;; Needed for some tests that link against it.
-     (list libxcrypt))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -9306,8 +9303,7 @@ comparison.
        (method url-fetch)
        (uri (pypi-uri "matplotlib" version))
        (sha256
-        (base32 "18amhxyxa6yzy1nwky4ggdgvvxnbl3qz2lki05vfx0dqf6w7ia81"))
-       (patches (search-patches "python-matplotlib-fix-legend-loc-best-test.patch"))))
+        (base32 "18amhxyxa6yzy1nwky4ggdgvvxnbl3qz2lki05vfx0dqf6w7ia81"))))
     (build-system pyproject-build-system)
     (arguments
      (list
@@ -10253,9 +10249,7 @@ Python list with elements of type @code{PIL.Image} (from the
               (snippet '(begin
                           (delete-file-recursively "src/thirdparty")))
               (patches
-               (search-patches "python-pillow-CVE-2022-45199.patch"
-                               ;; Included in 10.1.0.
-                               "python-pillow-use-zlib-1.3.patch"))))
+               (search-patches "python-pillow-CVE-2022-45199.patch"))))
     (build-system python-build-system)
     (native-inputs (list python-pytest))
     (inputs (list freetype
@@ -11021,19 +11015,16 @@ your favourite programs.")
 (define-public python-click-didyoumean
   (package
     (name "python-click-didyoumean")
-    (version "0.3.1")
+    (version "0.3.0")
     (source
      (origin
-       (method git-fetch)               ;no tests in PyPI archive
-       (uri (git-reference
-             (url "https://github.com/click-contrib/click-didyoumean")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
+       (method url-fetch)
+       (uri (pypi-uri "click-didyoumean" version))
        (sha256
-        (base32 "1byfqs3m87zfpvssm1al9dvq94gjd0iddpwrzk6205n18wjsphqb"))))
-    (build-system pyproject-build-system)
-    (native-inputs
-     (list python-poetry-core python-pytest))
+        (base32 "0dc0xrmqbw0idpx843ahzzvivmvx3fcfsm3k54lnssyra7cg117i"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f))              ; no tests in PyPI and no setup.py in github
     (propagated-inputs
      (list python-click))
     (home-page "https://github.com/timofurrer/click-didyoumean")
@@ -12904,31 +12895,24 @@ computing.")
 (define-public python-urwid
   (package
     (name "python-urwid")
-    (version "2.6.15")
+    (version "2.1.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "urwid" version))
        (sha256
         (base32
-         "06v7m5xayyglzv630qsbg7zh6k37h6k94w7x7xkdkj481lrmgk4y"))))
-    (build-system pyproject-build-system)
+         "1bky2bra6673xx8jy0826znw6cmxs89wcwwzda8d025j3jffx2sq"))))
+    (build-system python-build-system)
     (arguments
       (list
-        ;; XXX The test suite requires python-tornado but fails to find it
-        ;; whether or not it is available in the build environment.
-        #:tests? #f
         #:phases
         #~(modify-phases %standard-phases
             (add-after 'unpack 'remove-vterm-tests
               ;; According to Debian these tests are cursed.
               ;; https://salsa.debian.org/python-team/packages/urwid/-/blob/debian/2.1.2-2/debian/changelog#L141
               (lambda _
-                (delete-file "tests/test_vterm.py"))))))
-    (propagated-inputs
-      (list python-typing-extensions python-wcwidth))
-    (native-inputs
-      (list python-setuptools-scm))
+                (delete-file "urwid/tests/test_vterm.py"))))))
     (home-page "https://urwid.org")
     (synopsis "Console user interface library for Python")
     (description
@@ -13142,7 +13126,6 @@ implementation of D-Bus.")
   (package/inherit python-dbus
     (name "python2-dbus")
     (inputs `(("python" ,python-2)
-              ("libxcrypt" ,libxcrypt)  ;required by Python.h
               ,@(alist-delete "python"
                               (package-inputs python-dbus))))
     (arguments
@@ -17173,7 +17156,7 @@ JSON Reference and JSON Pointer.")
 (define-public python-fastbencode
   (package
     (name "python-fastbencode")
-    (version "0.3.1")
+    (version "0.0.7")
     (source
      (origin
        (method url-fetch)
@@ -17182,7 +17165,7 @@ JSON Reference and JSON Pointer.")
        ;; Delete pre-generated Cython C files.
        (snippet '(for-each delete-file (find-files "." "\\.c$")))
        (sha256
-        (base32 "15x1in22gwam7wwga5lbj1pd8hc9jk741pia3pv1m29n2xywpq2z"))))
+        (base32 "1r66w3vpmvfmssshjpgqaj2m14c8p94nymr96mwn61idajz9mg5n"))))
     (build-system python-build-system)
     (native-inputs (list python-cython))
     (home-page "https://github.com/breezy-team/fastbencode")
@@ -20347,12 +20330,7 @@ for Python inspired by modern web development.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "1x11kfn4g244fia9a7y4ly8dqv5zsxfg3l5azc54dl6gkp2bk7vx"))
-       (modules '((guix build utils)))
-       ;; Adjust expected output for file@5.45.
-       (snippet #~(substitute* "test/libmagic_test.py"
-                    (("PDF document, version 1\\.2, 2 pages")
-                     "PDF document, version 1.2, 2 page(s)")))))
+         "1x11kfn4g244fia9a7y4ly8dqv5zsxfg3l5azc54dl6gkp2bk7vx"))))
     (build-system python-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
@@ -20371,7 +20349,7 @@ for Python inspired by modern web development.")
                   (replace 'check
                     (lambda* (#:key tests? #:allow-other-keys)
                       ;; The test suite mandates this variable.
-                      (setenv "LC_ALL" "C.UTF-8")
+                      (setenv "LC_ALL" "en_US.UTF-8")
                       (if tests?
                           (with-directory-excursion "test"
                             (invoke "python" "./libmagic_test.py"))
@@ -22890,10 +22868,7 @@ implementation of your Python package and its public API surface.")
              (when tests?
                (invoke "pytest" "-v")))))))
     (native-inputs
-     (list glibc-utf8-locales ;; Tests want en_US.UTF-8
-           python-hypothesis
-           python-pytest-cov
-           python-pytest-mock
+     (list python-hypothesis python-pytest-cov python-pytest-mock
            python-pytest))
     (propagated-inputs ; TODO: Add python-fastnumbers.
      (list python-pyicu))
@@ -23126,7 +23101,7 @@ OpenSSH Server for example.")
 (define-public python-pyelftools
   (package
     (name "python-pyelftools")
-    (version "0.30")
+    (version "0.29")
     (home-page "https://github.com/eliben/pyelftools")
     (source
      (origin
@@ -23135,7 +23110,7 @@ OpenSSH Server for example.")
                            (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0gk47mq5cqv6qz35aydn67wma5m70gv5f9f6pg38zny6vsfavmq3"))
+        (base32 "1mi7i9zlhkkap4q50ciak57ia46mj2jzq0713m3dh0x8j05k9xml"))
        (snippet
         ;; Delete bundled readelf executable.
         '(delete-file "test/external_tools/readelf"))))
@@ -23152,9 +23127,9 @@ OpenSSH Server for example.")
     (synopsis
      "Analyze binary and library file information")
     (description "This Python library provides interfaces for parsing and
-analyzing two binary and library file formats ; the Executable and Linking
-Format (ELF), and debugging information in the Debugging With Attributed
-Record Format (DWARF).")
+     analyzing two binary and library file formats ; the Executable and Linking
+     Format (ELF), and debugging information in the Debugging With Attributed
+     Record Format (DWARF).")
     (license license:public-domain)))
 
 (define-public python-pefile
@@ -31677,7 +31652,7 @@ accessor layer.")
 (define-public pyzo
   (package
     (name "pyzo")
-    (version "4.16.0")
+    (version "4.15.0")
     (source
      (origin
        (method git-fetch)
@@ -31687,7 +31662,7 @@ accessor layer.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "18775dhd5z7l505khrh1vsv5w1x1icshv34av8bbhfj8dz8nvgx5"))))
+         "0m2sp65q21hhlfkvyby4sjc8cmwv3l0avw42xsna8za8ax9xadxr"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -33578,7 +33553,8 @@ CMake.")
                             (string-append x11 "/lib/libX11.so.6")))
               (substitute* "Screenkey/xlib.py"
                            (("libXtst.so.6")
-                            (string-append xtst "/lib/libXtst.so.6"))))))
+                            (string-append xtst "/lib/libXtst.so.6")))
+              #t)))
           (add-after 'install 'wrap-screenkey
             (lambda* (#:key outputs #:allow-other-keys)
               (wrap-program
@@ -33587,8 +33563,7 @@ CMake.")
                 `("GI_TYPELIB_PATH"
                   ":" prefix (,(getenv "GI_TYPELIB_PATH")))))))))
     (inputs
-     (list bash-minimal
-           python-distutils-extra
+     (list python-distutils-extra
            python-tokenize-rt
            libx11
            libxtst
@@ -37071,7 +37046,7 @@ and @code{bspatch4}.")
 (define-public python-mpv
   (package
     (name "python-mpv")
-    (version "1.0.7")
+    (version "1.0.1")
     (source
      (origin
        ;; python-mpv from pypi does not include the tests directory.
@@ -37081,14 +37056,28 @@ and @code{bspatch4}.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "102fajzrcgxapsanh0phlqmk9q2v95bvix6mrkg8rypv717idins"))))
-    (build-system pyproject-build-system)
+        (base32
+         "10w6j3n62ap45sf6q487kz8z6g58sha37i14fa2hhng794z7a8jh"))
+       (modules '((guix build utils)))
+       (snippet
+        #~(begin
+            ;; One of the tests never completes, so neutering it using
+            ;; early return allows other test to run without issue.
+            (substitute* "tests/test_mpv.py"
+              ;; Note the typo in "prooperty" - this was fixed later in
+              ;; upstream but has no effect on whether the tests hangs or not.
+              (("test_wait_for_prooperty_event_overflow.*" line)
+               ;; The long whitespace between \n and return is to match the
+               ;; identation level, which is significant in python.
+               (string-append line "\n        return\n")))))))
+    (build-system python-build-system)
     (arguments
      (list #:phases
            #~(modify-phases %standard-phases
                (add-before 'build 'patch-reference-to-mpv
                  (lambda* (#:key inputs #:allow-other-keys)
-                   ;; Without an absolute path it is not able find and load libmpv.
+                   ;; Without an absolute path it is not able find and
+                   ;; load the libmpv library.
                    (substitute* "mpv.py"
                      (("sofile = .*")
                       (string-append "sofile = \""
@@ -37099,16 +37088,11 @@ and @code{bspatch4}.")
                    ;; Fontconfig throws errors when it has no cache dir to use.
                    (setenv "XDG_CACHE_HOME" (getcwd))
                    ;; Some tests fail without a writable and readable HOME.
-                   (setenv "HOME" (getcwd))
-                   (setenv "PY_MPV_SKIP_TESTS"
-                           "test_wait_for_property_event_overflow"))))))
+                   (setenv "HOME" (getcwd)))))))
     (native-inputs
-     ;; For tests.
-     (list python-pytest
-           python-pyvirtualdisplay
-           python-xvfbwrapper))
+     (list python-xvfbwrapper)) ; needed for tests only
     (inputs (list mpv))
-    (propagated-inputs (list python-pillow)) ;for raw screenshots
+    (propagated-inputs (list python-pillow)) ; for raw screenshots
     (home-page "https://github.com/jaseg/python-mpv")
     (synopsis "Python interface to the mpv media player")
     (description
@@ -37284,7 +37268,7 @@ etc. to check code that uses @code{orjson}.")
                   (guix build utils))
       #:phases
       #~(modify-phases %standard-phases
-          (add-after 'build 'build-python-module
+          (add-after 'prepare-python-module 'build-python-module
             (assoc-ref py:%standard-phases 'build))
           (add-after 'build-python-module 'install-python-module
             (assoc-ref py:%standard-phases 'install)))

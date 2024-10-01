@@ -42,7 +42,6 @@
   #:use-module (gnu packages bash)
   #:use-module (gnu packages bdw-gc)
   #:use-module (gnu packages compression)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages dbm)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages gawk)
@@ -110,19 +109,7 @@
 
                       ;; The usual /bin/sh...
                       (substitute* "ice-9/popen.scm"
-                        (("/bin/sh") (which "sh")))))
-                  (add-after 'install 'add-libxcrypt-reference-pkgconfig
-                    (lambda* (#:key inputs outputs #:allow-other-keys)
-                      (define out (assoc-ref outputs "out"))
-                      (define libxcrypt
-                        (false-if-exception
-                         (dirname (search-input-file inputs "lib/libcrypt.so.1"))))
-                      (when libxcrypt
-                        (substitute*
-                            (find-files (string-append out "/lib/pkgconfig")
-                                        ".*\\.pc")
-                          (("-lcrypt")
-                           (string-append "-L" libxcrypt " -lcrypt")))))))
+                        (("/bin/sh") (which "sh"))))))
 
                 ;; XXX: Several numerical tests and tests related to
                 ;; 'inet-pton' fail on glibc 2.33/GCC 10.  Disable them.
@@ -135,7 +122,7 @@
                       `(("self" ,this-package))
                       '()))
 
-   (inputs (list gawk libxcrypt readline))
+   (inputs (list gawk readline))
 
    ;; Since `guile-1.8.pc' has "Libs: ... -lgmp -lltdl", these must be
    ;; propagated.
@@ -176,7 +163,7 @@ without requiring the source code to be rewritten.")
                 (list this-package)
                 '())))
    (inputs
-    (append (list libffi libxcrypt)
+    (append (list libffi)
             (libiconv-if-needed)
 
             ;; We need Bash when cross-compiling because some of the scripts
@@ -251,19 +238,7 @@ without requiring the source code to be rewritten.")
                          '(search-input-file inputs "/bin/bash"))
                         (else
                          '(string-append bash "/bin/bash")))))
-              #t)))
-        (add-after 'install 'add-libxcrypt-reference-pkgconfig
-          (lambda* (#:key inputs outputs #:allow-other-keys)
-            (define out (assoc-ref outputs "out"))
-            (define libxcrypt
-              (false-if-exception
-               (dirname (search-input-file inputs "lib/libcrypt.so.1"))))
-            (when libxcrypt
-              (substitute*
-                  (find-files (string-append out "/lib/pkgconfig")
-                              ".*\\.pc")
-                (("-lcrypt")
-                 (string-append "-L" libxcrypt " -lcrypt")))))))))
+              #t))))))
 
    (native-search-paths
     (list (search-path-specification
@@ -855,7 +830,7 @@ type system, elevating types to first-class status.")
 (define-public guile-git
   (package
     (name "guile-git")
-    (version "0.8.0")
+    (version "0.7.0")
     (home-page "https://gitlab.com/guile-git/guile-git.git")
     (source (origin
               (method git-fetch)
@@ -865,7 +840,7 @@ type system, elevating types to first-class status.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "15k5gcx5clckw9r38602xw8q4bmfr8s16fzmjw16carm54dsx78i"))))
+                "1dgxzyn6ra685hp2vdhvw4z2hzx16nsjqj5k4p773x5a33jaq4pg"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags '("GUILE_AUTO_COMPILE=0")       ; to prevent guild warnings
@@ -894,7 +869,7 @@ type system, elevating types to first-class status.")
     (native-inputs
      (list pkg-config autoconf automake texinfo guile-3.0 guile-bytestructures))
     (inputs
-     (list guile-3.0 libgit2-1.8))
+     (list guile-3.0 libgit2-1.7))
     (propagated-inputs
      (list guile-bytestructures))
     (synopsis "Guile bindings for libgit2")
@@ -907,13 +882,12 @@ manipulate repositories of the Git version control system.")
   (package-for-guile-2.2 guile-git))
 
 (define-public guile2.0-git
-  ;; Guile-Git 0.8.0 no longer supports Guile 2.0.
-  (deprecated-package "guile2.0-git" guile2.2-git))
+  (package-for-guile-2.0 guile-git))
 
 (define-public guile-zlib
   (package
     (name "guile-zlib")
-    (version "0.2.1")
+    (version "0.1.0")
     (source
      (origin
        ;; XXX: Do not use "git-fetch" method here that would create and
@@ -925,10 +899,13 @@ manipulate repositories of the Git version control system.")
                        version ".tar.gz"))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
-        ;; content hash: 09zfka3js7dp39fnplxbp90x98s5nj0pc93p1l9cmgrbj8nyn2sv
+        ;; content hash: 1ip18nzwnczqyhn9cpzxkm9vzpi5fz5sy96cgjhmp7cwhnkmv6zv
         (base32
-         "0wqva23zrxcsj9cp3xqmqpxqyd7a4nnja3dc7v7g0i9yfixi7xd5"))))
+         "1safz7rrbdf1d98x3lgx5v74kivpyf9n1v6pdyy22vd0f2sjdir5"))))
     (build-system gnu-build-system)
+    (arguments
+     '(#:make-flags
+       '("GUILE_AUTO_COMPILE=0"))) ;to prevent guild warnings
     (native-inputs (list autoconf automake pkg-config guile-3.0))
     (inputs (list guile-3.0 zlib))
     (synopsis "Guile bindings to zlib")

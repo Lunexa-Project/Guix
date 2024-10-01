@@ -9,7 +9,6 @@
 ;;; Copyright © 2020 Sebastian Schott <sschott@mailbox.org>
 ;;; Copyright © 2020 Vincent Legoll <vincent.legoll@gmail.com>
 ;;; Copyright © 2020. 2021, 2022, 2024 Vinicius Monego <monego@posteo.net>
-;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022, 2023 John Kehayias <john.kehayias@protonmail.com>
 ;;; Copyright © 2022 Sharlatan Hellseher <sharlatanus@gmail.com>
 ;;; Copyright © 2023 Bruno Victal <mirai@makinata.eu>
@@ -118,8 +117,7 @@
     (native-inputs
      (list file intltool gobject-introspection))
     (inputs
-     `(("bash" ,bash-minimal) ; for wrap-program
-       ("gdk-pixbuf" ,gdk-pixbuf)
+     `(("gdk-pixbuf" ,gdk-pixbuf)
        ("gexiv2" ,gexiv2)
        ("gst-libav" ,gst-libav)
        ("gst-plugins-base" ,gst-plugins-base)
@@ -333,7 +331,6 @@ MTP, and much more.")
                           (lib (dirname (dirname (car pm)))))
                      (wrap-program (string-append #$output "/bin/exiftool")
                        `("PERL5LIB" prefix (,lib)))))))))
-    (inputs (list bash-minimal))
     (home-page "https://metacpan.org/release/Image-ExifTool")
     (synopsis "Program and Perl library to manipulate EXIF and other metadata")
     (description "This package provides the @code{exiftool} command and the
@@ -534,7 +531,7 @@ photographic equipment.")
 (define-public darktable
   (package
     (name "darktable")
-    (version "4.8.1")
+    (version "4.8.0")
     (source
      (origin
        (method url-fetch)
@@ -542,7 +539,7 @@ photographic equipment.")
              "https://github.com/darktable-org/darktable/releases/"
              "download/release-" version "/darktable-" version ".tar.xz"))
        (sha256
-        (base32 "14armww5rmbgqssm8c3xji5i6ccdzgnn0k6zkxhvhvykmqn0w6wh"))))
+        (base32 "0mcjgz8kmsmj5icik3zsrk61qg9dafswch93bw3y8w2j07llk621"))))
     (build-system cmake-build-system)
     (arguments
      (list
@@ -724,14 +721,13 @@ such as Batch image processing.")
            gettext-minimal
            `(,glib "bin")
            gobject-introspection
-           gtk-doc/stable
+           gtk-doc
            itstool
            libxml2
            perl
            pkg-config))
     (inputs
-     (list bash-minimal
-           gdk-pixbuf
+     (list gdk-pixbuf
            gexiv2
            gst-plugins-base
            gstreamer

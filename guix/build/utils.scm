@@ -9,7 +9,6 @@
 ;;; Copyright © 2020, 2021 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021, 2022 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 Brendan Tildesley <mail@brendan.scot>
-;;; Copyright © 2023 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -177,7 +176,6 @@ decompress FILE-NAME, based on its file extension, else false."
         ((string-suffix? "lz"  file-name)  "lzip")
         ((string-suffix? "zip" file-name)  "unzip")
         ((string-suffix? "xz"  file-name)  "xz")
-        ((string-suffix? "zst" file-name)  "zstd")
         (else #f)))                ;no compression used/unknown file extension
 
 (define (tarball? file-name)
@@ -187,7 +185,7 @@ decompress FILE-NAME, based on its file extension, else false."
 (define (%xz-parallel-args)
   "The xz arguments required to enable bit-reproducible, multi-threaded
 compression."
-  (list "--memlimit=20%"
+  (list "--memlimit=50%"
         (format #f "--threads=~a" (max 2 (parallel-job-count)))))
 
 
@@ -432,38 +430,32 @@ name."
                            (log (current-output-port))
                            (follow-symlinks? #f)
                            (copy-file copy-file)
-                           keep-mtime? keep-permissions?
-                           (select? (const #t)))
-  "Copy SOURCE directory to DESTINATION.  Follow symlinks if FOLLOW-SYMLINKS?  is
-true; otherwise, just preserve them.  Call COPY-FILE to copy regular files.  When
-KEEP-MTIME? is true, keep the modification time of the files in SOURCE on those of
-DESTINATION.  When KEEP-PERMISSIONS? is true, preserve file permissions.  Write
-verbose output to the LOG port. Call (SELECT?  FILE STAT) for each entry in source,
-where FILE is the entry's absolute file name and STAT is the result of 'lstat' (or
-'stat' if FOLLOW-SYMLINKS? is true); exclude entries for which SELECT? does not
-return true."
+                           keep-mtime? keep-permissions?)
+  "Copy SOURCE directory to DESTINATION.  Follow symlinks if FOLLOW-SYMLINKS?
+is true; otherwise, just preserve them.  Call COPY-FILE to copy regular files.
+When KEEP-MTIME? is true, keep the modification time of the files in SOURCE on
+those of DESTINATION.  When KEEP-PERMISSIONS? is true, preserve file
+permissions.  Write verbose output to the LOG port."
   (define strip-source
     (let ((len (string-length source)))
       (lambda (file)
         (substring file len))))
 
-  (file-system-fold (lambda (file stat result)    ; enter?
-                      (select? file stat))
+  (file-system-fold (const #t)                    ; enter?
                     (lambda (file stat result)    ; leaf
                       (let ((dest (string-append destination
                                                  (strip-source file))))
-                        (when (select? file stat)
-                          (format log "`~a' -> `~a'~%" file dest)
-                          (case (stat:type stat)
-                            ((symlink)
-                             (let ((target (readlink file)))
-                               (symlink target dest)))
-                            (else
-                             (copy-file file dest)
-                             (when keep-permissions?
-                               (chmod dest (stat:perms stat)))))
-                          (when keep-mtime?
-                            (set-file-time dest stat)))))
+                        (format log "`~a' -> `~a'~%" file dest)
+                        (case (stat:type stat)
+                          ((symlink)
+                           (let ((target (readlink file)))
+                             (symlink target dest)))
+                          (else
+                           (copy-file file dest)
+                           (when keep-permissions?
+                             (chmod dest (stat:perms stat)))))
+                        (when keep-mtime?
+                          (set-file-time dest stat))))
                     (lambda (dir stat result)     ; down
                       (let ((target (string-append destination
                                                    (strip-source dir))))
@@ -737,22 +729,18 @@ effects, such as displaying warnings or error messages."
 (define* (alist-cons-before reference key value alist
                             #:optional (key=? equal?))
   "Insert the KEY/VALUE pair before the first occurrence of a pair whose key
-is REFERENCE in ALIST.  Use KEY=? to compare keys.  An error is raised when no
-such pair exists."
+is REFERENCE in ALIST.  Use KEY=? to compare keys."
   (let-values (((before after)
                 (break (match-lambda
                         ((k . _)
                          (key=? k reference)))
                        alist)))
-    (match after
-      ((_ _ ...)
-       (append before (alist-cons key value after))))))
+    (append before (alist-cons key value after))))
 
 (define* (alist-cons-after reference key value alist
                            #:optional (key=? equal?))
   "Insert the KEY/VALUE pair after the first occurrence of a pair whose key
-is REFERENCE in ALIST.  Use KEY=? to compare keys.  An error is raised when
-no such pair exists."
+is REFERENCE in ALIST.  Use KEY=? to compare keys."
   (let-values (((before after)
                 (break (match-lambda
                         ((k . _)
@@ -760,7 +748,9 @@ no such pair exists."
                        alist)))
     (match after
       ((reference after ...)
-       (append before (cons* reference `(,key . ,value) after))))))
+       (append before (cons* reference `(,key . ,value) after)))
+      (()
+       (append before `((,key . ,value)))))))
 
 (define* (alist-replace key value alist #:optional (key=? equal?))
   "Replace the first pair in ALIST whose car is KEY with the KEY/VALUE pair.

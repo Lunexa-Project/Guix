@@ -76,7 +76,6 @@
      ;; There numerous issues with the testsuite.
      ;; Enable all of them once they are fixed in upstream.
      `(#:tests? #f
-       #:parallel-build? #f
        #:configure-flags
        (list
         "--enable-shared"
@@ -357,7 +356,7 @@ be used by the sighted.")
        #:modules ((guix build gnu-build-system)
                   (guix build utils)
                   (guix build emacs-utils))
-       #:imported-modules (,@%default-gnu-imported-modules
+       #:imported-modules (,@%gnu-build-system-modules
                            (guix build emacs-utils))
        #:phases
        (modify-phases %standard-phases

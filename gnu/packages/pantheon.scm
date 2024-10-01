@@ -25,15 +25,12 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnupg)
-  #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
-  #:use-module (gnu packages image)
   #:use-module (gnu packages package-management)
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages photo)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
-  #:use-module (gnu packages sqlite)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xorg)
@@ -136,68 +133,6 @@ arithmetic.  It is the default calculator application in the Pantheon
 desktop.")
     (license license:gpl3)))
 
-(define-public pantheon-photos
-  (package
-    (name "pantheon-photos")
-    (version "8.0.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/elementary/photos")
-             (commit version)))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1z3b582y093x6pb3bl7zs4w97vg88rflyhwxfaycxw0rv8pcshhi"))))
-    (build-system meson-build-system)
-    (arguments
-     (list
-      #:glib-or-gtk? #t
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'disable-schema-cache-generation
-            (lambda _
-              (setenv "DESTDIR" "/")))
-          (add-after 'install 'install-symlinks
-            (lambda* (#:key outputs #:allow-other-keys)
-              (let* ((bin (string-append #$output
-                                         "/bin/io.elementary.photos"))
-                     (link (string-append #$output "/bin/pantheon-photos")))
-                (symlink bin link)))))))
-    (native-inputs
-     (list desktop-file-utils
-           `(,glib "bin")
-           intltool
-           pkg-config
-           python
-           vala))
-    (inputs
-     (list geocode-glib
-           gexiv2
-           granite-6
-           gst-plugins-bad
-           gst-plugins-base
-           gst-plugins-good
-           gst-plugins-ugly
-           gstreamer
-           gtk+
-           libexif
-           libgee
-           libgphoto2
-           libgudev
-           libhandy
-           libportal
-           libraw
-           libwebp
-           sqlite))
-    (synopsis "Photo viewer and organizer designed for the Pantheon desktop")
-    (description
-     "Photos is an image viewer and organizer.  It originally comes
-from elementary OS and is designed for the Pantheon desktop environment (but can
-also be used on others.")
-    (home-page "https://elementary.io/open-source")
-    (license license:lgpl2.1+)))
-
 (define-public pantheon-terminal
   (package
     (name "pantheon-terminal")
@@ -213,21 +148,20 @@ also be used on others.")
                 "0x3gzghnfx4a1q2zhra4dysc0pm1zvlfdxj96qhfb627pz16iv4k"))))
     (build-system meson-build-system)
     (arguments
-     (list
-      #:tests? #f      ; Tests invole launching the terminal.
-      #:glib-or-gtk? #t
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-before 'install 'set-environment-variables
-            (lambda _
-              ;; Disable compiling schemas and updating desktop databases
-              (setenv "DESTDIR" "/")))
-          (add-after 'install 'install-symlinks
-            (lambda* (#:key outputs #:allow-other-keys)
-              (let* ((bin (string-append #$output
-                                         "/bin/io.elementary.terminal"))
-                     (link (string-append #$output "/bin/pantheon-terminal")))
-                (symlink bin link)))))))
+     `(#:tests? #f      ; Tests invole launching the terminal.
+       #:glib-or-gtk? #t
+       #:phases (modify-phases %standard-phases
+                  (add-before 'install 'set-environment-variables
+                    (lambda _
+                      ;; Disable compiling schemas and updating desktop databases
+                      (setenv "DESTDIR" "/")))
+                  (add-after 'install 'install-symlinks
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      (let* ((out (assoc-ref outputs "out"))
+                             (bin (string-append out
+                                   "/bin/io.elementary.terminal"))
+                             (link (string-append out "/bin/pantheon-terminal")))
+                        (symlink bin link)))))))
     (native-inputs (list appstream
                          desktop-file-utils     ;required for tests
                          gettext-minimal        ;for msgfmt

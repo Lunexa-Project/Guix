@@ -20,14 +20,13 @@
 ;;; Copyright © 2020-2024 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2020, 2022 Michael Rohleder <mike@rohleder.de>
 ;;; Copyright © 2020, 2024 Timotej Lazar <timotej.lazar@araneo.si>
-;;; Copyright © 2020, 2022, 2023, 2024 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+;;; Copyright © 2020, 2022, 2023 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 Paul A. Patience <paul@apatience.com>
 ;;; Copyright © 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2023 Felix Gruber <felgru@posteo.net>
 ;;; Copyright © 2024 dan <i@dan.games>
 ;;; Copyright © 2023 Benjamin Slade <slade@lambda-y.net>
-;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -134,7 +133,8 @@
                (base32 "0kp1dcww5zl04wnbqbi8vjzpc5qgr8gr8rcx0s6s4xbjnzvqqw8d"))))
     (build-system meson-build-system)
     (arguments
-     (list #:configure-flags #~(list "-Dcpp_std=c++23")
+     (list #:meson meson/newer
+           #:configure-flags #~(list "-Dcpp_std=c++23")
            #:test-options '(list "plainc")
            #:phases
            #~(modify-phases %standard-phases
@@ -265,10 +265,10 @@ information.")
                  `("QT_PLUGIN_PATH" ":" =
                    (,(string-append qtbase "/lib/qt5/plugins")))
                  `("QT_QPA_PLATFORM_PLUGIN_PATH" ":" =
-                   (,(string-append qtbase "/lib/qt5/plugins/platforms"))))))))))
+                   (,(string-append qtbase "/lib/qt5/plugins/platforms"))))
+               #t))))))
     (inputs
-     (list bash-minimal
-           python-poppler-qt5
+     (list python-poppler-qt5
            python-pypdf2
            python-pyqt
            qtbase-5))
@@ -502,13 +502,13 @@ reading and editing of existing PDF files.")
 (define-public xpdf
   (package
    (name "xpdf")
-   (version "4.05")
+   (version "4.04")
    (source
     (origin
       (method url-fetch)
       (uri (string-append "https://dl.xpdfreader.com/xpdf-" version ".tar.gz"))
       (sha256
-       (base32 "1sjw5b7j404py1rblc8zxm6nar8km7yr2h7kffylyn5nmkapww4j"))))
+       (base32 "1pmsark94xza8q31wvfvp8n7l3c4qfd4ggj09i98y13npzy27kk3"))))
    (build-system cmake-build-system)
    (inputs (list cups freetype libpng qtbase-5 zlib))
    (arguments
@@ -916,14 +916,14 @@ line tools for batch rendering @command{pdfdraw}, rewriting files
 (define-public qpdf
   (package
     (name "qpdf")
-    (version "11.8.0")
+    (version "11.1.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/qpdf/qpdf/" version
                                   "/qpdf-" version ".tar.gz"))
               (sha256
                (base32
-                "0n8jfk4yf0m36rs9lg82pj9lv6pdqpfh8mhacc1ih9ahpigiycnr"))))
+                "0bg2d4585nxss2zakq105ibhzzsa1bhwpmr0k8752fg2qqxcz9rl"))))
     (build-system cmake-build-system)
     (arguments
      (list #:configure-flags #~'("-DBUILD_STATIC_LIBS=OFF")))
@@ -942,7 +942,7 @@ program capable of converting PDF into other formats.")
     ;; Prior to the 7.0 release, QPDF was licensed under Artistic 2.0.
     ;; Users can still choose to use the old license at their option.
     (license (list license:asl2.0 license:clarified-artistic))
-    (home-page "https://qpdf.sourceforge.io/")))
+    (home-page "https://qpdf.sourceforge.net/")))
 
 (define-public qpdfview
   (package
@@ -1198,7 +1198,7 @@ vector formats.")
                     (,(search-input-file inputs "bin/xpdf"))))
                 (install-file "impressive.1" man1)))))))
     ;; TODO: Add dependency on pdftk.
-    (inputs (list bash-minimal python-pygame python-pillow sdl xpdf))
+    (inputs (list python-pygame python-pillow sdl xpdf))
     (home-page "https://impressive.sourceforge.net")
     (synopsis "PDF presentation tool with visual effects")
     (description
@@ -1441,7 +1441,7 @@ manage or manipulate PDFs.")
     (native-inputs
      (list intltool python-distutils-extra))
     (inputs
-     (list bash-minimal gtk+ poppler))
+     (list gtk+ poppler))
     (propagated-inputs
      (list img2pdf
            python-dateutil
@@ -1489,7 +1489,7 @@ PDF.  Indeed @command{pdfposter} was inspired by @command{poster}.")
 (define-public pdfgrep
   (package
     (name "pdfgrep")
-    (version "2.2.0")
+    (version "2.1.2")
     (source
      (origin
        (method url-fetch)
@@ -1497,7 +1497,7 @@ PDF.  Indeed @command{pdfposter} was inspired by @command{poster}.")
                            name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1jr0qqvkcb3xz0ps111cqwwxp1b5g5rrf75ab5whkvy0whqyaq86"))))
+         "1fia10djcxxl7n9jw2prargw4yzbykk6izig2443ycj9syhxrwqf"))))
     (build-system gnu-build-system)
     (native-inputs
      (list pkg-config))

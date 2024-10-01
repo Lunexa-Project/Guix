@@ -171,7 +171,7 @@ supported by Canonical since 2009.")
                    (chdir "../profiles")))
                (add-after 'chdir-profiles 'build-profiles
                  (assoc-ref %standard-phases 'build))
-               (add-after 'build-profiles 'install-profiles
+               (add-after 'check-build 'install-profiles
                  (assoc-ref %standard-phases 'install)))))))
       (propagated-inputs
        (list libapparmor))

@@ -115,7 +115,7 @@ commit hash and its date rather than a proper release tag."
   ;; Build-side modules imported and used by default.
   `((guix build go-build-system)
     (guix build union)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-go)
   ;; Lazily resolve the binding to avoid a circular dependency.
@@ -192,8 +192,6 @@ commit hash and its date rather than a proper release tag."
                    (unpack-path "")
                    (build-flags ''())
                    (tests? #t)
-                   (parallel-build? #t)
-                   (parallel-tests? #t)
                    (allow-go-reference? #f)
                    (system (%current-system))
                    (goarch #f)
@@ -224,8 +222,6 @@ commit hash and its date rather than a proper release tag."
                     #:unpack-path #$unpack-path
                     #:build-flags #$build-flags
                     #:tests? #$tests?
-                    #:parallel-build? #$parallel-build?
-                    #:parallel-tests? #$parallel-tests?
                     #:allow-go-reference? #$allow-go-reference?
                     #:inputs #$(input-tuples->gexp inputs)))))
 

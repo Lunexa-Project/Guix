@@ -3,7 +3,6 @@
 ;;; Copyright © 2020, 2022 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2022, 2024 Sharlatan Hellseher <sharlatanus@gmail.com>
 ;;; Copyright © 2023 Benjamin <benjamin@uvy.fr>
-;;; Copyright © 2024 jgart <jgart@dismail.de>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -32,7 +31,6 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages documentation)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
@@ -71,7 +69,7 @@
 (define-public haproxy
   (package
     (name "haproxy")
-    (version "3.0.3")
+    (version "2.9.0")
     (source
      (origin
        (method url-fetch)
@@ -79,7 +77,7 @@
                            (version-major+minor version)
                            "/src/haproxy-" version ".tar.gz"))
        (sha256
-        (base32 "1pqrgndf5ciyq3l4ywrjj3q917dms59cmzxk5ihd400bg8c3r9rr"))))
+        (base32 "1aqfp1gslk4dfvrrzg51h0mn1j4n4in82z701bi7ycs63b6qm8gv"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -102,7 +100,7 @@
       #~(modify-phases %standard-phases
           (delete 'configure))))
     (inputs
-     (list libxcrypt lua openssl pcre2 zlib))
+     (list lua openssl pcre2 zlib))
     (home-page "https://www.haproxy.org/")
     (synopsis "Reliable, high performance TCP/HTTP load balancer")
     (description "HAProxy offers @acronym{HA, high availability}, load

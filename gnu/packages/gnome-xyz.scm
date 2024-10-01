@@ -791,7 +791,6 @@ faster window switching.")
     (inputs
      (list
       at-spi2-core
-      bash-minimal
       caribou
       evolution-data-server
       gjs

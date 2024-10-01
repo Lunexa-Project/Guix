@@ -40,8 +40,7 @@
   #:use-module (gnu packages crates-io)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages perl)
-  #:use-module (gnu packages sqlite)
-  #:use-module (gnu packages time))
+  #:use-module (gnu packages sqlite))
 
 (define-public nspr
   (package
@@ -107,15 +106,14 @@ in the Mozilla clients.")
               (base32
                "0v3zds1id71j5a5si42a658fjz8nv2f6zp6w4gqrqmdr6ksz8sxv"))))))
 
-;; nss should track ESRs, but currently doesn't.  3.102.1 is the current ESR.
-
 (define-public nss
   (package
     (name "nss")
     ;; IMPORTANT: Also update and test the nss-certs package, which duplicates
     ;; version and source to avoid a top-level variable reference & module
     ;; cycle.
-    (version "3.99")
+    (version "3.88.1")
+    (replacement nss/fixed)
     (source (origin
               (method url-fetch)
               (uri (let ((version-with-underscores
@@ -126,7 +124,7 @@ in the Mozilla clients.")
                       "nss-" version ".tar.gz")))
               (sha256
                (base32
-                "1g89ig40gfi1sp02gybvl2z818lawcnrqjzsws36cdva834c5maw"))
+                "15il9fsmixa1r4446zq1wl627sg0hz9h67w6kjxz273xz3nl7li7"))
               ;; Create nss.pc and nss-config.
               (patches (search-patches "nss-3.56-pkgconfig.patch"
                                        "nss-getcwd-nonnull.patch"
@@ -186,8 +184,11 @@ in the Mozilla clients.")
           (replace 'configure
             (lambda _
               (setenv "CC" #$(cc-for-target))
-              (setenv "CCC" #$(cxx-for-target))
-              (setenv "NATIVE_CC" "gcc")
+              ;; TODO: Set this unconditionally
+              #$@(if (%current-target-system)
+                     #~((setenv "CCC" #$(cxx-for-target))
+                        (setenv "NATIVE_CC" "gcc"))
+                     #~())
               ;; No VSX on powerpc-linux.
               #$@(if (target-ppc32?)
                      #~((setenv "NSS_DISABLE_CRYPTO_VSX" "1"))
@@ -206,29 +207,11 @@ in the Mozilla clients.")
                     (setenv "USE_IP" "TRUE")
                     (setenv "IP_ADDRESS" "127.0.0.1")
 
-                    ;; This specific test is looking at performance "now
-                    ;; verify that we can quickly dump a database", and
-                    ;; we're not testing performance here (especially
-                    ;; since we're using faketime), so raise the
-                    ;; threshold
-                    (substitute* "nss/tests/dbtests/dbtests.sh"
-                      ((" -lt 5") " -lt 50"))
-
-                    #$@(if (target-64bit?)
-                           '()
-                           ;; The script fails to determine the source
-                           ;; directory when running under 'datefudge' (see
-                           ;; <https://issues.guix.gnu.org/72239>).  Help it.
-                           #~((substitute* "nss/tests/gtests/gtests.sh"
-                                (("SOURCE_DIR=.*")
-                                 (string-append "SOURCE_DIR=" (getcwd) "/nss\n")))))
-
                     ;; The "PayPalEE.cert" certificate expires every six months,
                     ;; leading to test failures:
                     ;; <https://bugzilla.mozilla.org/show_bug.cgi?id=609734>.  To
                     ;; work around that, set the time to roughly the release date.
-                    (invoke #$(if (target-64bit?) "faketime" "datefudge")
-                            "2024-01-23" "./nss/tests/all.sh"))
+                    (invoke "faketime" "2022-11-01" "./nss/tests/all.sh"))
                   (format #t "test suite not run~%"))))
           (replace 'install
             (lambda* (#:key outputs #:allow-other-keys)
@@ -253,9 +236,7 @@ in the Mozilla clients.")
                 (copy-recursively (string-append obj "/lib") lib)))))))
     (inputs (list sqlite zlib))
     (propagated-inputs (list nspr))               ;required by nss.pc.
-    (native-inputs (list perl                     ;for tests
-                         (if (target-64bit?) libfaketime datefudge)
-                         which))
+    (native-inputs (list perl libfaketime which)) ;for tests
 
     ;; The NSS test suite takes around 48 hours on Loongson 3A (MIPS) when
     ;; another build is happening concurrently on the same machine.
@@ -322,71 +303,6 @@ security standards.")
                          (invoke "faketime" "2024-01-23" "./nss/tests/all.sh"))
                        (format #t "test suite not run~%"))))))))))))
 
-;; nss-rapid tracks the rapid release channel.  Unless your package requires a
-;; newer version, you should prefer the `nss' package, which tracks the ESR
-;; channel.
-;;
-;; See https://wiki.mozilla.org/NSS:Release_Versions
-;; and https://wiki.mozilla.org/Rapid_Release_Model
-
-(define-public nss-rapid
-  (package
-   (inherit nss)
-   (name "nss-rapid")
-   (version "3.103")
-   (source (origin
-             (inherit (package-source nss))
-             (uri (let ((version-with-underscores
-                         (string-join (string-split version #\.) "_")))
-                    (string-append
-                     "https://ftp.mozilla.org/pub/mozilla.org/security/nss/"
-                     "releases/NSS_" version-with-underscores "_RTM/src/"
-                     "nss-" version ".tar.gz")))
-             (sha256
-              (base32
-               "0qp9rs226rr6gh51b42cdbydr4mj80cli3bfqhh7bp3jyxbvcjkv"))))
-   (arguments
-    (substitute-keyword-arguments (package-arguments nss)
-      ((#:phases phases)
-       #~(modify-phases #$phases
-           (replace 'check
-             (lambda* (#:key tests? #:allow-other-keys)
-               (if tests?
-                   (begin
-                     ;; Use 127.0.0.1 instead of $HOST.$DOMSUF as HOSTADDR for
-                     ;; testing.  The latter requires a working DNS or /etc/hosts.
-                     (setenv "DOMSUF" "localdomain")
-                     (setenv "USE_IP" "TRUE")
-                     (setenv "IP_ADDRESS" "127.0.0.1")
-
-                     ;; This specific test is looking at performance "now
-                     ;; verify that we can quickly dump a database", and
-                     ;; we're not testing performance here (especially
-                     ;; since we're using faketime), so raise the
-                     ;; threshold
-                     (substitute* "nss/tests/dbtests/dbtests.sh"
-                       ((" -lt 5") " -lt 50"))
-
-                     ;; Since the test suite is very lengthy, run the test
-                     ;; suite once, not thrice as done by default, by
-                     ;; selecting only the 'standard' cycle.
-                     (setenv "NSS_CYCLES" "standard")
-
-                     ;; The "PayPalEE.cert" certificate expires every six months,
-                     ;; leading to test failures:
-                     ;; <https://bugzilla.mozilla.org/show_bug.cgi?id=609734>.  To
-                     ;; work around that, set the time to roughly the release date.
-                     (invoke "faketime" "2024-08-17" "./nss/tests/all.sh"))
-                   (format #t "test suite not run~%"))))))))
-   (synopsis "Network Security Services (Rapid Release)")
-   (description
-    "Network Security Services (@dfn{NSS}) is a set of libraries designed to
-support cross-platform development of security-enabled client and server
-applications.  Applications built with NSS can support SSL v2 and v3, TLS,
-PKCS #5, PKCS #7, PKCS #11, PKCS #12, S/MIME, X.509 v3 certificates, and other
-security standards.
-
-This package tracks the Rapid Release channel, which updates frequently.")))
 (define-public nsncd
   (package
     (name "nsncd")

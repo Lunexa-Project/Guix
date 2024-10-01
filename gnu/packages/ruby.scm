@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2015 Pjotr Prins <pjotr.guix@thebird.nl>
-;;; Copyright © 2014-2017, 2021-2022, 2024 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014-2017, 2021-2022 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2015, 2019 Ricardo Wurmus <rekado@elephly.net>
@@ -32,7 +32,7 @@
 ;;; Copyright © 2022-2024 Remco van 't Veer <remco@remworks.net>
 ;;; Copyright © 2022 Taiju HIGASHI <higashi@taiju.info>
 ;;; Copyright © 2023 Yovan Naumovski <yovan@gorski.stream>
-;;; Copyright © 2023, 2024 gemmaro <gemmaro.dev@gmail.com>
+;;; Copyright © 2023 gemmaro <gemmaro.dev@gmail.com>
 ;;; Copyright © 2023, 2024 Janneke Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2023, 2024 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2023, 2024 Hartmut Goebel <h.goebel@crazy-compilers.com>
@@ -179,7 +179,8 @@ a focus on simplicity and productivity.")
 (define-public ruby-2.7
   (package
     (inherit ruby-2.6)
-    (version "2.7.8")
+    (version "2.7.6")
+    (replacement ruby-2.7-fixed) ; security fixes
     (source
      (origin
        (inherit (package-source ruby-2.6))
@@ -188,7 +189,7 @@ a focus on simplicity and productivity.")
                            "/ruby-" version ".tar.gz"))
        (sha256
         (base32
-         "182vni66djmiqagwzfsd0za7x9k3zag43b88c590aalgphybdnn2"))))
+         "042xrdk7hsv4072bayz3f8ffqh61i8zlhvck10nfshllq063n877"))))
     (arguments
      `(#:test-target "test"
        #:configure-flags
@@ -228,6 +229,20 @@ a focus on simplicity and productivity.")
                  (list this-package)
                  '())
              (list autoconf)))))
+
+(define ruby-2.7-fixed
+  (package
+    (inherit ruby-2.7)
+    (version "2.7.8")
+    (source
+     (origin
+       (inherit (package-source ruby-2.7))
+       (uri (string-append "https://cache.ruby-lang.org/pub/ruby/"
+                           (version-major+minor version)
+                           "/ruby-" version ".tar.gz"))
+       (sha256
+        (base32
+         "182vni66djmiqagwzfsd0za7x9k3zag43b88c590aalgphybdnn2"))))))
 
 (define-public ruby-3.0
   (package
@@ -7795,26 +7810,6 @@ documentation for Ruby code.")
     (home-page "https://github.com/flori/tins")
     (license license:expat)))
 
-(define-public ruby-gemtext
-  (package
-    (name "ruby-gemtext")
-    (version "1.0.3")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (rubygems-uri "gemtext" version))
-       (sha256
-        (base32 "1z559f5z0zvwnqgnny0zf4mppiary020ljxwpw3bdxi2hr9aj3gp"))))
-    (build-system ruby-build-system)
-    (synopsis "Gemtext parser for Ruby")
-    (description
-     "This package is a Ruby parser library for Gemtext (hypertext format
-which is intended to serve as the native response format of the Gemini
-file transfer protocol) and produces a document object of various
-nodes.")
-    (home-page "https://github.com/exastencil/gemtext")
-    (license license:expat)))
-
 (define-public ruby-gem-hadar
   (package
     (name "ruby-gem-hadar")
@@ -13523,7 +13518,7 @@ technique.")
 (define-public ruby-rdoc
   (package
     (name "ruby-rdoc")
-    (version "6.7.0")
+    (version "6.5.0")
     (source
      (origin
        (method git-fetch)
@@ -13533,18 +13528,25 @@ technique.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "0dy997zi7k17c2yjlq1y7zl9yaiym1f4jgfh84qqzhwl1qm6v41j"))))
+         "06dcjs4s2phvg9bq42mlfqv4c4zpdr8w7aq107lm2q0qqqw7xjlr"))))
     (build-system ruby-build-system)
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'patch-gemspec
+           ;; TODO: Remove after next release is tagged.
+           (lambda _
+             (substitute* "rdoc.gemspec"
+               (("\"lib/rdoc/generator/template/darkfish/js/\
+jquery\\.js\", ") ""))
+             #t))
          (add-before 'build 'generate
            ;; 'gem build' doesn't honor Rakefile dependencies (see:
            ;; https://github.com/ruby/rdoc/issues/432#issuecomment-650808977).
            (lambda _
              (invoke "rake" "generate"))))))
-    (native-inputs (list bundler ruby-kpeg ruby-racc ruby-rubocop
-                         ruby-test-unit-ruby-core))
+    (native-inputs
+     (list bundler ruby-kpeg ruby-racc ruby-rubocop))
     (home-page "https://ruby.github.io/rdoc/")
     (synopsis "HTML and command-line documentation utility")
     (description "RDoc produces HTML and command-line documentation for Ruby

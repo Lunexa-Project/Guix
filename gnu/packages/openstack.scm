@@ -26,7 +26,6 @@
 
 (define-module (gnu packages openstack)
   #:use-module (gnu packages)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages check)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages gnupg)
@@ -978,10 +977,14 @@ permanence.")
                  `("PATH" ":" prefix
                    ,(map (lambda (dir)
                            (string-append dir "/bin"))
-                         (list git openssh))))))))))
-    (native-inputs (list python-pbr))
-    (propagated-inputs (list python-requests))
-    (inputs (list bash-minimal git openssh))
+                         (list git openssh)))))
+             #t)))))
+    (native-inputs
+     (list python-pbr))
+    (propagated-inputs
+     (list python-requests))
+    (inputs
+     (list git openssh))
     (home-page "https://docs.openstack.org/infra/git-review/")
     (synopsis "Command-line tool for Gerrit")
     (description

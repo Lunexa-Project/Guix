@@ -969,7 +969,7 @@ and manipulation.")
                    #:prefix emacs:)
                   (guix build utils)
                   (guix build emacs-utils))
-       #:imported-modules (,@%default-gnu-imported-modules
+       #:imported-modules (,@%gnu-build-system-modules
                            (guix build emacs-build-system)
                            (guix build emacs-utils))
        #:phases (modify-phases %standard-phases
@@ -1151,7 +1151,7 @@ Corporation.  The engine is independent of any language, dictionary or corpus.")
     (native-inputs (list mecab)); for mecab-config
     (home-page "https://taku910.github.io/mecab")
     (synopsis "Dictionary data for MeCab")
-    (description "This package contains dictionary data derived from
+    (description "This package contains dictionnary data derived from
 ipadic for use with MeCab.")
     (license (license:non-copyleft "mecab-ipadic/COPYING"))))
 

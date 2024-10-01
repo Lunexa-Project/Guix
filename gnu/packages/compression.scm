@@ -40,8 +40,6 @@
 ;;; Copyright © 2021 Foo Chuan Wei <chuanwei.foo@hotmail.com>
 ;;; Copyright © 2024 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2024 David Elsing <david.elsing@posteo.net>
-;;; Copyright © 2024 Artyom V. Poptsov <poptsov.artyom@gmail.com>
-;;; Copyright © 2024 Zheng Junjie <873216071@qq.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -112,7 +110,7 @@
 (define-public zlib
   (package
     (name "zlib")
-    (version "1.3")
+    (version "1.2.13")
     (source
      (origin
        (method url-fetch)
@@ -122,7 +120,7 @@
                                  version "/zlib-" version ".tar.gz")))
        (sha256
         (base32
-         "0gjrz8p70mgkic7mxjh1vqwws4x8z7hq2fhbackvqg81jb1a82zz"))))
+         "0c5b8vw40dy178xlpddw65q9gf1h2186jcc3p4swinwggbllv8mk"))))
     (build-system gnu-build-system)
     (outputs '("out" "static"))
     (arguments
@@ -257,14 +255,14 @@ adding and extracting files to/from a tar archive.")
 (define-public gzip
   (package
    (name "gzip")
-   (version "1.13")
+   (version "1.12")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnu/gzip/gzip-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "0mx0j7765l4cyj3hyvlks2s3izdyzaqf3hknamjwc5yv6mlynm3l"))))
+              "0mhrx5wk9gazmxdw7vmbpg036yzqqhsww6h12kwf2dzn37jh6pnf"))))
    (build-system gnu-build-system)
    (synopsis "General file (de)compression (using lzw)")
    (arguments
@@ -530,7 +528,7 @@ formats, including zstd, xz, gzip, and bgzf.")
 (define-public xz
   (package
    (name "xz")
-   (version "5.4.5")
+   (version "5.2.8")
    (source (origin
             (method url-fetch)
             (uri (list (string-append "http://tukaani.org/xz/xz-" version
@@ -539,7 +537,7 @@ formats, including zstd, xz, gzip, and bgzf.")
                                       version ".tar.gz")))
             (sha256
              (base32
-              "1mmpwl4kg1vs6n653gkaldyn43dpbjh8gpk7sk0gps5f6jwr0p0k"))))
+              "0z9056ydsy76ib5cl1z60jkcqgr0x12d3lw1p2qnlcwi1fgxlp7c"))))
    (build-system gnu-build-system)
    (arguments
     `(#:phases
@@ -575,45 +573,6 @@ container format.  With typical files, XZ Utils create 30 % smaller output
 than gzip and 15 % smaller output than bzip2.")
    (license (list license:gpl2+ license:lgpl2.1+)) ; bits of both
    (home-page "https://tukaani.org/xz/")))
-
-(define-public heatshrink
-  (package
-    (name "heatshrink")
-    (version "0.4.1")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/atomicobject/heatshrink/")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "0sdhvk27yz8kahw18j8pddbpkgl78v8rh8fx6wspc3acj7w7yvrn"))
-       ;; Add CMake build script, wanted by prusa-slicer and libbgcode, which are the
-       ;; only users of this library (see
-       ;; <https://github.com/NixOS/nixpkgs/pull/269758/commits/fa36136ceed0e2c58e0c9e21492a7e60c3a64470>.)
-       (patches (search-patches "heatshrink-add-cmake.patch"))))
-    (build-system cmake-build-system)
-    (arguments
-     (list
-      ;; XXX: No tests available with CMake (see
-      ;; <https://github.com/atomicobject/heatshrink/pull/77>.)
-      #:tests? #f))
-    (home-page "https://github.com/atomicobject/heatshrink/")
-    (synopsis "Data compression library for embedded/real-time systems")
-    (description
-     "A data compression/decompression library for embedded/real-time systems.
-
-Among its features are:
-@itemize
-@item Low memory usage (as low as 50 bytes.)  It is useful for some cases with less
-than 50 bytes, and useful for many general cases with less than 300 bytes.
-@item Incremental, bounded CPU use.  It can be used to chew on input data in
-arbitrarily tiny bites.  This is a useful property in hard real-time environments.
-@item Can use either static or dynamic memory allocation.
-@end itemize
-")
-    (license license:isc)))
 
 (define-public lhasa
   (package
@@ -2236,18 +2195,15 @@ corrupted input.")
 (define-public plzip
   (package
     (name "plzip")
-    (version "1.11")
+    (version "1.10")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://savannah/lzip/plzip/"
                            "plzip-" version ".tar.gz"))
        (sha256
-        (base32 "0sv2sp0ppxkdds4qiwb3ddvlv22ydv61n3hk74rkh8ljbkjcpqyq"))))
+        (base32 "16408n8z21hfxp0qnx3hh1d0c47g8z9i3vflbgbrmf6qcn1abyj3"))))
     (build-system gnu-build-system)
-    (arguments
-     (list #:configure-flags
-           #~(list (string-append "CXX=" #$(cxx-for-target)))))
     (inputs
      (list lzlib))
     (home-page "https://www.nongnu.org/lzip/plzip.html")
@@ -2958,7 +2914,7 @@ compression and decompression speed compared to Deflate using Zlib.")
 (define-public unrar-free
   (package
     (name "unrar-free")
-    (version "0.3.1")
+    (version "0.1.3")
     (source
      (origin
        (method git-fetch)
@@ -2967,14 +2923,14 @@ compression and decompression speed compared to Deflate using Zlib.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1qf2fdr4bl10kys2fsb6090r9xj0ascrk7pn0iklsv1ajwcql3qf"))))
+        (base32 "12idmr5rjmw7dg2mi6250q599nywrirgc8553353a4swf5n1pmx4"))))
     (build-system gnu-build-system)
-    (native-inputs
-     (list autoconf
-           automake
-           pkg-config))
     (inputs
-     (list libarchive))
+     `(("libarchive" ,libarchive)))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
     (home-page "https://gitlab.com/bgermann/unrar-free")
     (synopsis "Extract files from RAR archives")
     (description

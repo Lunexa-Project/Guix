@@ -98,9 +98,7 @@
                           (guile #f)
                           (imported-modules %pyproject-build-system-modules)
                           (modules '((guix build pyproject-build-system)
-                                     (guix build utils)))
-                          allowed-references
-                          disallowed-references)
+                                     (guix build utils))))
   "Build SOURCE using PYTHON, and with INPUTS."
   (define build
     (with-imported-modules imported-modules
@@ -133,9 +131,7 @@
                       #:system system
                       #:graft? #f                 ;consistent with 'gnu-build'
                       #:target #f
-                      #:guile-for-build guile
-                      #:allowed-references allowed-references
-                      #:disallowed-references disallowed-references)))
+                      #:guile-for-build guile)))
 
 (define pyproject-build-system
   (build-system

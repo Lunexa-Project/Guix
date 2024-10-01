@@ -30,7 +30,7 @@
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
 ;;; Copyright © 2018 Mădălin Ionel Patrașcu <madalinionel.patrascu@mdc-berlin.de>
 ;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
-;;; Copyright © 2019, 2020-2021, 2023, 2024 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2019, 2020-2021, 2023 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2019 Brendan Tildesley <mail@brendan.scot>
 ;;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
@@ -66,7 +66,6 @@
 ;;; Copyright © 2023 Felix Lechner <felix.lechner@lease-up.com>
 ;;; Copyright © 2023 Evgeny Pisemsky <mail@pisemsky.site>
 ;;; Copyright © 2024 Tomas Volf <~@wolfsden.cz>
-;;; Copyright © 2024 Zheng Junjie <873216071@qq.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -125,7 +124,6 @@
   #:use-module (gnu packages crates-gtk)
   #:use-module (gnu packages crates-tls)
   #:use-module (gnu packages crates-web)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages cyrus-sasl)
   #:use-module (gnu packages databases)
@@ -188,7 +186,6 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-check)
   #:use-module (gnu packages perl-compression)
-  #:use-module (gnu packages prometheus)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-build)
   #:use-module (gnu packages python-check)
@@ -236,7 +233,7 @@
      `(#:tests? #f                      ; no target
        #:imported-modules
        ((guix build copy-build-system)
-        ,@%default-gnu-imported-modules)
+        ,@%gnu-build-system-modules)
        #:modules
        (((guix build copy-build-system) #:prefix copy:)
         (guix build gnu-build-system)
@@ -302,18 +299,17 @@
                "1id45r2ccgkbjm9i998997ch32lvicpyynyx8x6aa4420wmdf5ps"))))
     (build-system gnu-build-system)
     (native-inputs (list `(,pcre "bin")))       ;for 'pcre-config'
-    (inputs (list apr apr-util libxcrypt openssl perl)) ; needed to run bin/apxs
+    (inputs (list apr apr-util openssl perl)) ; needed to run bin/apxs
     (arguments
-     (list
-      #:test-target "test"
-      #:configure-flags #~(list "--enable-rewrite"
-                                "--enable-userdir"
-                                "--enable-vhost-alias"
-                                "--enable-ssl"
-                                "--enable-mime-magic"
-                                (string-append "--sysconfdir="
-                                               #$output
-                                               "/etc/httpd"))))
+     `(#:test-target "test"
+       #:configure-flags (list "--enable-rewrite"
+                               "--enable-userdir"
+                               "--enable-vhost-alias"
+                               "--enable-ssl"
+                               "--enable-mime-magic"
+                               (string-append "--sysconfdir="
+                                              (assoc-ref %outputs "out")
+                                              "/etc/httpd"))))
     (synopsis "Featureful HTTP server")
     (description
      "The Apache HTTP Server Project is a collaborative software development
@@ -343,7 +339,7 @@ and its related documentation.")
 (define-public miniflux
   (package
     (name "miniflux")
-    (version "2.2.0")
+    (version "2.1.4")
     (source
      (origin
        (method git-fetch)
@@ -352,7 +348,7 @@ and its related documentation.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0w8q8x9rw4xq065va96xvlzjzl1qrvzfb1zah3dnnb5g34gjqk94"))))
+        (base32 "1m1rcxcjswni3adgjkn3hvb59cbfdh9cl22d5qqwn0lxs8mgqhfl"))))
     (build-system go-build-system)
     (arguments
      (list
@@ -524,16 +520,16 @@ the same, being completely separated from the Internet.")
     ;; Track the ‘mainline’ branch.  Upstream considers it more reliable than
     ;; ’stable’ and recommends that “in general you deploy the NGINX mainline
     ;; branch at all times” (https://www.nginx.com/blog/nginx-1-6-1-7-released/)
-    (version "1.27.1")
+    (version "1.27.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://nginx.org/download/nginx-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1z5x0i0k1hmnxm7mb3dfn6qrz9am96my5ivinxl3gsp1dj5acyxx"))))
+                "170ja338zh7wdyva34cr7f3wfq59434sssn51d5jvakyz0y0w8xp"))))
     (build-system gnu-build-system)
-    (inputs (list libxcrypt libxml2 libxslt openssl pcre zlib))
+    (inputs (list libxml2 libxslt openssl pcre zlib))
     (arguments
      (list
       #:tests? #f                       ; no test target
@@ -622,9 +618,9 @@ and as a proxy to reduce the load on back-end HTTP or mail servers.")
 
 (define-public nginx-documentation
   ;; This documentation should be relevant for the current nginx package.
-  (let ((version "1.27.1")
-        (revision 3114)
-        (changeset "051789a80bcb"))
+  (let ((version "1.27.0")
+        (revision 3081)
+        (changeset "1b23e39a3b94"))
     (package
       (name "nginx-documentation")
       (version (simple-format #f "~A-~A-~A" version revision changeset))
@@ -636,7 +632,7 @@ and as a proxy to reduce the load on back-end HTTP or mail servers.")
                (file-name (string-append name "-" version))
                (sha256
                 (base32
-                 "0p198cjnhypssmj4mrj6wx2lbrfgw84i2fa4ydzdbjgkdzp803mv"))))
+                 "0xnfda8xh8mv00fsycqbwicm8bb7rsvdqmmwv0h372kiwxnazjkh"))))
       (build-system gnu-build-system)
       (arguments
        '(#:tests? #f                    ; no test suite
@@ -689,8 +685,7 @@ and as a proxy to reduce the load on back-end HTTP or mail servers.")
          (sha256
           (base32 "1hjysrl15kh5233w7apq298cc2bp4q1z5mvaqcka9pdl90m0vhbw"))))
       (build-system gnu-build-system)
-      (inputs `(("libxcrypt" ,libxcrypt)
-                ("openssl" ,openssl)
+      (inputs `(("openssl" ,openssl)
                 ("pcre" ,pcre)
                 ("nginx-sources" ,(package-source nginx))
                 ("zlib" ,zlib)))
@@ -1560,7 +1555,7 @@ efficiently.  It gives the application developer no more than 4 methods.")
                (invoke (string-append (assoc-ref outputs "out") "/bin/ktImportText")
                        "ec.tsv")))))))
    (inputs
-    (list bash-minimal curl gnu-make perl))
+    (list curl gnu-make perl))
    (home-page "https://github.com/marbl/Krona/wiki")
    (synopsis "Hierarchical data exploration with zoomable HTML5 pie charts")
    (description
@@ -2170,16 +2165,7 @@ changes, and much more.")
                (base32
                 "07w1aq8y8wld43wmbk2q8134p3bfkp2vma78mmsfgw2jn1bh3xhd"))))
     (build-system gnu-build-system)
-    (arguments
-     (list
-      #:configure-flags ''("--enable-nss")
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'use-C-unicode-locale
-            (lambda _
-              (substitute* "tests/commontest.c"
-                (("en_US\\.UTF-8")
-                 "C.UTF-8")))))))
+    (arguments '(#:configure-flags '("--enable-nss")))
     (native-inputs (list pkg-config))
     (propagated-inputs
      (list curl nss))
@@ -5207,8 +5193,8 @@ Cloud.")
     (license license:expat)))
 
 (define-public guix-data-service
-  (let ((commit "a204bda36d0433b5835375cbdc9e640a2a196674")
-        (revision "54"))
+  (let ((commit "b5fbde5ac832e34987a05b1445c1c465c19d5340")
+        (revision "52"))
     (package
       (name "guix-data-service")
       (version (string-append "0.0.1-" revision "." (string-take commit 7)))
@@ -5220,7 +5206,7 @@ Cloud.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0f86sxxm0gnbkkb3x0kzrf9ld561y3mch4nkjylbmqdihh0609f0"))))
+                  "1dp26bj14jaac9f5332pd6hasm3wr1hg9wrbjm9m8wb7cdll9h2p"))))
       (build-system gnu-build-system)
       (arguments
        (list
@@ -5278,8 +5264,7 @@ Cloud.")
                               (_ #t)))))))
             (delete 'strip))))          ; As the .go files aren't compatible
       (inputs
-       (list bash-minimal
-             ephemeralpg
+       (list ephemeralpg
              util-linux
              postgresql-13
              sqitch
@@ -5448,7 +5433,7 @@ you'd expect.")
 (define-public go-github-com-mikefarah-yq-v4
   (package
     (name "go-github-com-mikefarah-yq-v4")
-    (version "4.44.3")
+    (version "4.34.2")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -5457,7 +5442,7 @@ you'd expect.")
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0s7c8r6y5jv6wda2v3k47hawfdr9j3rwk717l6byvh5qsbbml0vd"))))
+                "0y5i0p4fiq0kad9xqihhyclhd9d3l2r5yligdkvsdc90hlqjmql3"))))
     (build-system go-build-system)
     (arguments
      (list #:import-path "github.com/mikefarah/yq/v4"
@@ -5470,7 +5455,6 @@ you'd expect.")
     (propagated-inputs
      (list go-github-com-a8m-envsubst
            go-github-com-alecthomas-participle-v2
-           go-github-com-alecthomas-repr
            go-github-com-dimchansky-utfbom
            go-github-com-elliotchance-orderedmap
            go-github-com-fatih-color
@@ -5479,10 +5463,7 @@ you'd expect.")
            go-github-com-jinzhu-copier
            go-github-com-magiconair-properties
            go-github-com-pelletier-go-toml-v2
-           go-github-com-pkg-diff
            go-github-com-spf13-cobra
-           go-github-com-spf13-pflag
-           go-github-com-yuin-gopher-lua
            go-golang-org-x-net
            go-golang-org-x-text
            go-gopkg-in-op-go-logging-v1
@@ -5512,30 +5493,53 @@ JSON, XML, properties, CSV and TSV.")
     (propagated-inputs '())
     (inputs (package-propagated-inputs go-github-com-mikefarah-yq-v4))))
 
-(define-public go-github-com-itchyny-gojq
+(define-public go-github-com-itchyny-timefmt-go
   (package
-    (name "go-github-com-itchyny-gojq")
-    (version "0.12.16")
+    (name "go-github-com-itchyny-timefmt-go")
+    (version "0.1.4")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/itchyny/gojq")
+             (url "https://github.com/itchyny/timefmt-go")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0favs281iaq98cmqwf47amk12xpksznpwgfid24z8migkp8628wl"))))
+        (base32 "0z5z8hy5lbjqdxp544mf238i77n7pf7bv3psgr5gffh0630dsyag"))))
     (build-system go-build-system)
     (arguments
-     (list
-      #:import-path "github.com/itchyny/gojq/cmd/gojq"
-      #:unpack-path "github.com/itchyny/gojq"))
+     (list #:import-path "github.com/itchyny/timefmt-go"))
+    (home-page "https://github.com/itchyny/timefmt-go")
+    (synopsis "Efficient time formatting library (strftime, strptime) for Golang")
+    (description
+     "@code{timefmt-go} is a Go language package for formatting and parsing date
+time strings.")
+    (license license:expat)))
+
+(define-public go-github-com-itchyny-gojq
+  (package
+    (name "go-github-com-itchyny-gojq")
+    (version "0.12.11")
+    (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/itchyny/gojq")
+               (commit (string-append "v" version))))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32 "1dqmnxnipi497nx9x10ifack09w41579svryss5q2w5wxy0pg764"))))
+    (build-system go-build-system)
     (inputs
-     (list go-github-com-google-go-cmp
+     (list go-github-com-google-go-cmp-cmp
            go-github-com-itchyny-timefmt-go
            go-github-com-mattn-go-isatty
            go-github-com-mattn-go-runewidth
            go-gopkg-in-yaml-v3))
+    (arguments
+     (list
+      #:import-path "github.com/itchyny/gojq/cmd/gojq"
+      #:unpack-path "github.com/itchyny/gojq"))
     (home-page "https://github.com/itchyny/gojq")
     (synopsis "Pure Go implementation of jq")
     (description
@@ -5744,7 +5748,7 @@ NetSurf project.")
 (define-public ikiwiki
   (package
     (name "ikiwiki")
-    (version "3.20200202.4")
+    (version "3.20200202.3")
     (source
      (origin
        (method git-fetch)
@@ -5754,12 +5758,13 @@ NetSurf project.")
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "04ijislp7png18bg1carb71xk3sij9x5xpizfkxp6jbip6wdxsml"))
+         "0fphyqzlk9y8v9s89ypsmrnbhyymzrpc2w0liy0n4knc7kk2pabq"))
        (snippet
         '(begin
            ;; The POT file requires write permission during the build
            ;; phase.
-           (chmod "po/ikiwiki.pot" #o644)))))
+           (chmod "po/ikiwiki.pot" #o644)
+           #t))))
     (build-system perl-build-system)
     (arguments
      `(#:phases
@@ -5770,14 +5775,16 @@ NetSurf project.")
                           (("SYSCONFDIR\\?=") "SYSCONFDIR?=$(PREFIX)"))
              (with-directory-excursion "po"
                (substitute* "Makefile"
-                            (("PERL5LIB=") "PERL5LIB=${PERL5LIB}:")))))
+                            (("PERL5LIB=") "PERL5LIB=${PERL5LIB}:")))
+             #t))
          (add-before 'build 'set-modification-times
            ;; The wiki '--refresh' steps, which are executed during
            ;; the check phase, require recent timestamps on files in
            ;; the 'doc' and 'underlays' directories.
            (lambda _
              (invoke "find"  "doc" "underlays" "-type" "f" "-exec"
-                     "touch" "{}" "+")))
+                     "touch" "{}" "+")
+             #t))
          (add-before 'check 'pre-check
            (lambda* (#:key inputs #:allow-other-keys)
              ;; Six tests use IPC::Run.  For these tests the PERL5LIB
@@ -5803,7 +5810,8 @@ NetSurf project.")
                      (string-append (assoc-ref inputs "shared-mime-info")
                                     "/share"))
              ;; CC is needed by IkiWiki/Wrapper.pm.
-             (setenv "CC" "gcc")))
+             (setenv "CC" "gcc")
+             #t))
          (add-after 'install 'wrap-programs
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out  (assoc-ref outputs "out"))
@@ -5812,7 +5820,8 @@ NetSurf project.")
                (for-each (lambda (file)
                            (wrap-program file
                              `("PERL5LIB" ":" prefix (,path))))
-                         (find-files bin))))))))
+                         (find-files bin))
+               #t))))))
     (native-inputs
      (list which
            gettext-minimal
@@ -5822,8 +5831,7 @@ NetSurf project.")
            cvs
            mercurial))
     (inputs
-     (list bash-minimal
-           python-wrapper
+     (list python-wrapper
            perl-authen-passphrase
            perl-cgi-simple
            perl-db-file
@@ -6792,7 +6800,7 @@ functions of Tidy.")
                  `("PATH" ":" prefix (,mbed)))))))))
     (inputs
      ;; TODO: package "hiawatha-monitor", an optional dependency of "hiawatha".
-     (list bash-minimal libxcrypt libxslt libxml2 mbedtls-for-hiawatha
+     (list libxslt libxml2 mbedtls-for-hiawatha
            `(,nghttp2 "lib") zlib))
     (home-page "https://www.hiawatha-webserver.org")
     (synopsis "Webserver with focus on security")
@@ -7214,7 +7222,7 @@ file links.")
 (define-public castor
   (package
     (name "castor")
-    (version "0.9.0")
+    (version "0.8.18")
     (source
      (origin
        (method git-fetch)
@@ -7223,25 +7231,18 @@ file links.")
              (commit version)))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1gda77ya2qbmjxfbw3yfr64inm8xw8243iwnfsgwwiwl35pw70n9"))))
+        (base32 "1l72r6a917ymc9pn8dllbal1xdczfai376nvqkiys5fm4j4s3zmj"))))
     (build-system cargo-build-system)
     (arguments
-     (list
-      #:phases
-      #~(modify-phases %standard-phases
-          (add-after 'unpack 'relax-cargo-requirements
-            (lambda _
-              (substitute* "Cargo.toml" (("~") "")))))
-      #:cargo-inputs
-      `(("rust-ansi-parser" ,rust-ansi-parser-0.6)
-        ("rust-dirs" ,rust-dirs-3)
+     `(#:cargo-inputs
+       (("rust-ansi-parser" ,rust-ansi-parser-0.6)
+        ("rust-dirs" ,rust-dirs-2)
         ("rust-gdk" ,rust-gdk-0.13)
         ("rust-gtk" ,rust-gtk-0.8)
-        ("rust-linkify" ,rust-linkify-0.7)
+        ("rust-linkify" ,rust-linkify-0.4)
         ("rust-native-tls" ,rust-native-tls-0.2)
-        ("rust-open" ,rust-open-2)
+        ("rust-open" ,rust-open-1)
         ("rust-percent-encoding" ,rust-percent-encoding-2)
-        ("rust-textwrap" ,rust-textwrap-0.14)
         ("rust-url" ,rust-url-2))))
     (native-inputs
      (list pkg-config))
@@ -8498,7 +8499,7 @@ compressed JSON header blocks.
 (define-public nghttp3
   (package
     (name "nghttp3")
-    (version "1.5.0")
+    (version "1.4.0")
     (source
      (origin
        (method url-fetch)
@@ -8507,7 +8508,7 @@ compressed JSON header blocks.
                            "nghttp3-" version ".tar.gz"))
        (sha256
         (base32
-         "08zzwn40kr632wab2vr4cjy4l1yycphfdql1kdkv0bkxhr48mmhk"))))
+         "13s0jhqbs86a91702j8ybh4h5l75k3mi8cwdiikd9b03n5rq19s3"))))
     (build-system gnu-build-system)
     (native-inputs
      (list pkg-config))
@@ -8595,8 +8596,7 @@ It does not support server push.")
      (list autoconf automake uglify-js pkg-config
            (lookup-package-native-input guix "guile")))
     (inputs
-     (list bash-minimal
-           (lookup-package-native-input guix "guile")
+     (list (lookup-package-native-input guix "guile")
            guix
            guile-zlib
            guile-commonmark
@@ -8972,7 +8972,7 @@ solution for any project's interface needs:
 (define-public gmid
   (package
     (name "gmid")
-    (version "2.1.1")
+    (version "2.0.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -8980,7 +8980,7 @@ solution for any project's interface needs:
                     version "/gmid-" version ".tar.gz"))
               (sha256
                (base32
-                "1gy41858xxgbvngw7b162sq8vddd104a3cdd53pp2vk1f91gxc4y"))))
+                "1riihzgshfk6907r4g69lrlvabiznwi5d7njk7y6km0695lf62g0"))))
     (build-system gnu-build-system)
     (arguments
      (list #:test-target "regress"
@@ -9017,7 +9017,7 @@ in mind.  It has features such as:
 (define-public kiln
   (package
     (name "kiln")
-    (version "0.4.1")
+    (version "0.4.0")
     (source (origin
               (method git-fetch)
               (uri (git-reference
@@ -9026,7 +9026,7 @@ in mind.  It has features such as:
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "1ynb079jsyv6viwdksavwar5lqj84ssfw39dl5da98z683xrvch5"))))
+                "1lvzv46hn80gffw47mcc28iahwqng7pvg500s9jlrq6mhr4k5ih4"))))
     (build-system go-build-system)
     (arguments
      (list
@@ -9360,21 +9360,17 @@ tools:
 (define-public uriparser
   (package
     (name "uriparser")
-    (version "0.9.8")
+    (version "0.9.6")
     (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/uriparser/uriparser")
-                    (commit (string-append "uriparser-" version))))
-              (file-name (git-file-name name version))
+              (method url-fetch)
+              (uri (string-append "https://github.com/uriparser/uriparser"
+                                  "/releases/download/uriparser-"
+                                  version "/uriparser-" version ".tar.xz"))
               (sha256
                (base32
-                "0qr3rc0iz1zxim1ylwzf7zijgnxpzv4m35fzvv5kf66a8bqhrw2k"))))
+                "0i7nxgy36i8v81r213sbvmpxxq9qb4rhii9qbvl1k32jd1ka1252"))))
     (build-system cmake-build-system)
     (native-inputs (list googletest doxygen graphviz))
-    (arguments (if (%current-target-system)
-                   (list #:configure-flags #~(list "-DURIPARSER_BUILD_TESTS=OFF"))
-                   '()))
     (synopsis "Strictly RFC 3986 compliant URI parsing and handling library")
     (description "uriparser is a strictly RFC 3986 compliant URI parsing and
 handling library written in C89 (\"ANSI C\").  uriparser is fast and supports

@@ -43,7 +43,7 @@
     (guix build maven plugin)
     (guix build maven pom)
     (guix build java-utils)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define (default-jdk)
   "Return the default JDK package."

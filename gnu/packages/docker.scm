@@ -300,23 +300,24 @@ the required network abstractions for applications.")
     (inherit docker-libnetwork)
     (name "docker-libnetwork-cmd-proxy")
     (arguments
-     (list
-      ;; The tests are unsupported on all architectures except x86_64-linux.
-      #:tests? (and (not (%current-target-system)) (target-x86-64?))
-      #:install-source? #f
-      #:import-path "github.com/docker/libnetwork/cmd/proxy"
-      #:unpack-path "github.com/docker/libnetwork"))
+     ;; The tests are unsupported on all architectures except x86_64-linux.
+     `(#:tests? ,(and (not (%current-target-system))
+                      (target-x86-64?))
+       #:import-path "github.com/docker/libnetwork/cmd/proxy"
+       #:unpack-path "github.com/docker/libnetwork"
+       #:install-source? #f))
     (native-inputs
-     (list go-github-com-sirupsen-logrus ; for tests.
-           go-github-com-vishvananda-netlink
-           go-github-com-vishvananda-netns
-           go-golang-org-x-crypto
-           go-golang-org-x-sys
-           go-sctp))
+     `(("go-sctp" ,go-sctp)
+       ;; For tests.
+       ("logrus" ,go-github-com-sirupsen-logrus)
+       ("go-netlink" ,go-netlink)
+       ("go-netns" ,go-netns)
+       ("go-golang-org-x-crypto"
+        ,go-golang-org-x-crypto)
+       ("go-golang-org-x-sys" ,go-golang-org-x-sys)))
     (synopsis "Docker user-space proxy")
-    (description
-     "This package provides a proxy running in the user space.  It is used by
-the built-in registry server of Docker.")
+    (description "A proxy running in the user space.  It is used by the
+built-in registry server of Docker.")
     (license license:asl2.0)))
 
 ;; TODO: Patch out modprobes for ip_vs, nf_conntrack,
@@ -343,7 +344,7 @@ the built-in registry server of Docker.")
         (guix build union)
         (guix build utils))
       #:imported-modules
-      `(,@%default-gnu-imported-modules
+      `(,@%gnu-build-system-modules
         (guix build union)
         (guix build go-build-system))
       #:phases

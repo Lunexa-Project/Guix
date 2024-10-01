@@ -88,7 +88,6 @@
   #:use-module (gnu packages xml)
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
-  #:use-module (ice-9 regex)
 
   #:export (make-ergodox-firmware
             make-qmk-firmware))
@@ -680,7 +679,7 @@ coreboot.")
     (supported-systems %supported-systems)
     (arguments
      (substitute-keyword-arguments (package-arguments seabios)
-       ((#:modules modules %default-gnu-modules)
+       ((#:modules modules %gnu-build-system-modules)
         `((ice-9 match)
           (ice-9 threads)
           ,@modules))
@@ -1524,9 +1523,7 @@ upstream repository, provide a file-like object directory containing the whole
 keyboard definition in KEYBOARD-SOURCE-DIRECTORY."
   (package
     (name (string-append "qmk-firmware-"
-                         (regexp-substitute/global #f "[_/]" keyboard
-                                                   'pre "-" 'post)
-                         "-"
+                         (string-replace-substring keyboard "_" "-") "-"
                          (string-replace-substring keymap "_" "-")))
     ;; Note: When updating this package, make sure to also update the commit
     ;; used for the LUFA submodule in the 'copy-lufa-source' phase below.

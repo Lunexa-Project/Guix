@@ -44,7 +44,6 @@
 ;;; Copyright © 2021, 2023, 2024 Zheng Junjie <873216071@qq.com>
 ;;; Copyright © 2021 Sharlatan Hellseher <sharlatanus@gmail.com>
 ;;; Copyright © 2021 qblade <qblade@protonmail.com>
-;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021 lasnesne <lasnesne@lagunposprasihopre.org>
 ;;; Copyright © 2021, 2022 Petr Hodina <phodina@protonmail.com>
 ;;; Copyright © 2021, 2023 jgart <jgart@dismail.de>
@@ -343,7 +342,7 @@ or musca).
      (list asciidoc
            perl
            pkg-config
-           docbook-xsl
+           docbook-xsl libxml2          ; for XML_CATALOG_FILES
            xmlto))
     (home-page "https://i3wm.org/i3status/")
     (synopsis "Status bar for i3bar, dzen2, xmobar or similar programs")
@@ -873,24 +872,6 @@ manager and a system tray.")
         (base32 "19qz9a23377nzc0qq8nca45s745mfncd4i2vwba14gi7ipipfcil"))))
     (build-system haskell-build-system)
     (properties '((upstream-name . "xmonad")))
-    (arguments
-      (list
-       #:phases
-       #~(modify-phases %standard-phases
-           (add-after 'install 'install-xsession
-             (lambda _
-               (let* ((xsessions (string-append #$output "/share/xsessions"))
-                      (entry     (string-append xsessions "/xmonad.desktop")))
-                 (mkdir-p xsessions)
-                 (call-with-output-file
-                  entry
-                  (lambda (port)
-                    (format port "~
-                      [Desktop Entry]~@
-                      Name=xmonad~@
-                      Comment=xmonad window manager~@
-                      Exec=~a/bin/xmonad~@
-                      Type=Application~%" #$output)))))))))
     (inputs (list ghc-x11 ghc-data-default-class ghc-setlocale))
     (native-inputs (list ghc-quickcheck ghc-quickcheck-classes))
     (home-page "http://xmonad.org")
@@ -1227,12 +1208,12 @@ for wlroots-based Wayland compositors.")
            doxygen
            gperf
            imagemagick
+           libxml2 ;for XML_CATALOG_FILES
            lua-ldoc
            pkg-config
            xmlto))
     (inputs
-     (list bash-minimal
-           cairo
+     (list cairo
            dbus
            gdk-pixbuf
            glib
@@ -1313,7 +1294,8 @@ for wlroots-based Wayland compositors.")
              (let* ((out (assoc-ref outputs "out"))
                     (awesome (string-append out "/bin/awesome")))
                (substitute* (string-append out "/share/xsessions/awesome.desktop")
-                 (("Exec=awesome") (string-append "Exec=" awesome))))))
+                 (("Exec=awesome") (string-append "Exec=" awesome)))
+               #t)))
          (add-after 'install 'wrap
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((awesome (assoc-ref outputs "out"))
@@ -1326,7 +1308,8 @@ for wlroots-based Wayland compositors.")
                  `("LUA_CPATH" ";" suffix
                    (,(format #f "~a/lib/lua/~a/?.so" lua-lgi lua-version)))
                  `("GI_TYPELIB_PATH" ":" prefix (,(getenv "GI_TYPELIB_PATH")))
-                 `("LD_LIBRARY_PATH" suffix (,cairo)))))))))
+                 `("LD_LIBRARY_PATH" suffix (,cairo)))
+               #t))))))
     (home-page "https://awesomewm.org/")
     (synopsis "Highly configurable window manager")
     (description
@@ -1387,7 +1370,7 @@ all of them.  Currently supported window managers include:
     (inputs
      (list gtk+ gobject-introspection))
     (native-inputs
-     (list gtk-doc/stable pkg-config))
+     (list gtk-doc pkg-config))
     (synopsis "Library for registering global keyboard shortcuts, Gtk3 version")
     (description
      "Keybinder is a library for registering global keyboard shortcuts.
@@ -1771,7 +1754,7 @@ functionality to display information about the most commonly used services.")
            xorg-server-xwayland))
     (native-inputs
      (cons*
-       hwdata
+       `(,hwdata "pnp")
        pkg-config
        wayland
        (if (%current-target-system)
@@ -2004,7 +1987,7 @@ corners, shadows, inactive window dimming, etc.")
 (define-public swaylock
   (package
     (name "swaylock")
-    (version "1.8.0")
+    (version "1.7.2")
     (source
      (origin
        (method git-fetch)
@@ -2013,7 +1996,7 @@ corners, shadows, inactive window dimming, etc.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1n4m5nk2jj4f0p11760zdd51ncsb469d06hm0f5487v01p3igq6p"))))
+        (base32 "03jrjwlwxkcyd6m9a1bbwapasnz7b7aws7h0y6jigjm4m478phv6"))))
     (build-system meson-build-system)
     (inputs (append (if (%current-target-system)
                         (list wayland-protocols)
@@ -2362,7 +2345,7 @@ compositors that support the layer-shell protocol.")
 (define-public kanshi
   (package
     (name "kanshi")
-    (version "1.7.0")
+    (version "1.6.0")
     (source
      (origin
        (method git-fetch)
@@ -2371,13 +2354,10 @@ compositors that support the layer-shell protocol.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "0g5glpkcn54ypfym4lpfdjai479yfazcai1rg86bn72nkcbpwfql"))))
+        (base32 "10ym28xkxbs6nkjk3clb680815606c42vagbshd9qs9cvc8zncra"))))
     (build-system meson-build-system)
-    (inputs (list libscfg wayland))
-    (native-inputs (append (if (%current-target-system)
-                               (list pkg-config-for-build)
-                               (list))
-                           (list pkg-config scdoc wayland)))
+    (inputs (list wayland))
+    (native-inputs (list pkg-config scdoc libscfg))
     (home-page "https://wayland.emersion.fr/kanshi")
     (synopsis "Hotswappable output profiles for Wayland")
     (description "Kanshi allows you to define output profiles that are
@@ -2465,7 +2445,7 @@ wlr-output-management-unstable-v1 protocol.")
                         Icon=~@
                         Type=Application~%"
                        out))))))
-          (add-after 'create-desktop-file 'install-manual
+          (add-after 'install 'install-manual
             (lambda* (#:key (make-flags '()) outputs #:allow-other-keys)
               (let* ((out  #$output)
                      (info (string-append out "/share/info")))
@@ -3265,7 +3245,7 @@ for wayland conceptually based on the X11 window manager
                             (string-append (assoc-ref (or native-inputs inputs)
                                                       "hwdata")
                                            "/share/hwdata/pnp.ids"))))))))
-      (native-inputs (list hwdata python))
+      (native-inputs (list `(,hwdata "pnp") python))
       (synopsis "EDID and DisplayID library")
       (description
        "This package provides a library to read @acronym{EDID, Extended

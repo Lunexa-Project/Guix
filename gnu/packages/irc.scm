@@ -14,7 +14,6 @@
 ;;; Copyright © 2022 Jai Vetrivelan <jaivetrivelan@gmail.com>
 ;;; Copyright © 2022 jgart <jgart@dismail.de>
 ;;; Copyright © 2023 Janneke Nieuwenhuizen <janneke@gnu.org>
-;;; Copyright © 2024 Ashish SHUKLA <ashish.is@lostca.se>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -91,7 +90,6 @@
   #:use-module (gnu packages pcre)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
-  #:use-module (gnu packages prometheus)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-xyz)
@@ -368,14 +366,14 @@ Conferencing} and @acronym{ICB, Internet Citizen's Band}.")
 (define-public weechat
   (package
     (name "weechat")
-    (version "4.4.1")
+    (version "4.3.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://weechat.org/files/src/weechat-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "0v4k4rrp2a5zaxl86wnwffajv3b4fb9w70rsh42samra9k8hppp5"))))
+                "1qsbdg3c0787xs0vwbxsyylf5fvz4cazrzlnwj2mnp6s6b4c9nz6"))))
     (build-system cmake-build-system)
     (outputs '("out" "doc"))
     (native-inputs
@@ -632,13 +630,13 @@ highlighted.
        #:phases
        (modify-phases %standard-phases
          (delete 'configure))))         ; No ./configure script
-    (home-page "https://mcpcpc.github.io/kirc/")
     (synopsis "IRC client written in POSIX C99")
     (description "Kirc is an Internet Relay Chat (IRC) client.  It includes
 support for Simple Authentication and Security Layer (SASL), the
 client-to-client (CTCP) protocol, simple chat history logging, synchronous
 message handling, multi-channel joining at server connection, full support for
 all RFC 2812 commands, and customized color scheme definitions.")
+    (home-page "http://kirc.io/index.html")
     (license license:expat)))
 
 (define-public limnoria
@@ -1053,7 +1051,7 @@ server written in C++ for Unix-like operating systems.")
                                    (invoke guile "--no-auto-compile" test)))
                                 #t
                                 tests))))))
-          (add-after 'build 'install-script
+          (add-after 'install 'install-script
             (lambda _
               (let* ((bash #$(this-package-input "bash-minimal"))
                      (bash (string-append bash "/bin/bash"))

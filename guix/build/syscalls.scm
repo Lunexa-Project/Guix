@@ -1398,18 +1398,14 @@ exception if it's already taken."
           ;; Presumably we got EAGAIN or so.
           (throw 'flock-error err))))))
 
-(define* (lock-file file #:optional (mode "w0")
-                    #:key (wait? #t))
-  "Wait and acquire an exclusive lock on FILE.  Return an open port according
-to MODE."
-  (let ((port (open-file file mode)))
-    (fcntl-flock port
-                 (if (output-port? port) 'write-lock 'read-lock)
-                 #:wait? wait?)
+(define* (lock-file file #:key (wait? #t))
+  "Wait and acquire an exclusive lock on FILE.  Return an open port."
+  (let ((port (open-file file "w0")))
+    (fcntl-flock port 'write-lock #:wait? wait?)
     port))
 
 (define (unlock-file port)
-  "Unlock PORT, a port returned by 'lock-file', and close it."
+  "Unlock PORT, a port returned by 'lock-file'."
   (fcntl-flock port 'unlock)
   (close-port port)
   #t)

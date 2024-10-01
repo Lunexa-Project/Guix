@@ -4,7 +4,6 @@
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2019 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2020 Jakub Kądziołka <kuba@kadziolka.net>
-;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2022 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -143,9 +142,7 @@
                    (system (%current-system))
                    (imported-modules %qt-build-system-modules)
                    (modules '((guix build qt-build-system)
-                              (guix build utils)))
-                   allowed-references
-                   disallowed-references)
+                              (guix build utils))))
   "Build SOURCE using CMAKE, and with INPUTS. This assumes that SOURCE
 provides a 'CMakeLists.txt' file as its build system."
   (define builder
@@ -184,9 +181,7 @@ provides a 'CMakeLists.txt' file as its build system."
     (gexp->derivation name builder
                       #:graft? #f                 ;consistent with 'gnu-build'
                       #:system system
-                      #:guile-for-build guile
-                      #:allowed-references allowed-references
-                      #:disallowed-references disallowed-references)))
+                      #:guile-for-build guile)))
 
 
 ;;;
@@ -219,9 +214,7 @@ provides a 'CMakeLists.txt' file as its build system."
                          (build (nix-system->gnu-triplet system))
                          (imported-modules %qt-build-system-modules)
                          (modules '((guix build qt-build-system)
-                                    (guix build utils)))
-                         allowed-references
-                         disallowed-references)
+                                    (guix build utils))))
   "Cross-build NAME using CMAKE for TARGET, where TARGET is a GNU triplet and
 with INPUTS.  This assumes that SOURCE provides a 'CMakeLists.txt' file as its
 build system."
@@ -275,9 +268,7 @@ build system."
     (gexp->derivation name builder
                       #:graft? #f                 ;consistent with 'gnu-build'
                       #:system system
-                      #:guile-for-build guile
-                      #:allowed-references allowed-references
-                      #:disallowed-references disallowed-references)))
+                      #:guile-for-build guile)))
 
 (define qt-build-system
   (build-system

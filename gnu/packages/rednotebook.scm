@@ -22,7 +22,6 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system python)
   #:use-module ((guix licenses) #:prefix license:)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages python)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gtk)
@@ -71,11 +70,7 @@
                  `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path))
                  `("LD_LIBRARY_PATH" ":" prefix (,webkitgtk-path)))))))))
     (inputs
-     (list bash-minimal
-           gtk+
-           gtksourceview-3
-           python-pyyaml
-           python-pygobject
+     (list gtk+ gtksourceview-3 python-pyyaml python-pygobject
            webkitgtk-for-gtk3))
     ;; TODO: package the following for python3 (if possible), add them as
     ;; dependencies, and remove them from rednotebook source:

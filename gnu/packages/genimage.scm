@@ -61,7 +61,7 @@
       (arguments
        `(#:modules
          ((ice-9 match)
-          ,@%default-gnu-modules)
+          ,@%gnu-build-system-modules)
          #:phases
          (modify-phases %standard-phases
            (add-after 'unpack 'guixify

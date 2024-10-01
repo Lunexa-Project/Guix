@@ -50,7 +50,6 @@
   #:use-module (guix gexp)
   #:use-module (guix git-download)
   #:use-module (guix memoization)
-  #:use-module (guix search-paths)
   #:use-module (guix utils)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system emacs)
@@ -60,7 +59,6 @@
   #:use-module (gnu packages)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages bootstrap)           ;glibc-dynamic-linker
   #:use-module (gnu packages check)               ;python-lit
@@ -80,8 +78,6 @@
   #:use-module (gnu packages vulkan)
   #:use-module (gnu packages xml)
   #:use-module (srfi srfi-1)
-  #:use-module (srfi srfi-34)
-  #:use-module (srfi srfi-35)
   #:use-module (ice-9 match)
   #:export (make-lld-wrapper
             system->llvm-target))
@@ -111,7 +107,8 @@ as \"x86_64-linux\"."
                               (if (string-prefix? system-prefix system)
                                   target
                                   (matches rest ...)))
-                             ((_) #f))))
+                             ((_)
+                              (error "LLVM target arch for system is unknown" system)))))
     (matches ("aarch64"     => "AArch64")
              ("armhf"       => "ARM")
              ("mips64el"    => "Mips")
@@ -466,7 +463,19 @@ ttest third-party/unittest)\n" line))))))
                       #t)))))
 
     ;; Clang supports the same environment variables as GCC.
-    (native-search-paths %gcc-search-paths)
+    (native-search-paths
+     (list (search-path-specification
+            (variable "C_INCLUDE_PATH")
+            (files '("include")))
+           (search-path-specification
+            (variable "CPLUS_INCLUDE_PATH")
+            (files '("include/c++" "include")))
+           (search-path-specification
+            (variable "OBJC_INCLUDE_PATH")
+            (files '("include")))
+           (search-path-specification
+            (variable "LIBRARY_PATH")
+            (files '("lib" "lib64")))))
 
     (home-page "https://clang.llvm.org")
     (synopsis "C language family frontend for LLVM")
@@ -549,13 +558,9 @@ output), and Binutils.")
     ("18.1.8" . "1l9wm0g9jrpdf309kxjx7xrzf13h81kz8bbp0md14nrz38qll9la")))
 
 (define %llvm-patches
-  '(("14.0.6" . ("clang-14.0-libc-search-path.patch"
-                 "clang-runtime-14-glibc-2.36-compat.patch"
-                 "clang-14-remove-crypt-interceptors.patch"))
-    ("15.0.7" . ("clang-15.0-libc-search-path.patch"
-                 "clang-16-remove-crypt-interceptors.patch"))
-    ("16.0.6" . ("clang-16.0-libc-search-path.patch"
-                 "clang-16-remove-crypt-interceptors.patch"))
+  '(("14.0.6" . ("clang-14.0-libc-search-path.patch"))
+    ("15.0.7" . ("clang-15.0-libc-search-path.patch"))
+    ("16.0.6" . ("clang-16.0-libc-search-path.patch"))
     ("17.0.6" . ("clang-17.0-libc-search-path.patch"
                  "clang-17.0-link-dsymutil-latomic.patch"))
     ("18.1.8" . ("clang-18.0-libc-search-path.patch"
@@ -586,21 +591,15 @@ output), and Binutils.")
          ;; These options are required for cross-compiling LLVM according
          ;; to <https://llvm.org/docs/HowToCrossCompileLLVM.html>.
          #$@(if (%current-target-system)
-                (or (and=>
-                     (system->llvm-target-arch)
-                     (lambda (llvm-target-arch)
-                       #~((string-append "-DLLVM_TABLEGEN="
+                #~((string-append "-DLLVM_TABLEGEN="
                                   #+(file-append this-package
                                                  "/bin/llvm-tblgen"))
-                          #$(string-append "-DLLVM_DEFAULT_TARGET_TRIPLE="
-                                           (%current-target-system))
-                          #$(string-append "-DLLVM_TARGET_ARCH=" llvm-target-arch)
-                          #$(string-append "-DLLVM_TARGETS_TO_BUILD="
-                                           (system->llvm-target)))))
-                    (raise (condition
-                            (&package-unsupported-target-error
-                             (package this-package)
-                             (target (%current-target-system))))))
+                   #$(string-append "-DLLVM_DEFAULT_TARGET_TRIPLE="
+                                    (%current-target-system))
+                   #$(string-append "-DLLVM_TARGET_ARCH="
+                                    (system->llvm-target-arch))
+                   #$(string-append "-DLLVM_TARGETS_TO_BUILD="
+                                    (system->llvm-target)))
                 '())
          ;; Note: sadly, the build system refuses the use of
          ;; -DBUILD_SHARED_LIBS=ON and the large static archives are needed to
@@ -652,21 +651,15 @@ of programming tools as well as libraries with equivalent functionality.")
          ;; These options are required for cross-compiling LLVM according
          ;; to <https://llvm.org/docs/HowToCrossCompileLLVM.html>.
          #$@(if (%current-target-system)
-                (or (and=>
-                     (system->llvm-target-arch)
-                     (lambda (llvm-target-arch)
-                       #~((string-append "-DLLVM_TABLEGEN="
-                                         #+(file-append this-package
-                                                        "/bin/llvm-tblgen"))
-                          #$(string-append "-DLLVM_DEFAULT_TARGET_TRIPLE="
-                                           (%current-target-system))
-                          #$(string-append "-DLLVM_TARGET_ARCH=" llvm-target-arch)
-                          #$(string-append "-DLLVM_TARGETS_TO_BUILD="
-                                           (system->llvm-target)))))
-                    (raise (condition
-                            (&package-unsupported-target-error
-                             (package this-package)
-                             (target (%current-target-system))))))
+                #~((string-append "-DLLVM_TABLEGEN="
+                                  #+(file-append this-package
+                                                 "/bin/llvm-tblgen"))
+                   #$(string-append "-DLLVM_DEFAULT_TARGET_TRIPLE="
+                                    (%current-target-system))
+                   #$(string-append "-DLLVM_TARGET_ARCH="
+                                    (system->llvm-target-arch))
+                   #$(string-append "-DLLVM_TARGETS_TO_BUILD="
+                                    (system->llvm-target)))
                 '())
          ;; undefined reference to `__atomic_fetch_add_8' in lib/libLLVMOrcJIT.so.14
          #$@(if (target-ppc32?)
@@ -817,9 +810,7 @@ Library.")
 (define-public clang-runtime-13
   (clang-runtime-from-llvm
    llvm-13
-   "1z2xr9nn4mgc3hn9ark2k5y4wznpk47xppkp63bcbagr6589acvv"
-   '("clang-runtime-13-glibc-2.36-compat.patch"
-     "clang-13-remove-crypt-interceptors.patch")))
+   "1z2xr9nn4mgc3hn9ark2k5y4wznpk47xppkp63bcbagr6589acvv"))
 
 (define-public clang-13
   (clang-from-llvm llvm-13 clang-runtime-13
@@ -898,8 +889,7 @@ Library.")
 (define-public clang-runtime-12
   (clang-runtime-from-llvm
    llvm-12
-   "1950rg294izdwkaasi7yjrmadc9mzdd5paf0q63jjcq2m3rdbj5l"
-   '("clang-runtime-13-glibc-2.36-compat.patch")))
+   "1950rg294izdwkaasi7yjrmadc9mzdd5paf0q63jjcq2m3rdbj5l"))
 
 (define-public clang-12
   (clang-from-llvm llvm-12 clang-runtime-12
@@ -955,8 +945,7 @@ Library.")
 (define-public clang-runtime-11
   (clang-runtime-from-llvm
    llvm-11
-   "0x1j8ngf1zj63wlnns9vlibafq48qcm72p4jpaxkmkb4qw0grwfy"
-   '("clang-runtime-13-glibc-2.36-compat.patch")))
+   "0x1j8ngf1zj63wlnns9vlibafq48qcm72p4jpaxkmkb4qw0grwfy"))
 
 (define-public clang-11
   (clang-from-llvm llvm-11 clang-runtime-11
@@ -1014,8 +1003,7 @@ Library.")
 (define-public clang-runtime-10
   (clang-runtime-from-llvm
    llvm-10
-   "1yjqjri753w0fzmxcyz687nvd97sbc9rsqrxzpq720na47hwh3fr"
-   '("clang-runtime-13-glibc-2.36-compat.patch")))
+   "1yjqjri753w0fzmxcyz687nvd97sbc9rsqrxzpq720na47hwh3fr"))
 
 (define-public clang-10
   (clang-from-llvm llvm-10 clang-runtime-10
@@ -1086,8 +1074,7 @@ Library.")
   (clang-runtime-from-llvm
    llvm-9
    "0xwh79g3zggdabxgnd0bphry75asm1qz7mv3hcqihqwqr6aspgy2"
-   '("clang-runtime-9-libsanitizer-mode-field.patch"
-     "clang-runtime-9-glibc-2.36-compat.patch")))
+   '("clang-runtime-9-libsanitizer-mode-field.patch")))
 
 (define-public clang-9
   (clang-from-llvm llvm-9 clang-runtime-9
@@ -1132,8 +1119,7 @@ Library.")
   (clang-runtime-from-llvm
    llvm-8
    "0dqqf8f930l8gag4d9qjgn1n0pj0nbv2anviqqhdi1rkhas8z0hi"
-   '("clang-runtime-9-libsanitizer-mode-field.patch"
-     "clang-runtime-9-glibc-2.36-compat.patch")))
+   '("clang-runtime-9-libsanitizer-mode-field.patch")))
 
 (define-public clang-8
   (clang-from-llvm llvm-8 clang-runtime-8
@@ -1176,8 +1162,7 @@ Library.")
   (clang-runtime-from-llvm
    llvm-7
    "1n48p8gjarihkws0i2bay5w9bdwyxyxxbpwyng7ba58jb30dlyq5"
-   '("clang-runtime-9-libsanitizer-mode-field.patch"
-     "clang-runtime-9-glibc-2.36-compat.patch")))
+   '("clang-runtime-9-libsanitizer-mode-field.patch")))
 
 (define-public clang-7
   (clang-from-llvm llvm-7 clang-runtime-7
@@ -1219,8 +1204,7 @@ Library.")
   (clang-runtime-from-llvm
    llvm-6
    "1fcr3jn24yr8lh36nc0c4ikli4744i2q9m1ik67p1jymwwaixkgl"
-   '("clang-runtime-9-libsanitizer-mode-field.patch"
-     "clang-runtime-9-glibc-2.36-compat.patch")))
+   '("clang-runtime-9-libsanitizer-mode-field.patch")))
 
 (define-public clang-6
   (clang-from-llvm llvm-6 clang-runtime-6
@@ -1949,11 +1933,10 @@ standard C++ library.")
     (native-inputs
      (list clang-6 llvm-6 libcxxabi-6))))
 
-;; WARNING: This package is a dependency of mesa.
 (define-public libclc
   (package
     (name "libclc")
-    (version (package-version llvm-18))
+    (version (package-version llvm-15))
     (source (llvm-monorepo version))
     (build-system cmake-build-system)
     (arguments
@@ -1977,7 +1960,7 @@ standard C++ library.")
     (propagated-inputs
      (list spirv-llvm-translator spirv-tools))
     (native-inputs
-     (list clang-18 llvm-18 python))
+     (list clang-15 llvm-15 python))
     (home-page "https://libclc.llvm.org")
     (synopsis "Libraries for the OpenCL programming language")
     (description
@@ -2426,7 +2409,7 @@ LLVM bitcode files.")
             (lambda _
               (for-each delete-file (find-files #$output "\\.a$")))))))
     (native-inputs (list python python-lit))
-    (inputs (list clang-cling llvm-cling libxcrypt))
+    (inputs (list clang-cling llvm-cling))
     (home-page "https://root.cern/cling/")
     (synopsis "Interactive C++ interpreter")
     (description "Cling is an interactive C++17 standard compliant

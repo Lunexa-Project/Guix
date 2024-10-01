@@ -413,7 +413,7 @@
         (let ((chromium-dir (getcwd)))
           (set-path-environment-variable
            "PATH" '("bin")
-           (list #+patch #+python-wrapper #+xz #+zstd))
+           (list #+patch #+python-wrapper #+xz))
 
           ;; Apply patches before running the ungoogled scripts because
           ;; domain substitution may break some of the patches.
@@ -869,7 +869,6 @@
     (inputs
      (list alsa-lib
            at-spi2-core
-           bash-minimal
            cups
            curl
            dbus

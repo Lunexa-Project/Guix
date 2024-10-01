@@ -249,8 +249,6 @@ is used in some video games and movies.")
                    (lambda _
                      (install-file "libdds.so"
                                    (string-append #$output "/lib"))
-                     (let ((inc (string-append #$output "/include")))
-                       (copy-recursively "../include" inc))
                      (let ((doc (string-append #$output
                                                "/share/doc/"
                                                #$name "-" #$version)))
@@ -695,9 +693,9 @@ clone.")
                   (srfi srfi-1)
                   ((guix build guile-build-system)
                    #:select (target-guile-effective-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:imported-modules ((guix build guile-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-command
@@ -2069,7 +2067,6 @@ games.")
      (list pkg-config))
     (inputs
      (list alsa-lib
-           bash-minimal
            bullet
            freetype-with-brotli
            glew
@@ -2313,7 +2310,6 @@ scripted in a Python-like language.")
      (list pkg-config))
     (inputs
      (list alsa-lib
-           bash-minimal
            brotli
            dbus
            embree

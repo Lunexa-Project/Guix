@@ -129,7 +129,6 @@ Copyright @copyright{} 2024 Matthew Trzcinski@*
 Copyright @copyright{} 2024 Richard Sent@*
 Copyright @copyright{} 2024 Dariqq@*
 Copyright @copyright{} 2024 Denis 'GNUtoo' Carikli@*
-Copyright @copyright{} 2024 Fabio Natali@*
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -371,7 +370,7 @@ System Configuration
 * Keyboard Layout::             How the system interprets key strokes.
 * Locales::                     Language and cultural convention settings.
 * Services::                    Specifying system services.
-* Privileged Programs::         Programs running with elevated privileges.
+* Setuid Programs::             Programs running with elevated privileges.
 * X.509 Certificates::          Authenticating HTTPS servers.
 * Name Service Switch::         Configuring libc's name service switch.
 * Initial RAM Disk::            Linux-Libre bootstrapping.
@@ -861,28 +860,8 @@ files, configuration, and services.
 @section Setting Up the Daemon
 
 @cindex daemon
-During installation, the @dfn{build daemon} that must be running
-to use Guix has already been set up and you can run @command{guix}
-commands in your terminal program, @pxref{Getting Started}:
-
-@example
-guix build hello
-@end example
-
-If this runs through without error, feel free to skip this section.
-You should continue with the following section, @ref{Application
-Setup}.
-
-However, now would be a good time to replace outdated daemon versions,
-tweak it, perform builds on other machines (@pxref{Daemon Offload
-Setup}), or start it manually in special environments like ``chroots''
-(@pxref{Chrooting into an existing system}) or WSL (not needed for WSL
-images created with Guix, @pxref{System Images,
-@code{wsl2-image-type}}).  If you want to know more or optimize your
-system, this section is worth reading.
-
 Operations such as building a package or running the garbage collector
-are all performed by a specialized process, the build daemon, on
+are all performed by a specialized process, the @dfn{build daemon}, on
 behalf of clients.  Only the daemon may access the store and its
 associated database.  Thus, any operation that manipulates the store
 goes through the daemon.  For instance, command-line tools such as
@@ -2005,10 +1984,19 @@ We consider Guix System to be ready for a wide range of ``desktop'' and server
 use cases.  The reliability guarantees it provides---transactional upgrades
 and rollbacks, reproducibility---make it a solid foundation.
 
-More and more system services are provided (@pxref{Services}).
+Nevertheless, before you proceed with the installation, be aware of the
+following noteworthy limitations applicable to version @value{VERSION}:
 
-Nevertheless, before you proceed with the installation, be aware that some
-services you rely on may still be missing from version @value{VERSION}.
+@itemize
+@item
+More and more system services are provided (@pxref{Services}), but some
+may be missing.
+
+@item
+GNOME, Xfce, LXDE, and Enlightenment are available (@pxref{Desktop Services}),
+as well as a number of X11 window managers.  However, KDE is currently
+missing.
+@end itemize
 
 More than a disclaimer, this is an invitation to report issues (and success
 stories!), and to join us in improving it.  @xref{Contributing}, for more
@@ -4440,7 +4428,15 @@ effect on the version of Guix that user @code{alice} sees, and vice
 versa.
 
 The result of running @command{guix pull} is a @dfn{profile} available
-under @file{~/.config/guix/current} containing the latest Guix.
+under @file{~/.config/guix/current} containing the latest Guix.  Thus,
+make sure to add it to the beginning of your search path so that you use
+the latest version, and similarly for the Info manual
+(@pxref{Documentation}):
+
+@example
+export PATH="$HOME/.config/guix/current/bin:$PATH"
+export INFOPATH="$HOME/.config/guix/current/share/info:$INFOPATH"
+@end example
 
 The @option{--list-generations} or @option{-l} option lists past generations
 produced by @command{guix pull}, along with details about their provenance:
@@ -5372,8 +5368,7 @@ returns a package for the given channels, and using it as part of your
 operating system configuration, as in this example:
 
 @lisp
-(use-modules (gnu packages package-management)
-             (guix channels))
+(use-modules (guix channels))
 
 (define my-channels
   ;; Channels that should be available to
@@ -9312,9 +9307,6 @@ install all files but those matching the exclusion filters.
 If both inclusions and exclusions are specified, the exclusions are done
 on top of the inclusions.
 @end itemize
-@item When a package has multiple outputs, the @code{#:output} argument
-can be used to specify which output label the files should be installed
-to.
 @end itemize
 In all cases, the paths relative to @var{source} are preserved within
 @var{target}.
@@ -9331,9 +9323,6 @@ e.g., install @file{foo/sub/file} to @file{share/my-app/sub/file}.
 @file{share/my-app/sub/file}.
 @item @code{("foo/sub" "share/my-app" #:include ("file"))}: Install @file{foo/sub/file} to
 @file{share/my-app/file}.
-@item @code{("foo/doc" "share/my-app/doc" #:output "doc")}: Install
-@file{"foo/doc"} to @file{"share/my-app/doc"} within the @code{"doc"}
-output.
 @end itemize
 @end defvar
 
@@ -10628,18 +10617,12 @@ Make @var{file} writable for its owner.
 @deffn {Procedure} copy-recursively source destination @
   [#:log (current-output-port)] [#:follow-symlinks? #f] @
   [#:copy-file copy-file] [#:keep-mtime? #f] [#:keep-permissions? #t]
-  [#:select? (const #t)]
 Copy @var{source} directory to @var{destination}.  Follow symlinks if
 @var{follow-symlinks?}  is true; otherwise, just preserve them.  Call
-@var{copy-file} to copy regular files.  Call @var{select?}, taking two
-arguments, @var{file} and @var{stat}, for each entry in @var{source},
-where @var{file} is the entry's absolute file name and @var{stat} is the
-result of @code{lstat} (or @code{stat} if @var{follow-symlinks?} is
-true); exclude entries for which @var{select?} does not return true.
-When @var{keep-mtime?} is true, keep the modification time of the files
-in @var{source} on those of @var{destination}.
-When @var{keep-permissions?} is true, preserve file permissions.  Write
-verbose output to the @var{log} port.
+@var{copy-file} to copy regular files.  When @var{keep-mtime?} is true,
+keep the modification time of the files in @var{source} on those of
+@var{destination}.  When @var{keep-permissions?} is true, preserve file
+permissions.  Write verbose output to the @var{log} port.
 @end deffn
 
 @deffn {Procedure} delete-file-recursively dir [#:follow-mounts? #f]
@@ -11086,14 +11069,17 @@ contain a list of @file{catalog.xml} files (not directories), which are
 to be found in @file{xml} sub-directories---nothing less.  The search
 path specification looks like this:
 
-@c This is defined at (guix search-paths) as $XML_CATALOG_FILES.
 @lisp
-(search-path-specification
- (variable "XML_CATALOG_FILES")
- (separator " ")
- (files '("xml"))
- (file-pattern "^catalog\\.xml$")
- (file-type 'regular))
+(package
+  (name "libxml2")
+  ;; some fields omitted
+  (native-search-paths
+   (list (search-path-specification
+          (variable "XML_CATALOG_FILES")
+          (separator " ")
+          (files '("xml"))
+          (file-pattern "^catalog\\.xml$")
+          (file-type 'regular)))))
 @end lisp
 
 Worry not, search path specifications are usually not this tricky.
@@ -11129,31 +11115,21 @@ The type of file being matched---@code{'directory} or @code{'regular},
 though it can be any symbol returned by @code{stat:type} (@pxref{File
 System, @code{stat},, guile, GNU Guile Reference Manual}).
 
-In the @env{XML_CATALOG_FILES} example above, we would match regular
-files; in the Python example, we would match directories.
+In the libxml2 example above, we would match regular files; in the
+Python example, we would match directories.
 
 @item @code{file-pattern} (default: @code{#f})
 This must be either @code{#f} or a regular expression specifying
 files to be matched @emph{within} the sub-directories specified by the
 @code{files} field.
 
-Again, the @env{XML_CATALOG_FILES} example shows a situation where this
-is needed.
+Again, the libxml2 example shows a situation where this is needed.
 @end table
 @end deftp
 
 Some search paths are not tied by a single package but to many packages.
 To reduce duplications, some of them are pre-defined in @code{(guix
 search-paths)}.
-
-@defvar $SGML_CATALOG_FILES
-@defvarx $XML_CATALOG_FILES
-These two search paths indicate where the
-@url{https://www.oasis-open.org/specs/a401.htm,TR9401 catalog}@footnote{
-Alternatively known as SGML catalog.} or
-@url{https://www.oasis-open.org/committees/download.php/14809/xml-catalogs.html,
-XML catalog} files can be found.
-@end defvar
 
 @defvar $SSL_CERT_DIR
 @defvarx $SSL_CERT_FILE
@@ -16977,7 +16953,7 @@ instance to support new system services.
 * Keyboard Layout::             How the system interprets key strokes.
 * Locales::                     Language and cultural convention settings.
 * Services::                    Specifying system services.
-* Privileged Programs::         Programs running with elevated privileges.
+* Setuid Programs::             Programs running with elevated privileges.
 * X.509 Certificates::          Authenticating HTTPS servers.
 * Name Service Switch::         Configuring libc's name service switch.
 * Initial RAM Disk::            Linux-Libre bootstrapping.
@@ -17701,9 +17677,9 @@ touch this field.
 Linux @dfn{pluggable authentication module} (PAM) services.
 @c FIXME: Add xref to PAM services section.
 
-@item @code{privileged-programs} (default: @code{%default-privileged-programs})
-List of @code{<privileged-program>}.  @xref{Privileged Programs}, for
-more information.
+@item @code{setuid-programs} (default: @code{%setuid-programs})
+List of @code{<setuid-program>}.  @xref{Setuid Programs}, for more
+information.
 
 @item @code{sudoers-file} (default: @code{%sudoers-specification})
 @cindex sudoers file
@@ -23712,10 +23688,10 @@ environment, you are unlikely to need this procedure.
 
 @defvar screen-locker-service-type
 Type for a service that adds a package for a screen locker or screen
-saver to the set of privileged programs and/or add a PAM entry for it.  The
+saver to the set of setuid programs and/or add a PAM entry for it.  The
 value for this service is a @code{<screen-locker-configuration>} object.
 
-While the default behavior is to setup both a privileged program and PAM
+While the default behavior is to setup both a setuid program and PAM
 entry, these two methods are redundant.  Screen locker programs may not
 execute when PAM is configured and @code{setuid} is set on their
 executable.  In this case, @code{using-setuid?} can be set to @code{#f}.
@@ -24630,26 +24606,28 @@ The @code{%desktop-services} variable can be used as the @code{services}
 field of an @code{operating-system} declaration (@pxref{operating-system
 Reference, @code{services}}).
 
-Additionally, the following procedures add one (or more!) desktop
-environments to a system.
-
-@itemize
-@item @code{gnome-desktop-service-type} adds GNOME,
-@item @code{plasma-desktop-service-type} adds KDE Plasma,
-@item @code{enlightenment-desktop-service-type} adds Enlightenment,
-@item @code{lxqt-desktop-service-type} adds LXQt,
-@item @code{mate-desktop-service-type} adds MATE, and
-@item @code{xfce-desktop-service} adds Xfce.
-@end itemize
-
-These service types add ``metapackages'' such as @code{gnome} or
-@code{plasma} to the system profile, but most of them also set up other useful
-services that mere packages can't do.
-
-For example, they may elevate privileges on a limited number of
-special-purpose system interfaces and programs.  This allows backlight
-adjustment helpers, power management utilities, screen lockers, and
-other integrated functionality to work as expected.
+Additionally, the @code{gnome-desktop-service-type},
+@code{xfce-desktop-service}, @code{mate-desktop-service-type},
+@code{lxqt-desktop-service-type} and @code{enlightenment-desktop-service-type}
+procedures can add GNOME, Xfce, MATE and/or Enlightenment to a system.  To
+``add GNOME'' means that system-level services like the backlight adjustment
+helpers and the power management utilities are added to the system, extending
+@code{polkit} and @code{dbus} appropriately, allowing GNOME to operate with
+elevated privileges on a limited number of special-purpose system interfaces.
+Additionally, adding a service made by @code{gnome-desktop-service-type} adds
+the GNOME metapackage to the system profile.  Likewise, adding the Xfce
+service not only adds the @code{xfce} metapackage to the system profile, but
+it also gives the Thunar file manager the ability to open a ``root-mode'' file
+management window, if the user authenticates using the administrator's
+password via the standard polkit graphical interface.  To ``add MATE'' means
+that @code{polkit} and @code{dbus} are extended appropriately, allowing MATE
+to operate with elevated privileges on a limited number of special-purpose
+system interfaces.  Additionally, adding a service of type
+@code{mate-desktop-service-type} adds the MATE metapackage to the system
+profile.  ``Adding Enlightenment'' means that @code{dbus} is extended
+appropriately, and several of Enlightenment's binaries are set as setuid,
+allowing Enlightenment's screen locker and other functionality to work as
+expected.
 
 The desktop environments in Guix use the Xorg display server by
 default.  If you'd like to use the newer display server protocol
@@ -25008,12 +24986,6 @@ Data type representing the configuration of @command{elogind}.
 @item @code{hybrid-sleep-mode} (default: @code{'("suspend" "platform" "shutdown")}) (type: list)
 ...
 
-@item @code{hibernate-delay-seconds} (default: @code{*unspecified*}) (type: integer)
-...
-
-@item @code{suspend-estimation-seconds} (default: @code{*unspecified*}) (type: integer)
-...
-
 @end table
 @end deftp
 
@@ -25153,7 +25125,7 @@ Package object for UDisks.
 
 @defvar gvfs-service-type
 Type for the service that provides virtual file systems for GIO
-applications, which enables support for @code{trash://}, @code{ftp://},
+applicaitons, which enables support for @code{trash:///}, @code{ftp://},
 @code{sftp://} and many other location schemas in file managers like
 Nautilus (GNOME Files) and Thunar.
 
@@ -27895,7 +27867,7 @@ remote servers.  Run @command{man smtpd.conf} for more information.
 Make the following commands setgid to @code{smtpq} so they can be
 executed: @command{smtpctl}, @command{sendmail}, @command{send-mail},
 @command{makemap}, @command{mailq}, and @command{newaliases}.
-@xref{Privileged Programs}, for more information on setgid programs.
+@xref{Setuid Programs}, for more information on setgid programs.
 @end table
 @end deftp
 
@@ -32963,19 +32935,16 @@ This is the type of the agate service, whose value should be an
 (service agate-service-type
 	 (agate-configuration
 	   (content "/srv/gemini")
-	   (certificates "/srv/gemini-certs")))
+	   (certs "/srv/gemini-certs")))
 @end lisp
 
 The example above represents the minimal tweaking necessary to get Agate
 up and running.  Specifying the path to the certificate and key directory is
 always necessary, as the Gemini protocol requires TLS by default.
 
-If specified @code{certificates} path is writable by Agate, and contains no
-valid pre-generated key and certificate, the Agate will try to generate
-them on the first start. In this case you should pass at least one
-hostname using the @code{hostnames} option.
-If specified directory is read-only - key and certificate should be
-pre-generated by user.
+If specified path is writable by Agate, and contains no valid key
+and certificate, the Agate will try to generate them on the first start.
+If specified directory is read-only - key and certificate should be pre-generated by user.
 
 To obtain a certificate and a key in a DER format, you could, for example,
 use OpenSSL, running a commands similar to the following example:
@@ -32989,7 +32958,7 @@ openssl req -x509 -key key.der -outform DER -days 3650 -out cert.der \
 
 Of course, you'll have to replace @i{example.com} with your own domain
 name, and then point the Agate configuration towards the path of the
-directory with the generated key and certificate using the @code{certificates} option.
+directory with the generated key and certificate using the @code{certs} option.
 
 @end defvar
 
@@ -33003,10 +32972,10 @@ The package object of the Agate server.
 @item @code{content} (default: @file{"/srv/gemini"})
 The directory from which Agate will serve files.
 
-@item @code{certificates} (default: @file{"/srv/gemini-certs"})
+@item @code{certs} (default: @file{"/srv/gemini-certs"})
 Root of the certificate directory. Must be filled in with a value from the user.
 
-@item @code{addresses} (default: @code{'("[::]:1965" "0.0.0.0:1965")})
+@item @code{addr} (default: @code{'("0.0.0.0:1965" "[::]:1965")})
 A list of the addresses to listen on.
 
 @item @code{hostnames} (default: @code{'()})
@@ -33014,7 +32983,7 @@ Virtual hosts for the Gemini server. If multiple values are
 specified, corresponding directory names should be present in the @code{content}
 directory. Optional.
 
-@item @code{languages} (default: @code{#f})
+@item @code{lang} (default: @code{#f})
 RFC 4646 language code(s) for text/gemini documents.  Optional.
 
 @item @code{only-tls13?} (default: @code{#f})
@@ -33024,7 +32993,7 @@ Set to @code{#t} to disable support for TLSv1.2.
 Set to @code{#t} to serve secret files (files/directories starting with
 a dot).
 
-@item @code{central-configuration?} (default: @code{#f})
+@item @code{central-conf?} (default: @code{#f})
 Set to @code{#t} to look for the .meta configuration file in the @code{content}
 root directory and will ignore @code{.meta} files in other directories
 
@@ -40869,8 +40838,8 @@ create and run application bundles (aka. ``containers'').  The value for this
 service is the Singularity package to use.
 
 The service does not install a daemon; instead, it installs helper programs as
-setuid-root (@pxref{Privileged Programs}) such that unprivileged users can
-invoke @command{singularity run} and similar commands.
+setuid-root (@pxref{Setuid Programs}) such that unprivileged users can invoke
+@command{singularity run} and similar commands.
 @end defvar
 
 @cindex OCI-backed, Shepherd services
@@ -41670,14 +41639,11 @@ invokation.
 
 @c %end of fragment
 
-@node Privileged Programs
-@section Privileged Programs
+@node Setuid Programs
+@section Setuid Programs
 
-@cindex privileged programs
 @cindex setuid programs
 @cindex setgid programs
-@cindex capabilities, POSIX
-@cindex setcap
 Some programs need to run with elevated privileges, even when they are
 launched by unprivileged users.  A notorious example is the
 @command{passwd} program, which users can run to change their
@@ -41688,48 +41654,46 @@ obvious security reasons.  To address that, @command{passwd} should be
 (@pxref{How Change Persona,,, libc, The GNU C Library Reference Manual},
 for more info about the setuid mechanism).
 
-The store itself @emph{cannot} contain privileged programs: that would be
-a security issue since any user on the system can write derivations that
+The store itself @emph{cannot} contain setuid programs: that would be a
+security issue since any user on the system can write derivations that
 populate the store (@pxref{The Store}).  Thus, a different mechanism is
-used: instead of directly granting permissions to files that are in
-the store, we let the system administrator @emph{declare} which
+used: instead of changing the setuid or setgid bits directly on files that
+are in the store, we let the system administrator @emph{declare} which
 programs should be entrusted with these additional privileges.
 
-The @code{privileged-programs} field of an @code{operating-system}
-declaration contains a list of @code{<privileged-program>} denoting the
+The @code{setuid-programs} field of an @code{operating-system}
+declaration contains a list of @code{<setuid-program>} denoting the
 names of programs to have a setuid or setgid bit set (@pxref{Using the
 Configuration System}).  For instance, the @command{mount.nfs} program,
 which is part of the nfs-utils package, with a setuid root can be
 designated like this:
 
 @lisp
-(privileged-program
-  (program (file-append nfs-utils "/sbin/mount.nfs"))
-  (setuid? #t))
+(setuid-program
+  (program (file-append nfs-utils "/sbin/mount.nfs")))
 @end lisp
 
 And then, to make @command{mount.nfs} setuid on your system, add the
 previous example to your operating system declaration by appending it to
-@code{%default-privileged-programs} like this:
+@code{%setuid-programs} like this:
 
 @lisp
 (operating-system
   ;; Some fields omitted...
-  (privileged-programs
-    (append (list (privileged-program
-                    (program (file-append nfs-utils "/sbin/mount.nfs"))
-                    (setuid? #t))
-            %default-privileged-programs)))
+  (setuid-programs
+    (append (list (setuid-program
+                    (program (file-append nfs-utils "/sbin/mount.nfs"))))
+            %setuid-programs)))
 @end lisp
 
-@deftp {Data Type} privileged-program
-This data type represents a program with special privileges, such as setuid
+@deftp {Data Type} setuid-program
+This data type represents a program with a setuid or setgid bit set.
 
 @table @asis
 @item @code{program}
-A file-like object to which all given privileges should apply.
+A file-like object having its setuid and/or setgid bit set.
 
-@item @code{setuid?} (default: @code{#f})
+@item @code{setuid?} (default: @code{#t})
 Whether to set user setuid bit.
 
 @item @code{setgid?} (default: @code{#f})
@@ -41743,27 +41707,22 @@ defaults to root.
 GID (integer) group name (string) for the group owner of the program,
 defaults to root.
 
-@item @code{capabilities} (default: @code{#f})
-A string representing the program's POSIX capabilities, as described by
-the @code{cap_to_text(3)} man page from the libcap package, or @code{#f}
-to make no changes.
-
 @end table
 @end deftp
 
-A default set of privileged programs is defined by the
-@code{%default-privileged-programs} variable of the @code{(gnu system)} module.
+A default set of setuid programs is defined by the
+@code{%setuid-programs} variable of the @code{(gnu system)} module.
 
-@defvar {Scheme Variable} %default-privileged-programs
-A list of @code{<privileged-program>} denoting common programs with
-elevated privileges.
+@defvar %setuid-programs
+A list of @code{<setuid-program>} denoting common programs that are
+setuid-root.
 
 The list includes commands such as @command{passwd}, @command{ping},
 @command{su}, and @command{sudo}.
 @end defvar
 
-Under the hood, the actual privileged programs are created in the
-@file{/run/privileged/bin} directory at system activation time.  The
+Under the hood, the actual setuid programs are created in the
+@file{/run/setuid-programs} directory at system activation time.  The
 files in this directory refer to the ``real'' binaries, which are in the
 store.
 
@@ -42705,7 +42664,7 @@ once @command{reconfigure} has completed.
 @end quotation
 
 This effects all the configuration specified in @var{file}: user
-accounts, system services, global package list, privileged programs, etc.
+accounts, system services, global package list, setuid programs, etc.
 The command starts system services specified in @var{file} that are not
 currently running; if a service is currently running this command will
 arrange for it to be upgraded the next time it is stopped (e.g.@: by
@@ -44078,10 +44037,10 @@ In this example, the effect would be to add an @file{/etc/issue} file
 pointing to the given file.
 @end defvar
 
-@defvar privileged-program-service-type
-Type for the ``privileged-program service''.  This service collects lists of
+@defvar setuid-program-service-type
+Type for the ``setuid-program service''.  This service collects lists of
 executable file names, passed as gexps, and adds them to the set of
-privileged programs on the system (@pxref{Privileged Programs}).
+setuid and setgid programs on the system (@pxref{Setuid Programs}).
 @end defvar
 
 @defvar profile-service-type
@@ -44774,7 +44733,7 @@ Below is an example of a record type created using
    "The owner's email address.")
   (contacts
    (list-of-contact-configurations '())
-   "A list of @@code@{contact-configuration@} records which contain
+   "A list of @@code@{contact-configuation@} records which contain
 information about all your contacts."))
 @end lisp
 
@@ -47132,38 +47091,6 @@ documentation of the system service (@pxref{Networking Services,
 @subsection Miscellaneous Home Services
 
 This section lists Home services that lack a better place.
-
-@subsubheading Beets Service
-
-@cindex Beets service, for Home
-The @code{(gnu home services music)} module provides the following
-service:
-
-@defvar home-beets-service-type
-@uref{https://beets.io, Beets} is a music file and metadata manager
-that can be used via its command-line interface, @command{beet}. Beets
-requires a YAML configuration file and this Guix Home service is to
-create such file.
-@end defvar
-
-The service can be used as follows:
-
-@lisp
-(service home-beets-service-type
-         (home-beets-configuration (directory "/home/alice/music")))
-@end lisp
-
-Additional options can be specified via the service wild-card field
-@code{extra-options}:
-
-@lisp
-(service home-beets-service-type
-         (home-beets-configuration
-          (directory "/home/alice/music")
-          (extra-options '("
-import:
-  move: yes"))))
-@end lisp
 
 @subsubheading Dictionary Service
 

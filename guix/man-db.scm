@@ -1,6 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017, 2018 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2022, 2024 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -18,8 +17,7 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (guix man-db)
-  #:autoload (zlib) (call-with-gzip-input-port)
-  #:autoload (zstd) (call-with-zstd-input-port)
+  #:use-module (zlib)
   #:use-module ((guix build utils) #:select (find-files))
   #:use-module (gdbm)                             ;gdbm-ffi
   #:use-module (srfi srfi-9)
@@ -50,7 +48,7 @@
 (define-record-type <mandb-entry>
   (mandb-entry file-name name section synopsis kind)
   mandb-entry?
-  (file-name mandb-entry-file-name)               ;e.g., "../abiword.1.zst"
+  (file-name mandb-entry-file-name)               ;e.g., "../abiword.1.gz"
   (name      mandb-entry-name)                    ;e.g., "ABIWORD"
   (section   mandb-entry-section)                 ;number
   (synopsis  mandb-entry-synopsis)                ;string
@@ -65,21 +63,13 @@
             (string<? (basename file1) (basename file2))))))))
 
 (define abbreviate-file-name
-  (let ((man-file-rx (make-regexp "(.+)\\.[0-9][a-z]?(\\.(gz|zst))?$")))
+  (let ((man-file-rx (make-regexp "(.+)\\.[0-9][a-z]?(\\.gz)?$")))
     (lambda (file)
       (match (regexp-exec man-file-rx (basename file))
         (#f
          (basename file))
         (matches
          (match:substring matches 1))))))
-
-(define (gzip-compressed? file-name)
-  "True if FILE-NAME is suffixed with the '.gz' file extension."
-  (string-suffix? ".gz" file-name))
-
-(define (zstd-compressed? file-name)
-  "True if FILE-NAME is suffixed with the '.zst' file extension."
-  (string-suffix? ".zst" file-name))
 
 (define (entry->string entry)
   "Return the wire format for ENTRY as a string."
@@ -102,11 +92,7 @@
 
                     "\t-\t-\t"
 
-                    (cond
-                     ((gzip-compressed? file) "gz")
-                     ((zstd-compressed? file) "zst")
-                     (else ""))
-
+                    (if (string-suffix? ".gz" file) "gz" "")
                     "\t"
 
                     synopsis "\x00"))))
@@ -162,8 +148,7 @@
        (loop (cons line lines))))))
 
 (define* (man-page->entry file #:optional (resolve identity))
-  "Parse FILE, a gzip or zstd compressed man page, and return a <mandb-entry>
-for it."
+  "Parse FILE, a gzipped man page, and return a <mandb-entry> for it."
   (define (string->number* str)
     (if (and (string-prefix? "\"" str)
              (> (string-length str) 1)
@@ -171,13 +156,8 @@ for it."
         (string->number (string-drop (string-drop-right str 1) 1))
         (string->number str)))
 
-  (define call-with-input-port*
-    (cond
-     ((gzip-compressed? file) call-with-gzip-input-port)
-     ((zstd-compressed? file) call-with-zstd-input-port)
-     (else call-with-port)))
-
-  (call-with-input-port* (open-file file "r0")
+  ;; Note: This works for both gzipped and uncompressed files.
+  (call-with-gzip-input-port (open-file file "r0")
     (lambda (port)
       (let loop ((name     #f)
                  (section  #f)
@@ -211,19 +191,14 @@ for it."
 (define (man-files directory)
   "Return the list of man pages found under DIRECTORY, recursively."
   ;; Filter the list to ensure that broken symlinks are excluded.
-  (filter file-exists?
-          (find-files directory "\\.[0-9][a-z]?(\\.(gz|zst))?$")))
+  (filter file-exists? (find-files directory "\\.[0-9][a-z]?(\\.gz)?$")))
 
 (define (mandb-entries directory)
   "Return mandb entries for the man pages found under DIRECTORY, recursively."
   (map (lambda (file)
          (man-page->entry file
                           (lambda (link)
-                            (let ((file-gz (string-append directory "/" link
-                                                          ".gz"))
-                                  (file-zst (string-append directory "/" link
-                                                           ".zst")))
-                              (and (or (file-exists? file-gz)
-                                       (file-exists? file-zst) file)
-                                   file)))))
+                            (let ((file (string-append directory "/" link
+                                                       ".gz")))
+                              (and (file-exists? file) file)))))
        (man-files directory)))

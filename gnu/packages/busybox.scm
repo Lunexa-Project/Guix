@@ -30,7 +30,6 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages compression)
-  #:use-module (gnu packages crypto)
   #:use-module (gnu packages perl))
 
 (define-public busybox
@@ -164,7 +163,6 @@ any small or embedded system.")
                    (delete-file-recursively (string-append #$output "/usr")))))
            #:test-target "tests"))
     (native-inputs (list bc))
-    (inputs (list libxcrypt))
     (synopsis "Many common UNIX utilities in a single executable")
     (description "ToyBox combines tiny versions of many common UNIX utilities
 into a single small executable.  It provides a fairly complete environment for

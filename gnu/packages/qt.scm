@@ -3936,10 +3936,10 @@ module provides support functions to the automatically generated code.")
     (arguments
      `(#:tests? #f ; no check target
        #:imported-modules ((guix build python-build-system)
-                           ,@%default-gnu-imported-modules)
+                           ,@%gnu-build-system-modules)
        #:modules ((srfi srfi-1)
                   ((guix build python-build-system) #:select (python-version))
-                  ,@%default-gnu-modules)
+                  ,@%gnu-build-system-modules)
        #:phases
        (modify-phases %standard-phases
          (replace 'configure
@@ -4462,7 +4462,7 @@ securely.  It will not store any data unencrypted unless explicitly requested.")
        `(#:tests? #f                    ; No target
          #:imported-modules
          ((guix build copy-build-system)
-          ,@%default-gnu-imported-modules)
+          ,@%gnu-build-system-modules)
          #:modules
          (((guix build copy-build-system) #:prefix copy:)
           (guix build gnu-build-system)

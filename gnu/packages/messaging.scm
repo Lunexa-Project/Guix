@@ -28,7 +28,6 @@
 ;;; Copyright © 2020, 2022 Raghav Gururajan <rg@raghavgururajan.name>
 ;;; Copyright © 2020, 2021 Robert Karszniewicz <avoidr@posteo.de>
 ;;; Copyright © 2020 Giacomo Leidi <goodoldpaul@autistici.org>
-;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;; Copyright © 2021, 2023 Denis 'GNUtoo' Carikli <GNUtoo@cyberdimension.org>
 ;;; Copyright © 2021, 2024 Vinicius Monego <monego@posteo.net>
 ;;; Copyright © 2021 jgart <jgart@dismail.de>
@@ -45,7 +44,6 @@
 ;;; Copyright © 2024 Wilko Meyer <w@wmeyer.eu>
 ;;; Copyright © 2024 Ashish SHUKLA <ashish.is@lostca.se>
 ;;; Copyright © 2024 Igor Goryachev <igor@goryachev.org>
-;;; Copyright © 2024 Nguyễn Gia Phong <mcsinyx@disroot.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -75,7 +73,6 @@
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
-  #:use-module (gnu packages certs)
   #:use-module (gnu packages code)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages cpp)
@@ -96,7 +93,6 @@
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages golang)
   #:use-module (gnu packages golang-build)
-  #:use-module (gnu packages golang-web)
   #:use-module (gnu packages golang-xyz)
   #:use-module (gnu packages gperf)
   #:use-module (gnu packages graphviz)
@@ -272,7 +268,6 @@ XMPP-based sessions.")
     (outputs '("out" "doc"))
     (arguments
      (list #:glib-or-gtk? #t         ; To wrap binaries and/or compile schemas
-           #:configure-flags #~'("-Dpython2=false")
            #:phases
            #~(modify-phases %standard-phases
                (add-after 'unpack 'patch-ncurses-path
@@ -291,10 +286,10 @@ XMPP-based sessions.")
      (list docbook-xml-4.1.2
            `(,glib "bin")
            gobject-introspection
-           gtk-doc/stable
+           gtk-doc
            pkg-config))
-    (inputs (list libxcrypt ncurses))
-    (propagated-inputs (list glib libxml2))
+    (inputs (list ncurses))
+    (propagated-inputs (list glib libxml2 python-2))
     (synopsis "GLib Ncurses Toolkit")
     (description "GNT is an ncurses toolkit for creating text-mode graphical
 user interfaces in a fast and easy way.  It is based on GLib and ncurses.")
@@ -827,36 +822,34 @@ used by Pidgin and Bitlbee, among others, to access
 (define-public hexchat
   (package
     (name "hexchat")
-    (version "2.16.2")
+    (version "2.16.1")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://github.com/hexchat/hexchat/releases/"
-                           "download/v" version "/hexchat-" version ".tar.xz"))
+       (uri (string-append "https://dl.hexchat.net/hexchat/hexchat-"
+                           version ".tar.xz"))
        (sha256
-        (base32 "0jhfg6n9r6fn9ld21pdzdz6210d7dms401zcfdrvhx52il53921f"))))
+        (base32 "1iy4ln6yfgy3xysrfpjxw8fn38i3qx8jsn2mk2prshfzf7d9gr57"))))
     (build-system meson-build-system)
-    (native-inputs
-     (list gettext-minimal
-           `(,glib "bin")               ;need glib-genmarshal
-           perl
-           pkg-config))
-    (inputs
-     (list dbus-glib
-           dbus
-           enchant
-           gtk+-2
-           libcanberra
-           openssl
+    (native-inputs `(("gettext" ,gettext-minimal)
+                     ("glib:bin" ,glib "bin")       ;need glib-genmarshal
+                     ("perl" ,perl)
+                     ("pkg-config" ,pkg-config)))
+    (inputs `(("dbus-glib" ,dbus-glib)
+              ("dbus" ,dbus)
+              ("enchant" ,enchant)
+              ("gtk" ,gtk+-2)
+              ("libcanberra" ,libcanberra)
+              ("openssl" ,openssl)
 
-           ;; Bindings for add-on scripts.
-           luajit
-           perl-xml-parser
-           python
-           python-cffi
+              ;; Bindings for add-on scripts.
+              ("luajit" ,luajit)
+              ("perl-xml-parser" ,perl-xml-parser)
+              ("python" ,python)
+              ("python-cffi" ,python-cffi)
 
-           ;; For the ensuing WRAP-PROGRAM.
-           bash-minimal))
+              ;; For the ensuing WRAP-PROGRAM.
+              ("bash-minimal" ,bash-minimal)))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -953,15 +946,15 @@ authentication.")
 (define-public pidgin
   (package
     (name "pidgin")
-    (version "2.14.13")
+    (version "2.14.5")
     (source
      (origin
        (method url-fetch)
        (uri
         (string-append "mirror://sourceforge/pidgin/Pidgin/"
-                       version "/pidgin-" version ".tar.bz2"))
+                       version "/pidgin-" version ".tar.gz"))
        (sha256
-        (base32 "1a3by4niw5ls67mwgj20p2mr317zj4hzysi5glm9mq0pivf4j00j"))
+        (base32 "12llip3r8126gph82r638xjv2v2rg34qgggn1nbwfmc3s7halimr"))
        (patches
         (search-patches "pidgin-add-search-path.patch"))
        (modules '((guix build utils)))
@@ -972,54 +965,53 @@ authentication.")
            #t))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
-     (list autoconf ;; For bootstrap
-           automake ;; For bootstrap
-           check
-           graphviz
-           gconf
-           intltool
-           libtool ;; For bootstrap
-           pkg-config))
+     `(("autoconf" ,autoconf) ;; For bootstrap
+       ("automake" ,automake) ;; For bootstrap
+       ("check" ,check)
+       ("dot" ,graphviz)
+       ("gconf" ,gconf)
+       ("intltool" ,intltool)
+       ("libtool" ,libtool) ;; For bootstrap
+       ("pkg-config" ,pkg-config)))
     (inputs
-     (list avahi
-           cyrus-sasl
-           dbus
-           dbus-glib
-           ;; evolution-data-server
-           farstream
-           gnutls
-           gstreamer
-           ;; gtkspell2
-           libgadu
-           libgcrypt
-           libice
-           libidn
-           libltdl
-           libsm
-           libx11
-           libxext
-           libxml2
-           libxscrnsaver
-           libxslt
-           ;; libzephyr
-           meanwhile
-           ncurses
-           network-manager
-           nspr
-           nss
-           nss-certs
-           pango
-           perl
-           python-wrapper
-           python-dbus
-           silc-toolkit
-           sqlite
-           startup-notification
-           tcl
-           tk))
+     `(("avahi" ,avahi)
+       ("cyrus-sasl" ,cyrus-sasl)
+       ("dbus" ,dbus)
+       ("dbus-glib" ,dbus-glib)
+       ;; ("evolution-data-server" ,evolution-data-server)
+       ("farstream" ,farstream)
+       ("gnutls" ,gnutls)
+       ("gstreamer" ,gstreamer)
+       ;; ("gtkspell2" ,gtkspell2)
+       ("libgadu" ,libgadu)
+       ("libgcrypt" ,libgcrypt)
+       ("libgnt" ,libgnt)
+       ("libice" ,libice)
+       ("libidn" ,libidn)
+       ("libltdl" ,libltdl)
+       ("libsm" ,libsm)
+       ("libx11" ,libx11)
+       ("libxext" ,libxext)
+       ("libxml2" ,libxml2)
+       ("libxscrnsaver" ,libxscrnsaver)
+       ("libxslt" ,libxslt)
+       ;; ("libzephyr" ,libzephyr)
+       ("meanwhile" ,meanwhile)
+       ("ncurses" ,ncurses)
+       ("network-manager" ,network-manager)
+       ("nspr" ,nspr)
+       ("nss" ,nss)
+       ("pango" ,pango)
+       ("perl" ,perl)
+       ("python" ,python-2)
+       ("python2-dbus" ,python2-dbus)
+       ("silc" ,silc-toolkit)
+       ("sqlite" ,sqlite)
+       ("startup-notification" ,startup-notification)
+       ("tcl" ,tcl)
+       ("tk" ,tk)))
     (propagated-inputs
-     ;; Required by finch.pc, pidgin.pc and purple.pc
-     (list glib gtk+-2 libgnt))
+     (list glib gtk+-2))
     (arguments
      `(#:configure-flags
        (list
@@ -1030,10 +1022,6 @@ authentication.")
         "--disable-gevolution"
         "--enable-cap"
         "--enable-cyrus-sasl"
-        ;; Use nss-certs instead of bundled ones.
-        (string-append "--with-system-ssl-certs="
-                       (assoc-ref %build-inputs "nss-certs")
-                       "/etc/ssl/certs")
         (string-append "--with-ncurses-headers="
                        (assoc-ref %build-inputs "ncurses")
                        "/include")
@@ -1294,8 +1282,7 @@ of xmpppy.")
            python-setuptools
            xorg-server-for-tests))
     (inputs
-     (list bash-minimal
-           avahi
+     (list avahi
            dbus
            farstream
            geoclue
@@ -1425,7 +1412,7 @@ Encryption to Gajim.")
            #:modules '((guix build cmake-build-system)
                        ((guix build glib-or-gtk-build-system) #:prefix glib-or-gtk:)
                        (guix build utils))
-           #:imported-modules `(,@%default-gnu-imported-modules
+           #:imported-modules `(,@%gnu-build-system-modules
                                 (guix build cmake-build-system)
                                 (guix build glib-or-gtk-build-system))
            #:phases
@@ -1501,12 +1488,12 @@ default.")
               (method url-fetch)
               (uri (string-append "mirror://kde/unstable/kaidan/" version
                                   "/kaidan-" version ".tar.xz"))
-              (modules '((guix build utils)))
-              (snippet
-               #~(begin
-                   (delete-file-recursively "3rdparty")))
-              (sha256
-               (base32 "1waqv0fdkhvp3cqy2a2g6i2wc9s0zbvgzknymrwxy99mnx9ymw9g"))))
+       (modules '((guix build utils)))
+       (snippet
+        #~(begin
+            (delete-file-recursively "3rdparty")))
+       (sha256
+        (base32 "1waqv0fdkhvp3cqy2a2g6i2wc9s0zbvgzknymrwxy99mnx9ymw9g"))))
     (build-system qt-build-system)
     (arguments
      (list #:configure-flags #~(list "-DBUILD_TESTS=true")))
@@ -1514,8 +1501,8 @@ default.")
                          perl
                          pkg-config
                          python-wrapper))
-    (inputs (list kirigami-5
-                  knotifications-5
+    (inputs (list kirigami
+                  knotifications
                   qtbase-5
                   qtdeclarative-5
                   qtgraphicaleffects
@@ -1823,59 +1810,58 @@ messenger protocol.")
 
 (define-public utox
   (package
-    (name "utox")
-    (version "0.18.1")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/uTox/uTox")
-             (commit (string-append "v" version))
-             (recursive? #t))) ;; Needed for 'minini' git submodule.
-       (file-name (string-append name "-" version "-checkout"))
-       (sha256
-        (base32
-         "01rvlf94d4rkrygnnjak3cg16hrrqyi1rn9nx65y17qk2nbyh68g"))))
-    (build-system cmake-build-system)
-    (arguments
-     `(#:configure-flags '("-DENABLE_TESTS=on")
-       #:phases
-       (modify-phases %standard-phases
-         (add-before 'build 'patch-absolute-filename-libgtk-3
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             (substitute* "../source/src/xlib/gtk.c"
-               (("libgtk-3.so")
-                (search-input-file inputs "/lib/libgtk-3.so")))))
-         (add-after 'install 'wrap-program
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             (wrap-program (string-append (assoc-ref outputs "out")
-                                          "/bin/utox")
-               ;; For GtkFileChooserDialog.
-               `("GSETTINGS_SCHEMA_DIR" =
-                 (,(string-append (assoc-ref inputs "gtk+")
-                                  "/share/glib-2.0/schemas")))))))))
-    (inputs
-     (list bash-minimal                 ;for wrap-program
-           dbus
-           filteraudio
-           fontconfig
-           freetype
-           c-toxcore
-           gtk+
-           libvpx
-           libx11
-           libxext
-           libxrender
-           openal
-           v4l-utils))
-    (native-inputs
-     (list check pkg-config))
-    (synopsis "Lightweight Tox client")
-    (description
-     "uTox is a lightweight Tox client.  Tox is a distributed and secure
+   (name "utox")
+   (version "0.18.1")
+   (source
+    (origin
+     (method git-fetch)
+     (uri (git-reference
+           (url "https://github.com/uTox/uTox")
+           (commit (string-append "v" version))
+           (recursive? #t))) ;; Needed for 'minini' git submodule.
+     (file-name (string-append name "-" version "-checkout"))
+     (sha256
+      (base32
+       "01rvlf94d4rkrygnnjak3cg16hrrqyi1rn9nx65y17qk2nbyh68g"))))
+   (build-system cmake-build-system)
+   (arguments
+    `(#:configure-flags '("-DENABLE_TESTS=on")
+      #:phases
+      (modify-phases %standard-phases
+        (add-before 'build 'patch-absolute-filename-libgtk-3
+          (lambda* (#:key inputs outputs #:allow-other-keys)
+            (substitute* "../source/src/xlib/gtk.c"
+                         (("libgtk-3.so")
+                          (search-input-file inputs "/lib/libgtk-3.so")))))
+        (add-after 'install 'wrap-program
+          (lambda* (#:key inputs outputs #:allow-other-keys)
+            (wrap-program (string-append (assoc-ref outputs "out")
+                                         "/bin/utox")
+            ;; For GtkFileChooserDialog.
+             `("GSETTINGS_SCHEMA_DIR" =
+               (,(string-append (assoc-ref inputs "gtk+")
+                                "/share/glib-2.0/schemas")))))))))
+   (inputs
+    `(("dbus" ,dbus)
+      ("filteraudio" ,filteraudio)
+      ("fontconfig" ,fontconfig)
+      ("freetype" ,freetype)
+      ("c-toxcore" ,c-toxcore)
+      ("gtk+" ,gtk+)
+      ("libvpx" ,libvpx)
+      ("libx11" ,libx11)
+      ("libxext" ,libxext)
+      ("libxrender" ,libxrender)
+      ("openal" ,openal)
+      ("v4l-utils" ,v4l-utils)))
+   (native-inputs
+    (list check pkg-config))
+   (synopsis "Lightweight Tox client")
+   (description
+    "uTox is a lightweight Tox client.  Tox is a distributed and secure
 instant messenger with audio and video chat capabilities.")
-    (home-page "https://github.com/uTox/uTox")
-    (license license:gpl3)))
+   (home-page "https://github.com/uTox/uTox")
+   (license license:gpl3)))
 
 (define-public qtox
   (package
@@ -1917,8 +1903,7 @@ instant messenger with audio and video chat capabilities.")
     (native-inputs
      (list pkg-config qttools-5))
     (inputs
-     (list bash-minimal
-           ffmpeg
+     (list ffmpeg
            filteraudio
            glib
            gtk+-2
@@ -2006,7 +1991,7 @@ into existing applications.")
     (native-inputs
      (list unzip))
     (inputs
-     (list bash-minimal perl-curses perl-io-socket-ssl))
+     (list perl-curses perl-io-socket-ssl))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -2037,7 +2022,8 @@ into existing applications.")
                (install-file "README.txt" doc)
                (install-file "TODO.txt" doc)
                (copy-recursively "share/man/man1" man1)
-               (copy-recursively "share/man/man3" man3))))
+               (copy-recursively "share/man/man3" man3)
+               #t)))
          (add-after 'install 'wrap-programs
            (lambda* (#:key outputs #:allow-other-keys)
              ;; Make sure all executables in "bin" find the Perl modules
@@ -2048,7 +2034,8 @@ into existing applications.")
                (for-each (lambda (file)
                            (wrap-program file
                              `("PERL5LIB" ":" prefix (,path))))
-                         (find-files bin "\\.*$"))))))))
+                         (find-files bin "\\.*$"))
+               #t))))))
     (description
      "@code{Net::PSYC} with support for TCP, UDP, Event.pm, @code{IO::Select} and
 Gtk2 event loops.  This package includes 12 applications and additional scripts:
@@ -2130,7 +2117,7 @@ including psyced.")
     (native-inputs
      (list pkg-config check
            `(,glib "bin") ; gtester
-           gtk-doc/stable))
+           gtk-doc))
     (home-page "https://mcabber.com/")
     (description
      "Loudmouth is a lightweight and easy-to-use C library for programming
@@ -2251,7 +2238,7 @@ is also scriptable and extensible via Guile.")
            (lambda _
              (substitute* "Makefile.am"
                (("'\\^xmpp_'") "'.'"))))
-         (add-after 'install 'install-extra-licence-files
+         (add-after 'install-licence-files 'install-extra-licence-files
            (lambda _
             (let ((license-directory (string-append #$output
                                                     "/share/doc/"
@@ -2523,8 +2510,7 @@ for the Matrix protocol.  It is built on to of @code{Boost.Asio}.")
                   `("GST_PLUGIN_SYSTEM_PATH" ":" prefix (,gst-plugin-path)))))))))
     (build-system qt-build-system)
     (inputs
-     (list bash-minimal
-           blurhash
+     (list blurhash
            brotli
            cmark
            coeurl
@@ -2552,7 +2538,6 @@ for the Matrix protocol.  It is built on to of @code{Boost.Asio}.")
            spdlog
            vulkan-headers
            vulkan-loader
-           xdg-utils                    ; xdg-open for opening URLs
            zlib))
     (native-inputs
      (list asciidoc pkg-config qttools))
@@ -3134,7 +3119,8 @@ social and chat platform.")
                (("qiteaudio.h")
                 "qite/qiteaudio.h")
                (("qiteaudiorecorder.h")
-                "qite/qiteaudiorecorder.h"))))
+                "qite/qiteaudiorecorder.h"))
+             #t))
          (add-after 'install 'wrap-env
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
@@ -3146,48 +3132,48 @@ social and chat platform.")
                     (wrap-program file
                       `("GST_PLUGIN_SYSTEM_PATH" ":" prefix (,gst-plugin-path))
                       `("GI_TYPELIB_PATH" ":" prefix (,gi-typelib-path)))))
-                '("psi-plus")))))
+                '("psi-plus")))
+             #t))
          (add-after 'wrap-env 'glib-or-gtk-compile-schemas
            (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-compile-schemas))
          (add-after 'glib-or-gtk-compile-schemas 'glib-or-gtk-wrap
            (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
     (native-inputs
-     (list `(,glib "bin")
-           gobject-introspection
-           perl
-           pkg-config
-           python-wrapper
-           ruby))
+     `(("glib:bin" ,glib "bin")
+       ("gobject-introspection" ,gobject-introspection)
+       ("perl" ,perl)
+       ("pkg-config" ,pkg-config)
+       ("python" ,python-wrapper)
+       ("ruby" ,ruby)))
     (inputs
-     (list bash-minimal       ; for wrap-program
-           libb2
-           dbus
-           enchant
-           glib
-           gstreamer
-           gst-plugins-base
-           http-parser
-           libgcrypt
-           libgpg-error
-           libidn
-           libotr
-           libsignal-protocol-c
-           tidy-html
-           openssl
-           qca
-           qhttp
-           qite
-           qtbase-5
-           qtkeychain
-           qtmultimedia-5
-           qtsvg-5
-           qtx11extras
-           usrsctp
-           libx11
-           libxext
-           libxcb
-           libxscrnsaver
-           zlib))
+     `(("blake2" ,libb2)
+       ("dbus" ,dbus)
+       ("enchant" ,enchant)
+       ("glib" ,glib)
+       ("gstreamer" ,gstreamer)
+       ("gst-plugins-base" ,gst-plugins-base)
+       ("http-parser" ,http-parser)
+       ("libgcrypt" ,libgcrypt)
+       ("libgpg-error" ,libgpg-error)
+       ("libidn" ,libidn)
+       ("libotr" ,libotr)
+       ("libsignal-protocol-c" ,libsignal-protocol-c)
+       ("libtidy" ,tidy-html)
+       ("openssl" ,openssl)
+       ("qca" ,qca)
+       ("qhttp" ,qhttp)
+       ("qite" ,qite)
+       ("qtbase" ,qtbase-5)
+       ("qtkeychain" ,qtkeychain)
+       ("qtmultimedia-5" ,qtmultimedia-5)
+       ("qtsvg-5" ,qtsvg-5)
+       ("qtx11extras" ,qtx11extras)
+       ("usrsctp" ,usrsctp)
+       ("x11" ,libx11)
+       ("xext" ,libxext)
+       ("xcb" ,libxcb)
+       ("xss" ,libxscrnsaver)
+       ("zlib" ,zlib)))
     (home-page "https://psi-plus.com/")
     (synopsis "Qt-based XMPP Client")
     (description
@@ -3375,7 +3361,7 @@ notifications.")
     (native-inputs
      (list pkg-config universal-ctags))
     (inputs
-     (list libressl libxcrypt))
+     (list libressl))
     (home-page "https://git.causal.agency/pounce")
     (synopsis "Simple multi-client TLS-only IRC bouncer")
     (description
@@ -3601,7 +3587,7 @@ a text snippet), using @code{libphonenumber}.")
        (method git-fetch)
        (uri
         (git-reference
-         (url "https://git.sr.ht/~delthas/senpai")
+         (url "https://git.sr.ht/~taiite/senpai")
          (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -3639,7 +3625,7 @@ a text snippet), using @code{libphonenumber}.")
                          go-golang-org-x-time
                          go-mvdan-cc-xurls
                          scdoc))
-    (home-page "https://sr.ht/~delthas/senpai")
+    (home-page "https://sr.ht/~taiite/senpai")
     (synopsis "Modern terminal IRC client")
     (description
      "@code{senpai} is an IRC client that works best with bouncers.")
@@ -3720,9 +3706,6 @@ a text snippet), using @code{libphonenumber}.")
                 (substitute* "rebar.config"
                   (("\\{copy, \"rel/files/erl\",")
                    "%{copy, \"rel/files/erl\","))
-                ;; It seems ejabberd still needs jiffy due to p1_acme.
-                (substitute* "rebar.config"
-                  (("\\{if_version_below, \"27\",") "{if_version_below, \"30\","))
                 ;; Unpin pinned dependences.
                 (substitute* "rebar.lock"
                   ((",1\\}") ",0}"))

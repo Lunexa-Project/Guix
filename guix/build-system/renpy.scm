@@ -44,7 +44,7 @@
   `((guix build renpy-build-system)
     (guix build json)
     (guix build python-build-system)
-    ,@%default-gnu-imported-modules))
+    ,@%gnu-build-system-modules))
 
 (define* (lower name
                 #:key source inputs native-inputs outputs system target

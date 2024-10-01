@@ -19,7 +19,6 @@
 ;;; Copyright © 2021 Hugo Lecomte <hugo.lecomte@inria.fr>
 ;;; Copyright © 2021, 2022 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;; Copyright © 2024 Troy Figiel <troy@troyfigiel.com>
-;;; Copyright © 2021 Maxime Devos <maximedevos@telenet.be>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,8 +47,6 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages)
   #:use-module (gnu packages check)
-  #:use-module (gnu packages fonts)
-  #:use-module (gnu packages fontutils)
   #:use-module (gnu packages graphviz)
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
@@ -78,10 +75,7 @@
          "12cdy3m5c09lpf2bbxzbhm5v5y9fk7jgm94qrzggpq86waj28cms"))))
     (build-system python-build-system)
     (arguments
-     `(;; Make sure it is safe to use 'imagemagick' instead of
-       ;; 'imagemagick/stable' (see the comment for the "imagemagick" input).
-       #:disallowed-references (,imagemagick/stable)
-       #:phases
+     '(#:phases
        (modify-phases %standard-phases
          (replace 'check
            (lambda* (#:key tests? #:allow-other-keys)
@@ -113,43 +107,38 @@
 
            ;; The Sphinx LaTeX library '\RequirePackage' or \\usepackage
            ;; these:
-           texlive-scheme-basic         ;for a valid TeX Live tree
-           texlive-anyfontsize
+           texlive-amsfonts             ;amsmath, amssymb, amstext
+           texlive-amsmath
            texlive-capt-of
-           texlive-cm-super
+           texlive-carlisle             ;remreset
            texlive-cmap
            texlive-etoolbox
+           texlive-fancyhdr
            texlive-fancyvrb
            texlive-float
            texlive-fncychap
-           texlive-fontspec
            texlive-framed
-           texlive-luatex85
-           texlive-luatexbase
+           texlive-geometry
+           texlive-hyperref
+           texlive-kvoptions
+           texlive-latex-bin
+           texlive-ltxcmds
            texlive-needspace
+           texlive-oberdiek             ;hypcap
            texlive-parskip
-           texlive-polyglossia
            texlive-preview
            texlive-tabulary
-           texlive-tex-gyre
            texlive-titlesec
+           texlive-tools                ;multicol, longtable
            texlive-upquote
            texlive-varwidth
            texlive-wrapfig
            texlive-xcolor))
     (native-inputs
-     (list fontconfig
-           font-gnu-freefont
-           ;; imagemagick is added for "convert".  The store item does not
-           ;; retain a reference to imagemagick, so it should be safe to use
-           ;; 'imagemagick/stable' instead of 'imagemagick'.  This is enforced
-           ;; by the '#:disallowed-references' above.
-           imagemagick/stable
+     (list imagemagick                  ;for "convert"
            python-cython
            python-html5lib
-           python-pytest
-           (texlive-updmap.cfg
-            (list texlive-cm-super texlive-tex-gyre))))
+           python-pytest))
     (home-page "https://www.sphinx-doc.org")
     (synopsis "Python documentation generator")
     (description "Sphinx is a tool that makes it easy to create documentation

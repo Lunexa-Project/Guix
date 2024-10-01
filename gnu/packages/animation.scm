@@ -34,7 +34,6 @@
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages assembly)
   #:use-module (gnu packages autotools)
-  #:use-module (gnu packages bash)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
@@ -192,7 +191,7 @@ for tweening, preventing the need to hand-draw each frame.")
                 (wrap-program (string-append #$output "/bin/synfigstudio")
                   `("XDG_DATA_DIRS" ":" prefix (,gtk-share)))))))))
     (inputs
-     (list bash-minimal gtkmm-3 gtk+ libsigc++ synfig))
+     (list gtkmm-3 gtk+ libsigc++ synfig))
     (native-inputs
      (list pkg-config intltool))
     (home-page "https://www.synfig.org")
@@ -411,8 +410,7 @@ language.")
                            qt)))
                  #t))))))
       (inputs
-       `(("bash" ,bash-minimal)
-         ("qt" ,qtbase-5)
+       `(("qt" ,qtbase-5)
          ("qtmultimedia-5" ,qtmultimedia-5)
          ("libsndfile" ,libsndfile)))
       (native-inputs
@@ -442,7 +440,7 @@ waveform until they line up with the proper sounds.")
                 "0b1nwiwyg01087q318vymg4si76dw41ykxbn2zwd6dqbxzbpr1dh"))))
     (build-system gnu-build-system)
     (inputs
-     (list bash-minimal qtbase-5 qtxmlpatterns qtmultimedia-5 qtsvg-5))
+     (list qtbase-5 qtxmlpatterns qtmultimedia-5 qtsvg-5))
     (arguments
      (list
       #:phases

@@ -40,5 +40,5 @@ index d4b39869c..13071d898 100644
 +#include <miniupnpc/upnpcommands.h>
 +#include <miniupnpc/upnperrors.h>
  
- #undef LUNEXA_DEFAULT_LOG_CATEGORY
- #define LUNEXA_DEFAULT_LOG_CATEGORY "net.p2p"
+ #undef MONERO_DEFAULT_LOG_CATEGORY
+ #define MONERO_DEFAULT_LOG_CATEGORY "net.p2p"

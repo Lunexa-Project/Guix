@@ -167,14 +167,14 @@ management, extensions such as advertisement blocker and colorful tabs.")
 (define-public links
   (package
     (name "links")
-    (version "2.30")
+    (version "2.29")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://links.twibright.com/download/"
                                   "links-" version ".tar.bz2"))
               (sha256
                (base32
-                "0rpi2l1v9b8d86z9dm91n312aavz7g12z1xp7kf7qlhib9miqqy4"))))
+                "163rmng8zkwy0pv9wxcpc0j3gz27g8ba9myrgs7ny6lfng09dai2"))))
     (build-system gnu-build-system)
     (arguments
      (list
@@ -264,8 +264,7 @@ features including, tables, builtin image display, bookmarks, SSL and more.")
     (native-inputs
      (list pkg-config))
     (inputs
-     (list bash-minimal
-           glib-networking
+     (list glib-networking
            gsettings-desktop-schemas
            gtk+
            lua-5.1
@@ -374,13 +373,14 @@ systems intended primarily for local access.")
              ;; Contains executable of 7z and pscp
              (delete-file-recursively "ci/tools")
              ;; Remove bundled fonts
-             (delete-file-recursively "src/fonts")))))
+             (delete-file-recursively "src/fonts")
+             #t))))
       (build-system gnu-build-system)
       (arguments
        `(#:modules ((guix build gnu-build-system)
                     (guix build qt-utils)
                     (guix build utils))
-         #:imported-modules (,@%default-gnu-imported-modules
+         #:imported-modules (,@%gnu-build-system-modules
                              (guix build qt-utils))
          #:make-flags
          (list (string-append "PREFIX=" %output))
@@ -394,21 +394,22 @@ systems intended primarily for local access.")
                ;; Patch it to just return the real version number directly.
                (substitute* "src/kristall.pro"
                  (("(KRISTALL_VERSION=).*" _ match)
-                  (string-append match ,version "\n")))))
+                  (string-append match ,version "\n")))
+               #t))
            (add-before 'build 'dont-use-bundled-cmark
              (lambda _
                (substitute* "src/kristall.pro"
                  (("(^include\\(.*cmark.*)" _ match)
                   (string-append
-                   "LIBS += -I" (assoc-ref %build-inputs "cmark")
-                   " -lcmark")))))
+                   "LIBS += -I" (assoc-ref %build-inputs "cmark") " -lcmark")))
+               #t))
            (add-before 'build 'dont-use-bundled-breeze-stylesheet
              (lambda _
                (substitute* "src/kristall.pro"
                  (("../lib/BreezeStyleSheets/breeze.qrc")
                   (string-append
-                   (assoc-ref %build-inputs "breeze-stylesheet")
-                   "/breeze.qrc")))))
+                   (assoc-ref %build-inputs "breeze-stylesheet") "/breeze.qrc")))
+               #t))
            (add-before 'build 'dont-use-bundled-fonts
              (lambda _
                (substitute* "src/kristall.pro"
@@ -421,7 +422,8 @@ systems intended primarily for local access.")
                  (("/fonts/NotoColorEmoji")
                   (string-append
                    (assoc-ref %build-inputs "font-google-noto")
-                   "/share/fonts/truetype/NotoColorEmoji")))))
+                   "/share/fonts/truetype/NotoColorEmoji")))
+               #t))
            (add-after 'install 'wrap-program
              (lambda* (#:key outputs inputs #:allow-other-keys)
                (let ((out (assoc-ref outputs "out")))
@@ -443,8 +445,7 @@ systems intended primarily for local access.")
                 (base32
                  "1kvkxkisi3czldnb43ig60l55pi4a3m2a4ixp7krhpf9fc5wp294")))))))
       (inputs
-       (list bash-minimal
-             cmark
+       (list cmark
              font-google-noto
              font-openmoji
              openssl
@@ -616,7 +617,7 @@ driven and does not detract you from your daily work.")
          (add-before 'build 'fix-common-lisp-cache-folder
            (lambda _ (setenv "HOME" "/tmp")))
          (add-before 'check 'configure-tests
-           (lambda _ (setenv "NYXT_TESTS_NO_NETWORK" "1")))
+           (lambda _ (setenv "NYXT_TESTS_NO_NETWORK" "1") #t))
          (add-after 'install 'wrap-program
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((bin (string-append (assoc-ref outputs "out") "/bin/nyxt"))
@@ -640,8 +641,7 @@ driven and does not detract you from your daily work.")
                  `("LD_LIBRARY_PATH" ":" prefix (,path))
                  `("XDG_DATA_DIRS" ":" prefix (,xdg-path)))))))))
     (native-inputs (list cl-lisp-unit2 sbcl))
-    (inputs (list bash-minimal
-                  sbcl-alexandria
+    (inputs (list sbcl-alexandria
                   sbcl-bordeaux-threads
                   sbcl-calispel
                   sbcl-cl-base64
@@ -852,7 +852,7 @@ http, and https via third-party applications.")
 (define-public tinmop
   (package
     (name "tinmop")
-    (version "0.9.9.14142135623")
+    (version "0.9.9.141421356")
     (source
      (origin
        (method git-fetch)
@@ -861,13 +861,12 @@ http, and https via third-party applications.")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
-        (base32 "02kp527gyh60fm2ss92wy3k3m9fih82wvzndri98sj2zc0wgcnki"))))
+        (base32 "0cw8scjxci98jx5cmm98x0frjrbs3q7w3dwz60xpy67aqmwq7kqx"))))
     (build-system gnu-build-system)
     (native-inputs
      (list autoconf
            automake
            gnu-gettext
-           libjpeg-turbo
            imagemagick
            mandoc
            nano

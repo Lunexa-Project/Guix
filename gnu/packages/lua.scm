@@ -21,8 +21,6 @@
 ;;; Copyright © 2023 Yovan Naumovski <yovan@gorski.stream>
 ;;; Copyright © 2023 Valter Nazianzeno <manipuladordedados@gmail.com>
 ;;; Copyright © 2023 Timo Wilken <guix@twilken.net>
-;;; Copyright © 2024 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
-;;; Copyright © 2024 Maxim Cournoyer <maxim.cournoyer@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -51,13 +49,11 @@
   #:use-module (guix build-system meson)
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages)
-  #:use-module (gnu packages autotools)
   #:use-module (gnu packages base)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages build-tools)
-  #:use-module (gnu packages check)
   #:use-module (gnu packages gcc)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages gcc)
@@ -170,8 +166,8 @@ for configuration, scripting, and rapid prototyping.")
                                       "lua51-pkgconfig.patch"))))))
 
 (define-public luajit
-  (let ((branch "v2.1")
-        (commit "04dca7911ea255f37be799c18d74c305b921c1a6"))
+  (let ((branch "2.1.0-beta3")
+        (commit "6c4826f12c4d33b8b978004bc681eb1eef2be977"))
     (package
       (name "luajit")
       (version (git-version branch "0" commit))
@@ -183,13 +179,20 @@ for configuration, scripting, and rapid prototyping.")
                 (file-name (git-file-name name version))
                 (sha256
                  (base32
-                  "0srwk9nmiz8a93f70inq2597ff6xy203ckr4c0k7jcksdixymi9v"))))
+                  "1a002yh8v1i1q9w09494q0b8vsbmw3amn9jgfs5qnz7ba54jij0q"))))
       (build-system gnu-build-system)
       (arguments
        `(#:tests? #f                    ; luajit is distributed without tests
          #:phases
          (modify-phases %standard-phases
-           (delete 'configure)) ; no configure script
+           (delete 'configure)          ; no configure script
+           (add-after 'install 'create-luajit-symlink
+             (lambda* (#:key outputs #:allow-other-keys)
+               (let* ((out (assoc-ref outputs "out"))
+                      (bin (string-append out "/bin")))
+                 (with-directory-excursion bin
+                   (symlink ,(string-append name "-" branch)
+                            ,name))))))
          #:make-flags (list (string-append "PREFIX="
                                            (assoc-ref %outputs "out")))))
       (home-page "https://www.luajit.org/")
@@ -911,44 +914,6 @@ on numbers.")
 
 (define-public lua5.1-bitop
   (make-lua-bitop "lua5.1-bitop" lua-5.1))
-
-(define-public lutok
-  (package
-    (name "lutok")
-    (version "0.4")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/freebsd/lutok")
-                    (commit (string-append name "-" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                "0a2vc2wy5hasw69h1mz768ywx6c4ccl9jzzd4ixddwba3z3ha03b"))))
-    (build-system gnu-build-system)
-    ;; Disable the test suite to avoid a circular dependency on kyua.
-    (arguments (list #:tests? #f))
-    (native-inputs (list autoconf automake libtool pkg-config))
-    (inputs (list atf))
-    (propagated-inputs (list lua-5.2))  ;included in c_gate.hpp
-    (home-page "https://github.com/freebsd/lutok")
-    (synopsis "Lightweight C++ API for Lua")
-    (description "Lutok is a lightweight C++ API library for Lua.
-
-Lutok provides thin C++ wrappers around the Lua C API to ease the interaction
-between C++ and Lua.  These wrappers make intensive use of @acronym{RAII,
-Resource Acquisition is Initialization} to prevent resource leakage, expose
-C++-friendly data types, report errors by means of exceptions and ensure that
-the Lua stack is always left untouched in the face of errors.  The library
-also provides a small subset of miscellaneous utility functions built on top
-of the wrappers.
-
-Lutok focuses on providing a clean and safe C++ interface; the drawback is
-that it is not suitable for performance-critical environments.  In order to
-implement error-safe C++ wrappers on top of a Lua C binary library, Lutok adds
-several layers or abstraction and error checking that go against the original
-spirit of the Lua C API and thus degrade performance.")
-    (license license:bsd-3)))
 
 (define-public selene
   (package

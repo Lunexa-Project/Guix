@@ -182,12 +182,9 @@ files."
                            ;; set a sane value for 'PATH'.
                            #:environment-variables
                            (cons* "GUILE_AUTO_COMPILE=0"
-                                  #$(if home-service?
-                                        '(environ)
-                                        '(cons*
-                                          "PATH=/run/current-system/profile/bin"
-                                          (remove (cut string-prefix? "PATH=" <>)
-                                                  (environ)))))
+                                  "PATH=/run/current-system/profile/bin"
+                                  (remove (cut string-prefix? "PATH=" <>)
+                                          (environ)))
 
                            #:log-file #$log-file))
                  (stop #~(make-kill-destructor))

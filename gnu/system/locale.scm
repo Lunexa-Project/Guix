@@ -148,7 +148,9 @@ data format changes between libc versions."
 
 (define %default-locale-libcs
   ;; The libcs for which we build locales by default.
-  (list glibc glibc-2.35))
+  (if (system-hurd?)
+      (list glibc/hurd)
+      (list glibc)))
 
 (define %default-locale-definitions
   ;; Arbitrary set of locales that are built by default.  They come as a

@@ -25,14 +25,12 @@
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages glib)
-  #:use-module (gnu packages groff)
   #:use-module (gnu packages hunspell)
   #:use-module (gnu packages icu4c)
   #:use-module (gnu packages man)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages version-control)
-  #:use-module (guix gexp)
   #:use-module (guix packages)
   #:use-module (guix git-download)
   #:use-module (guix download)
@@ -73,7 +71,7 @@ dictionaries.")
 (define-public enchant
   (package
     (name "enchant")
-    (version "2.6.9")
+    (version "2.2.15")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/AbiWord/enchant/releases"
@@ -81,31 +79,31 @@ dictionaries.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0szzxx0bvkdgahlzdbrmnngf1dzbsrpcf8psl2rl72mkr46s39fr"))))
+                "00vcykbb7lxh51prvmsb62a06q18a6rlk9ba5a7g45c1awaj43rv"))))
     (build-system gnu-build-system)
     (arguments
-     (list
-      #:configure-flags
-      #~(list"--disable-static"
-             ;; Tests require a relocatable build.
-             "--enable-relocatable")))
+     '(#:configure-flags '("--disable-static"
+                           ;; Tests require a relocatable build.
+                           "--enable-relocatable")))
     (inputs
-     (list aspell hunspell nuspell))
+     (list aspell hunspell))
     (propagated-inputs
      ;; Required by enchant.pc.
      (list glib))
     (native-inputs
-     (list `(,glib "bin") groff pkg-config unittest-cpp))
+     `(("glib:bin" ,glib "bin")
+       ("pkg-config" ,pkg-config)
+       ("unittest-cpp" ,unittest-cpp)))
     (synopsis "Multi-backend spell-checking library wrapper")
     (description
-     "Enchant is a library---and command-line program---that wraps a number of
-different spelling libraries and programs with a consistent interface.  By
-using Enchant, you can use a wide range of spelling libraries, including some
-specialized for particular languages, without needing to program to each
-library's interface.  If it's not convenient to call a C library, you can
-access most of Enchant's functionality via the @command{enchant} program,
-which communicates over a pipe, like Ispell, and is indeed
-Ispell-compatible.")
+      "On the surface, Enchant appears to be a generic spell checking library.
+Looking closer, you'll see the Enchant is more-or-less a fancy wrapper around
+the dlopen() system call.
+
+Enchant steps in to provide uniformity and conformity on top of these libraries,
+and implement certain features that may be lacking in any individual provider
+library.  Everything should \"just work\" for any and every definition of \"just
+working\".")
     (home-page "https://abiword.github.io/enchant/")
     (license lgpl2.1+)))
 
