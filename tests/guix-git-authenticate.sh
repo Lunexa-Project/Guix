@@ -29,8 +29,8 @@ guile -c '(use-modules (git))
     exit 77
 
 # Keep in sync with '%default-channels' in (guix channels)!
-intro_commit="9edb3f66fd807b096b48283debdcddccfea34bad"
-intro_signer="BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA"
+intro_commit="ada7668f0ff13f23bd115c4a8176d1c9f3d371f6"
+intro_signer="35C0 683C 0441 1562 27B2  0811 9CD5 E16B 0E41 6C95"
 
 cache_key="test-$$"
 
