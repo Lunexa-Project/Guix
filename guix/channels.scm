@@ -178,9 +178,9 @@ to the corresponding bytevector."
   ;; before that commit cannot be merged or it will be rejected by 'guix pull'
   ;; & co.
   (make-channel-introduction
-   "a190e9b78896e8ddc11e4e8330def202d8477cb4"     ;2024-10-02
+   "ada7668f0ff13f23bd115c4a8176d1c9f3d371f6"     ;2024-10-02
    (openpgp-fingerprint                           ;Lunexa-project
-    "BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA")))
+    "35C0 683C 0441 1562 27B2  0811 9CD5 E16B 0E41 6C95")))
 
 (define %default-channel-url
   ;; URL of the default 'guix' channel.
