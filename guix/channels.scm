@@ -132,7 +132,7 @@
   channel?
   (name      channel-name)
   (url       channel-url)
-  (branch    channel-branch (default "main"))
+  (branch    channel-branch (default "master"))
   (commit    channel-commit (default #f))
   (introduction channel-introduction (default #f))
   (location  channel-location
@@ -178,9 +178,9 @@ to the corresponding bytevector."
   ;; before that commit cannot be merged or it will be rejected by 'guix pull'
   ;; & co.
   (make-channel-introduction
-   "8684197039b317562e0be97e4d59279f16f3ad2f"     ;2024-10-1
-   (openpgp-fingerprint                           ;Lunexa-Project
-    "35C0 683C 0441 1562 27B2  0811 9CD5 E16B 0E41 6C95")))
+   "9edb3f66fd807b096b48283debdcddccfea34bad"     ;2020-05-26
+   (openpgp-fingerprint                           ;mbakke
+    "BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA")))
 
 (define %default-channel-url
   ;; URL of the default 'guix' channel.
